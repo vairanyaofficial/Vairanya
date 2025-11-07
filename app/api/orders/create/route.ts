@@ -1,0 +1,186 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createOrder } from "@/lib/orders-firestore";
+import { updateProduct } from "@/lib/products-firestore";
+import { incrementOfferUsage } from "@/lib/offers-firestore";
+import type { Order } from "@/lib/orders-types";
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const {
+      items,
+      total,
+      subtotal,
+      shipping,
+      discount,
+      offer_id,
+      customer,
+      shipping_address,
+      payment_method,
+      payment_status,
+      status,
+      user_id,
+    } = body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Order items are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate required fields
+    if (!customer || !customer.name || !customer.email || !customer.phone) {
+      return NextResponse.json(
+        { success: false, error: "Customer information is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!shipping_address || !shipping_address.address_line1 || !shipping_address.city || !shipping_address.state || !shipping_address.pincode) {
+      return NextResponse.json(
+        { success: false, error: "Shipping address is required" },
+        { status: 400 }
+      );
+    }
+
+    // Create order items - ensure no undefined values
+    const orderItems = items.map((item: any) => {
+      const orderItem: any = {
+        product_id: item.product_id,
+        sku: item.sku || item.product_id,
+        title: item.title,
+        quantity: item.quantity,
+        price: item.price,
+      };
+      
+      // Only include image if it exists
+      const imageUrl = item.images?.[0] || item.image;
+      if (imageUrl) {
+        orderItem.image = imageUrl;
+      }
+      
+      return orderItem;
+    });
+
+    // Clean shipping_address - remove undefined address_line2 if empty
+    const cleanedShippingAddress: any = {
+      name: shipping_address.name,
+      address_line1: shipping_address.address_line1,
+      city: shipping_address.city,
+      state: shipping_address.state,
+      pincode: shipping_address.pincode,
+      country: shipping_address.country || "India",
+    };
+    
+    // Only include address_line2 if it has a value
+    if (shipping_address.address_line2 && shipping_address.address_line2.trim()) {
+      cleanedShippingAddress.address_line2 = shipping_address.address_line2.trim();
+    }
+
+    // Create order - only include optional fields if they have values
+    const order: Omit<Order, "id" | "order_number" | "created_at" | "updated_at"> = {
+      items: orderItems,
+      total: total || 0,
+      subtotal: subtotal || 0,
+      shipping: shipping || 0,
+      customer: {
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      },
+      shipping_address: cleanedShippingAddress,
+      payment_method: payment_method || "cod",
+      payment_status: payment_status || "pending",
+      status: status || "confirmed",
+    };
+
+    // Only include user_id if it has a value
+    if (user_id) {
+      (order as any).user_id = user_id;
+    }
+
+    // Only include optional fields if they have values (not undefined)
+    if (discount !== undefined && discount !== null && discount > 0) {
+      (order as any).discount = discount;
+    }
+    
+    if (offer_id !== undefined && offer_id !== null && offer_id !== "") {
+      (order as any).offer_id = offer_id;
+    }
+
+    console.log("Creating order with data:", JSON.stringify(order, null, 2));
+    const savedOrder = await createOrder(order);
+    console.log("Order created successfully:", savedOrder.id);
+
+    // Increment offer usage if offer was applied
+    if (offer_id) {
+      try {
+        await incrementOfferUsage(offer_id);
+      } catch (offerError) {
+        // Continue even if offer usage increment fails
+        console.error("Failed to increment offer usage:", offerError);
+      }
+    }
+
+    // Update inventory
+    try {
+      for (const item of orderItems) {
+        const { getProductById } = await import("@/lib/products-firestore");
+        const product = await getProductById(item.product_id);
+        if (product) {
+          await updateProduct(item.product_id, {
+            stock_qty: Math.max(0, product.stock_qty - item.quantity),
+          });
+        }
+      }
+    } catch (inventoryError) {
+      // Continue even if inventory update fails
+    }
+
+    return NextResponse.json({
+      success: true,
+      order_id: savedOrder.id,
+      order_number: savedOrder.order_number,
+      message: "Order created successfully",
+    });
+  } catch (error: any) {
+    console.error("Error creating order:", error);
+    console.error("Error stack:", error.stack);
+    console.error("Error details:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    
+    // Check if it's a Firebase/Firestore initialization error
+    if (error.message && error.message.includes("Firestore not initialized")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Server configuration error. Please contact support.",
+          details: "Firebase Admin not initialized",
+        },
+        { status: 500 }
+      );
+    }
+
+    // Check if it's a permission error
+    if (error.code === 7 || error.code === "PERMISSION_DENIED" || error.message?.includes("403")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Permission denied. Please check Firebase configuration.",
+          details: error.message,
+        },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || "Failed to create order",
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
+      { status: 500 }
+    );
+  }
+}
+
