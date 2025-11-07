@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
           if (adminFirestore) {
             const workersSnapshot = await adminFirestore.collection("admins").get();
             firestoreWorkers = workersSnapshot.docs
-              .map((doc) => {
+              .map((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
                 const data = doc.data();
                 return {
                   uid: doc.id,
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
                   role: data.role || "worker",
                 };
               })
-              .filter((w) => w.role === "worker");
+              .filter((w: { uid: string; name: string; role: string }) => w.role === "worker");
           }
           
           // If no Firestore workers, fallback to empty array

@@ -45,7 +45,7 @@ export async function getCarouselSlides(activeOnly: boolean = true): Promise<Car
 
     const slides = snapshot.docs.map(docToCarouselSlide);
     // Sort by order in memory to avoid needing a Firestore index
-    return slides.sort((a, b) => (a.order || 0) - (b.order || 0));
+    return slides.sort((a: CarouselSlide, b: CarouselSlide) => (a.order || 0) - (b.order || 0));
   } catch (error) {
     console.error("Error fetching carousel slides:", error);
     return [];

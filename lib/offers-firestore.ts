@@ -63,7 +63,7 @@ export async function getAllOffers(): Promise<Offer[]> {
       
       const offers = snapshot.docs.map(docToOffer);
       // Sort by created_at descending
-      return offers.sort((a, b) => {
+      return offers.sort((a: Offer, b: Offer) => {
         const dateA = new Date(a.created_at).getTime();
         const dateB = new Date(b.created_at).getTime();
         return dateB - dateA;

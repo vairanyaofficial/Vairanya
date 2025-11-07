@@ -46,7 +46,7 @@ export async function DELETE(
 
     // Get all remaining categories
     const snapshot = await adminFirestore.collection(CATEGORIES_COLLECTION).get();
-    const categories = snapshot.docs.map((doc) => doc.id).sort();
+    const categories = snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => doc.id).sort();
 
     return NextResponse.json({ success: true, categories });
   } catch (error: any) {
@@ -83,7 +83,7 @@ export async function PUT(
     if (oldName === newName) {
       // No change, just return current categories
       const snapshot = await adminFirestore.collection(CATEGORIES_COLLECTION).get();
-      const categories = snapshot.docs.map((doc) => doc.id).sort();
+      const categories = snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => doc.id).sort();
       return NextResponse.json({ success: true, categories });
     }
 
@@ -127,7 +127,7 @@ export async function PUT(
 
     // Get all categories
     const snapshot = await adminFirestore.collection(CATEGORIES_COLLECTION).get();
-    const categories = snapshot.docs.map((doc) => doc.id).sort();
+    const categories = snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => doc.id).sort();
 
     return NextResponse.json({ success: true, categories });
   } catch (error: any) {

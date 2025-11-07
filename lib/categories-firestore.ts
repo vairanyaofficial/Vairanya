@@ -24,7 +24,7 @@ export async function getAllCategories(): Promise<string[]> {
       return defaultCategories;
     }
 
-    return snapshot.docs.map((doc) => doc.id).sort();
+    return snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => doc.id).sort();
   } catch (error) {
     // Fallback to default categories
     return ["rings", "earrings", "pendants", "bracelets", "necklaces"];

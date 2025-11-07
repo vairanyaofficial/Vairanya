@@ -418,7 +418,7 @@ export default function TasksPage() {
               Create Task
             </Button>
           )}
-          <Button onClick={loadTasks} variant="outline">
+          <Button onClick={() => loadTasks(true)} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>

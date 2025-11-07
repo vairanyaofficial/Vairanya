@@ -17,7 +17,7 @@ export async function getAllCustomers(): Promise<Customer[]> {
     const customersSnapshot = await adminFirestore.collection(CUSTOMERS_COLLECTION).get();
     const customersFromCollection = new Map<string, Customer>();
     
-    customersSnapshot.docs.forEach((doc) => {
+    customersSnapshot.docs.forEach((doc: any) => {
       const data = doc.data();
       customersFromCollection.set(data.email, {
         email: data.email,

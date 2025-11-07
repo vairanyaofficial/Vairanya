@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
     // Fetch all admins/workers
     const adminsSnapshot = await adminFirestore.collection("admins").get();
-    const workers = adminsSnapshot.docs.map((doc) => {
+    const workers = adminsSnapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
       const data = doc.data();
       return {
         uid: doc.id,

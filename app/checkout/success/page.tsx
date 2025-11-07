@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -10,7 +10,19 @@ import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function CheckoutSuccessPage() {
-  return <SuccessContent />;
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FAF9F6]">
+        <Header />
+        <main className="max-w-7xl mx-auto px-6 py-16">
+          <div className="text-center text-gray-500">Loading...</div>
+        </main>
+        <Footer />
+      </div>
+    }>
+      <SuccessContent />
+    </Suspense>
+  );
 }
 
 function SuccessContent() {

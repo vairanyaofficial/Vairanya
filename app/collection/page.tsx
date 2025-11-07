@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -9,7 +9,7 @@ import ProductFilters from "@/components/ProductFilters";
 import type { Category, MetalFinish, Product } from "@/lib/products-types";
 import { Filter, Grid } from "lucide-react";
 
-export default function CollectionPage() {
+function CollectionContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -161,9 +161,11 @@ export default function CollectionPage() {
               <ProductFilters
                 selectedCategory={selectedCategory}
                 selectedMetalFinish={selectedMetalFinish}
+                selectedSize={selectedSize}
                 priceRange={priceRange}
                 onCategoryChange={setSelectedCategory}
                 onMetalFinishChange={setSelectedMetalFinish}
+                onSizeChange={setSelectedSize}
                 onPriceRangeChange={setPriceRange}
                 onReset={handleReset}
               />
@@ -204,6 +206,22 @@ export default function CollectionPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function CollectionPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FAF9F6]">
+        <Header />
+        <main className="max-w-7xl mx-auto px-6 py-16">
+          <div className="text-center text-gray-500">Loading...</div>
+        </main>
+        <Footer />
+      </div>
+    }>
+      <CollectionContent />
+    </Suspense>
   );
 }
 

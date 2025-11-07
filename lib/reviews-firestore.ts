@@ -67,7 +67,7 @@ export async function getFeaturedReviews(): Promise<Review[]> {
 
     // Sort in memory by created_at descending
     const reviews = snapshot.docs.map(docToReview);
-    return reviews.sort((a, b) => {
+    return reviews.sort((a: Review, b: Review) => {
       const dateA = new Date(a.created_at).getTime();
       const dateB = new Date(b.created_at).getTime();
       return dateB - dateA; // Descending order

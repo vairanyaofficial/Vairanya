@@ -611,8 +611,8 @@ export default function WorkersPage() {
                                                   {order.order_number}
                                                 </Link>
                                                 <span className={`px-2 py-1 text-xs rounded-full ${
-                                                  order.status === "completed" || order.status === "delivered" ? "bg-green-100 text-green-800" :
-                                                  order.status === "processing" || order.status === "packing" ? "bg-yellow-100 text-yellow-800" :
+                                                  order.status === "delivered" ? "bg-green-100 text-green-800" :
+                                                  order.status === "processing" || order.status === "packing" || order.status === "packed" ? "bg-yellow-100 text-yellow-800" :
                                                   order.status === "cancelled" ? "bg-red-100 text-red-800" :
                                                   "bg-gray-100 text-gray-800"
                                                 }`}>
@@ -645,9 +645,9 @@ export default function WorkersPage() {
                                                     Priority: {task.priority}
                                                   </div>
                                                 </div>
-                                                {(task.notes || task.description) && (
+                                                {task.notes && (
                                                   <div className="text-xs text-gray-600 mt-1 ml-6">
-                                                    {task.notes || task.description}
+                                                    {task.notes}
                                                   </div>
                                                 )}
                                                 <div className="text-xs text-gray-400 mt-1 ml-6">
