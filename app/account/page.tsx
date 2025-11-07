@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import type { Order } from "@/lib/orders-types";
 import { auth } from "@/lib/firebaseClient";
+import { updateProfile } from "firebase/auth";
 import { useToast } from "@/components/ToastProvider";
 
 interface Address {
@@ -175,7 +176,7 @@ export default function AccountPage() {
         try {
           const currentUser = auth.currentUser;
           if (currentUser) {
-            await currentUser.updateProfile({ displayName: profileForm.displayName });
+            await updateProfile(currentUser, { displayName: profileForm.displayName });
           }
         } catch (error) {
           // Don't fail the whole operation if Firebase update fails
