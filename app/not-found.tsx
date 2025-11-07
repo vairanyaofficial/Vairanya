@@ -42,6 +42,7 @@ export default function NotFound() {
             >
               Nothing Here
             </h2>
+            
           </div>
 
           {/* Animated Button */}

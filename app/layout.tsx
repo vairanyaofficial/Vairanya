@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   title: "Vairanya — Handcrafted Anti-Tarnish Jewellery | Where Elegance Meets Soul",
   description: "Vairanya offers handcrafted, anti-tarnish jewellery designed for everyday elegance. Shop rings, earrings, pendants — timeless pieces made to last.",
   keywords: ["jewellery", "anti-tarnish", "handcrafted", "gold plated", "hypoallergenic", "rings", "earrings", "pendants"],
+  icons: {
+    icon: "/images/logo-ivory.png",
+    shortcut: "/images/logo-ivory.png",
+    apple: "/images/logo-ivory.png",
+  },
   openGraph: {
     title: "Vairanya — Handcrafted Anti-Tarnish Jewellery",
     description: "Where Elegance Meets Soul. Shop timeless jewellery pieces designed for everyday grace.",
