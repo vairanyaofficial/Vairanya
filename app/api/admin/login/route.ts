@@ -4,8 +4,21 @@ import { adminAuth, adminFirestore } from "@/lib/firebaseAdmin.server";
 
 export async function POST(req: Request) {
   try {
-    if (!adminAuth) return NextResponse.json({ error: "adminAuth not initialized" }, { status: 500 });
-    if (!adminFirestore) return NextResponse.json({ error: "adminFirestore not initialized" }, { status: 500 });
+    // Check if Firebase Admin is properly initialized
+    if (!adminAuth) {
+      console.error("[Admin Login] Firebase Admin Auth not initialized");
+      return NextResponse.json({ 
+        error: "Server configuration error", 
+        message: "Authentication service is not properly configured. Please contact support." 
+      }, { status: 500 });
+    }
+    if (!adminFirestore) {
+      console.error("[Admin Login] Firebase Admin Firestore not initialized");
+      return NextResponse.json({ 
+        error: "Server configuration error", 
+        message: "Database service is not properly configured. Please contact support." 
+      }, { status: 500 });
+    }
 
     const body = await req.json().catch((e) => ({ __parseError: String(e) }));
     if (!body || !body.idToken) return NextResponse.json({ error: "Missing idToken", body }, { status: 400 });
@@ -15,7 +28,30 @@ export async function POST(req: Request) {
     try {
       decoded = await adminAuth.verifyIdToken(body.idToken);
     } catch (err: any) {
-      return NextResponse.json({ error: "verifyIdToken failed", message: String(err?.message || err) }, { status: 401 });
+      // Log detailed error for debugging (remove sensitive info in production)
+      const errorMessage = err?.message || String(err);
+      console.error("[Admin Login] verifyIdToken error:", {
+        errorCode: err?.code,
+        errorMessage: errorMessage,
+        hasToken: !!body.idToken,
+        tokenLength: body.idToken?.length,
+      });
+      
+      // Provide more helpful error messages
+      let userMessage = "Authentication failed";
+      if (errorMessage.includes("auth/id-token-expired")) {
+        userMessage = "Your session has expired. Please sign in again.";
+      } else if (errorMessage.includes("auth/argument-error")) {
+        userMessage = "Invalid authentication token. Please try signing in again.";
+      } else if (errorMessage.includes("auth/id-token-revoked")) {
+        userMessage = "Your session was revoked. Please sign in again.";
+      }
+      
+      return NextResponse.json({ 
+        error: "verifyIdToken failed", 
+        message: userMessage,
+        details: process.env.NODE_ENV === "development" ? errorMessage : undefined
+      }, { status: 401 });
     }
 
     const uid = decoded?.uid;

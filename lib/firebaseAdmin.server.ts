@@ -58,23 +58,43 @@ try {
   // get auth + firestore instances
   try {
     adminAuth = getAuth(adminApp);
+    console.log("✅ Firebase Admin Auth initialized successfully");
   } catch (err: any) {
-    console.error("Failed to initialize Firebase Admin Auth:", err?.message);
+    console.error("❌ Failed to initialize Firebase Admin Auth:", err?.message);
     adminAuth = null;
   }
 
   try {
     adminFirestore = getFirestore(adminApp);
+    console.log("✅ Firebase Admin Firestore initialized successfully");
   } catch (err: any) {
-    console.error("Failed to initialize Firebase Admin Firestore:", err?.message);
+    console.error("❌ Failed to initialize Firebase Admin Firestore:", err?.message);
     adminFirestore = null;
   }
 
-  if (!adminFirestore) {
-    console.error("Firebase Admin Firestore is not initialized. Please check:");
-    console.error("1. FIREBASE_SERVICE_ACCOUNT_JSON environment variable is set, OR");
-    console.error("2. GOOGLE_APPLICATION_CREDENTIALS points to a valid service account file, OR");
-    console.error("3. Firebase Admin SDK is properly installed (npm install firebase-admin)");
+  // Detailed initialization check
+  if (!adminAuth || !adminFirestore) {
+    console.error("⚠️ Firebase Admin SDK initialization failed!");
+    console.error("Please verify the following:");
+    console.error("1. FIREBASE_SERVICE_ACCOUNT_JSON environment variable is set (recommended for Vercel)");
+    console.error("   - This should be the full JSON string of your service account key");
+    console.error("   - Get it from: Firebase Console > Project Settings > Service Accounts");
+    console.error("2. OR GOOGLE_APPLICATION_CREDENTIALS points to a valid service account file");
+    console.error("3. Firebase Admin SDK is installed: npm install firebase-admin");
+    console.error("4. Service account has proper permissions (Firebase Admin SDK Admin Service Agent)");
+    
+    // Check if we have the env var but it might be malformed
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      try {
+        JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+        console.log("✓ FIREBASE_SERVICE_ACCOUNT_JSON exists and is valid JSON");
+      } catch (parseErr) {
+        console.error("✗ FIREBASE_SERVICE_ACCOUNT_JSON exists but is NOT valid JSON!");
+        console.error("  Please check that the entire JSON is properly escaped in Vercel environment variables");
+      }
+    } else {
+      console.error("✗ FIREBASE_SERVICE_ACCOUNT_JSON is not set");
+    }
   }
 } catch (err: any) {
   // if require('firebase-admin/...') fails, show clear message

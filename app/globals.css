@@ -134,3 +134,16 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes pulse-gentle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+.animate-pulse-gentle {
+  animation: pulse-gentle 2s ease-in-out infinite;
+}
