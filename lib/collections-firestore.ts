@@ -40,7 +40,7 @@ export async function getAllCollections(): Promise<Collection[]> {
 
     const collections = snapshot.docs.map(docToCollection);
     // Sort by display_order then by createdAt
-    return collections.sort((a, b) => {
+    return collections.sort((a: Collection, b: Collection) => {
       if (a.display_order !== b.display_order) {
         return (a.display_order || 0) - (b.display_order || 0);
       }
@@ -66,7 +66,7 @@ export async function getFeaturedCollections(): Promise<Collection[]> {
 
     const collections = snapshot.docs.map(docToCollection);
     // Sort by display_order then by createdAt
-    return collections.sort((a, b) => {
+    return collections.sort((a: Collection, b: Collection) => {
       if (a.display_order !== b.display_order) {
         return (a.display_order || 0) - (b.display_order || 0);
       }

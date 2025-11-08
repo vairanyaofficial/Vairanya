@@ -16,7 +16,12 @@ interface HorizontalSliderProps<T> {
   buttonSize?: 'sm' | 'md' | 'lg'; // Button size (defaults to 'sm')
 }
 
-export default function HorizontalSlider<T extends { id?: string | number }>({
+// Helper function to get item identifier
+function getItemKey(item: any, index: number): string | number {
+  return item?.id ?? item?.product_id ?? item?.slug ?? index;
+}
+
+export default function HorizontalSlider<T = any>({
   items,
   renderItem,
   cardWidth,
@@ -105,7 +110,7 @@ export default function HorizontalSlider<T extends { id?: string | number }>({
             // Clone items for infinite scroll (first set)
             <>
           {items.map((item, index) => (
-            <div key={`clone-start-${item.id || index}`} className="shrink-0">
+            <div key={`clone-start-${getItemKey(item, index)}`} className="shrink-0">
               {renderItem(item, index)}
             </div>
           ))}
@@ -114,7 +119,7 @@ export default function HorizontalSlider<T extends { id?: string | number }>({
           
           {/* Original items */}
           {items.map((item, index) => (
-            <div key={item.id || index} className="shrink-0">
+            <div key={getItemKey(item, index)} className="shrink-0">
               {renderItem(item, index)}
             </div>
           ))}
@@ -123,7 +128,7 @@ export default function HorizontalSlider<T extends { id?: string | number }>({
             // Clone items for infinite scroll (end set)
             <>
               {items.map((item, index) => (
-                <div key={`clone-end-${item.id || index}`} className="shrink-0">
+                <div key={`clone-end-${getItemKey(item, index)}`} className="shrink-0">
                   {renderItem(item, index)}
                 </div>
               ))}
