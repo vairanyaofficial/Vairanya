@@ -319,26 +319,15 @@ function ProductsContent() {
     });
   }, [products, selectedCategory, selectedMetalFinish, selectedSize, selectedCollection, priceRange, maxPrice, searchQuery, collections]);
 
-  const handleReset = useCallback(() => {
-    // Reset all filters
+  const handleReset = () => {
     setSelectedCategory("all");
     setSelectedMetalFinish("all");
     setSelectedSize("all");
     setSelectedCollection("all");
     setPriceRange([0, maxPrice]);
     setSearchQuery("");
-    
-    // Mark that we're updating URL to prevent useEffect from running
-    isUpdatingFromURL.current = true;
-    
-    // Clear URL params
     router.replace("/products", { scroll: false });
-    
-    // Reset flag after URL update
-    setTimeout(() => {
-      isUpdatingFromURL.current = false;
-    }, 150);
-  }, [maxPrice, router]);
+  };
 
   const handleCollectionChange = useCallback((collectionSlug: string) => {
     // Update state immediately for instant UI feedback

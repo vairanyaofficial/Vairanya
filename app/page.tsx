@@ -78,14 +78,10 @@ export default function Page() {
       .then((data) => {
         if (data.success) {
           setAllProducts(data.products);
-          const newProducts = data.products.filter((p: Product) => p.is_new);
-          // If we have new products, use them; otherwise use first 4 products
-          if (newProducts.length > 0) {
-            setFeaturedProducts(newProducts.slice(0, 4));
-          } else {
-            // Fallback to first 4 products if no new products
-            setFeaturedProducts(data.products.slice(0, 4));
-          }
+          // Products are already sorted by createdAt desc from API
+          // Show the 4 most recent products (newest first)
+          // This ensures newly seeded products appear on homepage
+          setFeaturedProducts(data.products.slice(0, 4));
         }
         setIsLoadingProducts(false);
       })

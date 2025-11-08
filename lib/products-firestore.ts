@@ -42,14 +42,54 @@ export async function getAllProducts(): Promise<Product[]> {
   }
 
   try {
-    const snapshot = await adminFirestore
-      .collection(PRODUCTS_COLLECTION)
-      .orderBy("createdAt", "desc")
-      .get();
-
-    return snapshot.docs.map(docToProduct);
-  } catch (error) {
-    return [];
+    // Try with orderBy first, but fallback to unordered if index doesn't exist
+    let snapshot;
+    try {
+      snapshot = await adminFirestore
+        .collection(PRODUCTS_COLLECTION)
+        .orderBy("createdAt", "desc")
+        .get();
+      
+      return snapshot.docs.map(docToProduct);
+    } catch (orderByError: any) {
+      // If orderBy fails (likely due to missing index), get without ordering
+      // and sort in memory
+      console.warn("OrderBy failed, fetching all products without ordering. Error:", orderByError?.message);
+      console.warn("This is usually because the Firestore index doesn't exist. Products will be sorted in memory.");
+      
+      snapshot = await adminFirestore
+        .collection(PRODUCTS_COLLECTION)
+        .get();
+      
+      // Map docs to products and sort by createdAt
+      const productsWithDates = snapshot.docs.map((doc: any) => {
+        const product = docToProduct(doc);
+        const data = doc.data();
+        const createdAt = data.createdAt?.toDate?.() || data.createdAt || new Date(0);
+        return { product, createdAt };
+      });
+      
+      // Sort by createdAt descending
+      productsWithDates.sort((a: { product: Product; createdAt: any }, b: { product: Product; createdAt: any }) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+        const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+      
+      return productsWithDates.map((item: { product: Product; createdAt: any }) => item.product);
+    }
+  } catch (error: any) {
+    console.error("Error fetching products:", error);
+    // Final fallback - try to get all products without any sorting
+    try {
+      const snapshot = await adminFirestore
+        .collection(PRODUCTS_COLLECTION)
+        .get();
+      return snapshot.docs.map(docToProduct);
+    } catch (fallbackError) {
+      console.error("Error in fallback fetch:", fallbackError);
+      return [];
+    }
   }
 }
 
