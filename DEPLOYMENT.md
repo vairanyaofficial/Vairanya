@@ -45,7 +45,12 @@ npm start
 1. Push code to GitHub
 2. Import project in Vercel
 3. Add environment variables
-4. Deploy automatically
+4. **Important**: Do NOT set `NODE_ENV` manually in Vercel environment variables. Vercel automatically manages this variable.
+   - If you see a warning: "NODE_ENV was incorrectly set to 'development', this value is being overridden to 'production'"
+   - **Solution**: Go to Vercel Dashboard → Your Project → Settings → Environment Variables
+   - Remove `NODE_ENV` if it exists (Vercel will automatically set it to "production" during builds)
+   - This warning is harmless but can be avoided by removing the manual setting
+5. Deploy automatically
 
 ### Option 2: Self-Hosted (Node.js Server)
 1. Run `npm run build`
@@ -102,6 +107,10 @@ CMD ["npm", "start"]
 4. **Image Optimization**: Configured for external domains (Firebase, ImgBB, etc.)
 5. **Rate Limiting**: Admin login and order creation are rate-limited
 6. **Health Check**: Monitor `/api/health` for service status
+7. **NODE_ENV Warning**: If you see "NODE_ENV was incorrectly set to 'development'" warning in Vercel:
+   - This happens if `NODE_ENV` is manually set in Vercel environment variables
+   - **Fix**: Remove `NODE_ENV` from Vercel environment variables (Vercel automatically manages it)
+   - The warning is harmless - Vercel correctly overrides it to "production", but removing the manual setting will eliminate the warning
 
 ## Build Output
 - Total Routes: 75+
