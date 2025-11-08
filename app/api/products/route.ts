@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAllProducts } from "@/lib/products-firestore";
 import { logger } from "@/lib/logger";
 
+// Force dynamic rendering since we use searchParams
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
