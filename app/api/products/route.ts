@@ -13,20 +13,29 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0", 10);
     const getAll = searchParams.get("all") === "true"; // For initial max price calculation
 
+    logger.info(`[API /api/products] Request - limit: ${limit}, offset: ${offset}, getAll: ${getAll}`);
+
     // Fetch products from Firestore
     const allProducts = await getAllProducts();
     
+    logger.info(`[API /api/products] Fetched ${allProducts.length} total products from Firestore`);
+    
     // If requesting all products (for max price calculation), return all
     if (getAll) {
-      logger.info(`Fetched all ${allProducts.length} products from Firestore`);
-      return NextResponse.json({ success: true, products: allProducts, total: allProducts.length });
+      logger.info(`[API /api/products] Returning all ${allProducts.length} products`);
+      return NextResponse.json({ 
+        success: true, 
+        products: allProducts, 
+        total: allProducts.length 
+      });
     }
 
     // Paginate products
     const paginatedProducts = allProducts.slice(offset, offset + limit);
     const hasMore = offset + limit < allProducts.length;
     
-    logger.info(`Fetched ${paginatedProducts.length} products (offset: ${offset}, limit: ${limit}) from Firestore`);
+    logger.info(`[API /api/products] Returning ${paginatedProducts.length} products (offset: ${offset}, limit: ${limit}, total: ${allProducts.length}, hasMore: ${hasMore})`);
+    
     return NextResponse.json({ 
       success: true, 
       products: paginatedProducts,
@@ -36,11 +45,29 @@ export async function GET(request: NextRequest) {
       limit
     });
   } catch (error: any) {
-    logger.error("Error fetching products in API route", error);
+    // Enhanced error logging for production debugging
+    const errorMessage = error?.message || "Unknown error";
+    const errorStack = error?.stack || "No stack trace";
+    
+    logger.error("Error fetching products in API route", {
+      message: errorMessage,
+      stack: errorStack,
+      name: error?.name,
+      code: error?.code,
+    });
+    
+    // Log to console for production debugging
+    console.error("[API /api/products] Error:", {
+      message: errorMessage,
+      stack: errorStack,
+      name: error?.name,
+      code: error?.code,
+    });
+    
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message ?? "Unknown error",
+        error: errorMessage,
         products: [], // Return empty array on error
         total: 0,
         hasMore: false

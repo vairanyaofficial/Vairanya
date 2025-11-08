@@ -60,18 +60,28 @@ export default function Page() {
     // Fetch all products from public API endpoint
     setIsLoadingProducts(true);
     fetch("/api/products")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`API returned ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      })
       .then((data) => {
-        if (data.success) {
+        if (data.success && Array.isArray(data.products)) {
           setAllProducts(data.products);
           // Products are already sorted by createdAt desc from API
           // Show the 4 most recent products (newest first)
           // This ensures newly added products appear on homepage
           setFeaturedProducts(data.products.slice(0, 4));
+          setIsLoadingProducts(false);
+        } else {
+          // API returned success: false or invalid data, try fallback
+          console.warn("API returned unsuccessful response, trying fallback:", data.error || "Unknown error");
+          throw new Error(data.error || "API returned unsuccessful response");
         }
-        setIsLoadingProducts(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Failed to fetch products from API, using fallback:", error);
         // Fallback to static import
         import("@/lib/products").then((mod) => {
           setAllProducts(mod.products);
@@ -81,6 +91,9 @@ export default function Page() {
           } else {
             setFeaturedProducts(mod.products.slice(0, 4));
           }
+          setIsLoadingProducts(false);
+        }).catch((fallbackError) => {
+          console.error("Fallback also failed:", fallbackError);
           setIsLoadingProducts(false);
         });
       });

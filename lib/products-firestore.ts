@@ -38,7 +38,9 @@ function docToProduct(doc: any): Product {
 // Get all products
 export async function getAllProducts(): Promise<Product[]> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    const errorMsg = "Firestore not initialized. Please check FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS environment variables.";
+    console.error("[getAllProducts]", errorMsg);
+    throw new Error(errorMsg);
   }
 
   try {

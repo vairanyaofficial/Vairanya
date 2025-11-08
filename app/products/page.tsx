@@ -47,9 +47,11 @@ function ProductsContent() {
   const loadProducts = useCallback(async (offset: number, isInitial: boolean = false) => {
     // Prevent multiple simultaneous loads
     if (isInitial && loadingStateRef.current.isLoading) {
+      console.log("[loadProducts] Skipping initial load - already loading");
       return;
     }
     if (!isInitial && loadingStateRef.current.isLoadingMore) {
+      console.log("[loadProducts] Skipping load more - already loading");
       return;
     }
 
@@ -64,27 +66,54 @@ function ProductsContent() {
         setIsLoadingMore(true);
       }
 
+      console.log(`[loadProducts] Fetching products - offset: ${offset}, limit: ${PRODUCTS_PER_PAGE}, isInitial: ${isInitial}`);
       const response = await fetch(`/api/products?limit=${PRODUCTS_PER_PAGE}&offset=${offset}`);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch products: ${response.statusText}`);
+        throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log(`[loadProducts] API response - success: ${data.success}, products count: ${data.products?.length || 0}, total: ${data.total || 0}, hasMore: ${data.hasMore || false}`);
 
-      if (data.success && data.products) {
+      if (data.success && Array.isArray(data.products)) {
+        const newProducts = data.products;
+        const newOffset = offset + newProducts.length;
+        
         if (isInitial) {
-          setProducts(data.products);
-          setCurrentOffset(data.products.length);
+          setProducts(newProducts);
+          setCurrentOffset(newOffset);
+          console.log(`[loadProducts] Initial load complete - loaded ${newProducts.length} products, new offset: ${newOffset}`);
         } else {
-          setProducts(prev => [...prev, ...data.products]);
-          setCurrentOffset(prev => prev + data.products.length);
+          setProducts(prev => {
+            // Prevent duplicates by checking product_id
+            const existingIds = new Set(prev.map(p => p.product_id));
+            const uniqueNewProducts = newProducts.filter(p => !existingIds.has(p.product_id));
+            const combined = [...prev, ...uniqueNewProducts];
+            console.log(`[loadProducts] Load more complete - added ${uniqueNewProducts.length} new products (${newProducts.length - uniqueNewProducts.length} duplicates skipped), total: ${combined.length}`);
+            return combined;
+          });
+          setCurrentOffset(newOffset);
         }
-        setHasMore(data.hasMore || false);
+        setHasMore(data.hasMore ?? false);
         setTotalProducts(data.total || 0);
+      } else {
+        console.error("[loadProducts] API returned unsuccessful response:", data);
+        if (isInitial) {
+          // Only clear products on initial load failure
+          setProducts([]);
+          setCurrentOffset(0);
+        }
+        setHasMore(false);
       }
     } catch (error) {
-      console.error("Error loading products:", error);
+      console.error("[loadProducts] Error loading products:", error);
+      if (isInitial) {
+        setProducts([]);
+        setCurrentOffset(0);
+        setHasMore(false);
+        setTotalProducts(0);
+      }
     } finally {
       // Always reset loading states
       if (isInitial) {
@@ -204,21 +233,33 @@ function ProductsContent() {
     };
   }, [loadProducts]); // Include loadProducts - it's stable and memoized
 
-  // Infinite scroll handler
+  // Infinite scroll handler - only load more when user scrolls, not automatically
   useEffect(() => {
     const handleScroll = () => {
-      // Check if user is near bottom of page (within 300px)
+      // Only load more if we have no active filters (to prevent auto-loading filtered results)
+      const hasActiveFilter = selectedCategory !== "all" || 
+                             selectedMetalFinish !== "all" || 
+                             selectedSize !== "all" || 
+                             selectedCollection !== "all" || 
+                             searchQuery.trim() !== "" ||
+                             (priceRange[0] !== 0 || priceRange[1] < maxPrice);
+      
+      // Check if user is near bottom of page (within 500px)
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       
-      // Load more when user is 300px from bottom
+      // Only auto-load if no filters are active AND we have more products to load
+      // With filters, user should see all results without infinite scroll
       if (
-        scrollTop + windowHeight >= documentHeight - 300 &&
+        !hasActiveFilter &&
+        scrollTop + windowHeight >= documentHeight - 500 &&
         !isLoadingMore &&
         hasMore &&
-        !isLoading
+        !isLoading &&
+        currentOffset > 0 // Ensure we've loaded initial batch
       ) {
+        console.log(`[InfiniteScroll] Loading more products at offset: ${currentOffset}`);
         loadProducts(currentOffset);
       }
     };
@@ -230,18 +271,17 @@ function ProductsContent() {
       timeoutId = setTimeout(() => {
         handleScroll();
         timeoutId = null;
-      }, 100);
+      }, 200); // Increased throttle to 200ms
     };
 
     window.addEventListener("scroll", throttledHandleScroll, { passive: true });
-    // Also check on mount in case page is already scrolled
-    handleScroll();
+    // Don't auto-check on mount - wait for user scroll
     
     return () => {
       window.removeEventListener("scroll", throttledHandleScroll);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [currentOffset, hasMore, isLoadingMore, isLoading, loadProducts]);
+  }, [currentOffset, hasMore, isLoadingMore, isLoading, loadProducts, selectedCategory, selectedMetalFinish, selectedSize, selectedCollection, searchQuery, priceRange, maxPrice]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -442,29 +482,8 @@ function ProductsContent() {
     });
   }, [products, selectedCategory, selectedMetalFinish, selectedSize, selectedCollection, priceRange, maxPrice, searchQuery, collections]);
 
-  // Auto-load more products when filtered results are low (smart loading for filters)
-  useEffect(() => {
-    // If we have filters active and filtered results are less than 8, auto-load more
-    const hasActiveFilter = selectedCategory !== "all" || 
-                           selectedMetalFinish !== "all" || 
-                           selectedSize !== "all" || 
-                           selectedCollection !== "all" || 
-                           searchQuery.trim() !== "" ||
-                           (priceRange[0] !== 0 || priceRange[1] < maxPrice);
-    
-    // Only auto-load if we're not currently loading and have products to load
-    if (hasActiveFilter && filteredProducts.length < 8 && hasMore && !isLoadingMore && !isLoading && products.length > 0) {
-      // Auto-load more products to ensure we have enough filtered results
-      const timer = setTimeout(() => {
-        // Double check conditions before loading to prevent unnecessary loads
-        if (!isLoadingMore && !isLoading && hasMore) {
-          loadProducts(currentOffset);
-        }
-      }, 500); // Small delay to avoid rapid requests
-      
-      return () => clearTimeout(timer);
-    }
-  }, [filteredProducts.length, hasMore, isLoadingMore, isLoading, selectedCategory, selectedMetalFinish, selectedSize, selectedCollection, searchQuery, priceRange, maxPrice, currentOffset, loadProducts, products.length]);
+  // Remove auto-loading for filtered results - let users see what's available
+  // This prevents the issue where products keep loading even when filters are applied
 
   const handleReset = () => {
     setSelectedCategory("all");
@@ -473,13 +492,12 @@ function ProductsContent() {
     setSelectedCollection("all");
     setPriceRange([0, maxPrice]);
     setSearchQuery("");
-    // Reset pagination
+    // Reset pagination and reload products
     setCurrentOffset(0);
     setHasMore(true);
-    // Only reload if we don't have products, otherwise just reset filters
-    if (products.length === 0) {
-      loadProducts(0, true);
-    }
+    setProducts([]);
+    // Always reload products when resetting filters
+    loadProducts(0, true);
     router.replace("/products", { scroll: false });
   };
 
