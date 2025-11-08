@@ -2,12 +2,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getActiveOffers } from "@/lib/offers-firestore";
 
+// Mark route as dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // GET - Get active offers (public endpoint)
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const customerEmail = searchParams.get("customer_email") || undefined;
-    const customerId = searchParams.get("customer_id") || undefined;
+    const customerEmail = request.nextUrl.searchParams.get("customer_email") || undefined;
+    const customerId = request.nextUrl.searchParams.get("customer_id") || undefined;
 
     const offers = await getActiveOffers(customerEmail, customerId);
     

@@ -29,10 +29,37 @@ try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { getFirestore } = require("firebase-admin/firestore");
 
-  // If already initialized, reuse
-  if (apps && apps.length > 0) {
+  // Helper function to check if error is about duplicate app
+  const isDuplicateAppError = (err: any): boolean => {
+    if (!err) return false;
+    const message = String(err.message || '').toLowerCase();
+    const code = String(err.code || '');
+    return (
+      code === 'app/duplicate-app' ||
+      code === 'app/default-already-exists' ||
+      message.includes('already exists') ||
+      message.includes('duplicate app')
+    );
+  };
+
+  // Try to get existing app first (most common case in Next.js)
+  try {
     adminApp = getApp();
-  } else {
+  } catch (err: any) {
+    // App doesn't exist yet, we'll initialize it below
+    // Only log if it's not a "no app" error
+    if (err?.code !== 'app/no-app') {
+      // Try with explicit name
+      try {
+        adminApp = getApp('[DEFAULT]');
+      } catch {
+        // App doesn't exist, will initialize below
+      }
+    }
+  }
+
+  // Only initialize if we don't have an app yet
+  if (!adminApp) {
     // Prefer JSON in env
     const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
     if (svcJson) {
@@ -41,35 +68,78 @@ try {
         adminApp = initializeApp({
           credential: cert(parsed),
         });
-      } catch (err) {
+      } catch (err: any) {
+        // If initialization fails due to duplicate app, try to get existing
+        if (isDuplicateAppError(err)) {
+          try {
+            adminApp = getApp();
+          } catch (getErr: any) {
+            // If getApp also fails, try default name
+            try {
+              adminApp = getApp('[DEFAULT]');
+            } catch {
+              // If all else fails, log warning but continue
+              console.warn("⚠️ Firebase app initialization conflict. Some features may not work.");
+              console.warn("   This can happen during build time. The app should work at runtime.");
+            }
+          }
+        } else {
+          // Re-throw non-duplicate errors
+          throw err;
+        }
       }
-    }
-
-    if (!adminApp) {
+    } else {
+      // No JSON in env, try default initialization
       try {
         // This will pick GOOGLE_APPLICATION_CREDENTIALS or ADC
         adminApp = initializeApp();
-      } catch (err) {
-        throw err;
+      } catch (err: any) {
+        // If initialization fails due to duplicate app, try to get existing
+        if (isDuplicateAppError(err)) {
+          try {
+            adminApp = getApp();
+          } catch (getErr: any) {
+            try {
+              adminApp = getApp('[DEFAULT]');
+            } catch {
+              console.warn("⚠️ Firebase app initialization conflict. Some features may not work.");
+              console.warn("   This can happen during build time. The app should work at runtime.");
+            }
+          }
+        } else {
+          // Re-throw non-duplicate errors only in non-build contexts
+          // During build, Next.js might load modules multiple times
+          const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
+          if (!isBuildTime) {
+            throw err;
+          } else {
+            console.warn("⚠️ Firebase initialization error during build (this is usually safe):", err?.message);
+          }
+        }
       }
     }
   }
 
-  // get auth + firestore instances
-  try {
-    adminAuth = getAuth(adminApp);
-    console.log("✅ Firebase Admin Auth initialized successfully");
-  } catch (err: any) {
-    console.error("❌ Failed to initialize Firebase Admin Auth:", err?.message);
-    adminAuth = null;
-  }
+  // get auth + firestore instances (only if adminApp exists)
+  if (adminApp) {
+    try {
+      adminAuth = getAuth(adminApp);
+      console.log("✅ Firebase Admin Auth initialized successfully");
+    } catch (err: any) {
+      console.error("❌ Failed to initialize Firebase Admin Auth:", err?.message);
+      adminAuth = null;
+    }
 
-  try {
-    adminFirestore = getFirestore(adminApp);
-    console.log("✅ Firebase Admin Firestore initialized successfully");
-  } catch (err: any) {
-    console.error("❌ Failed to initialize Firebase Admin Firestore:", err?.message);
-    adminFirestore = null;
+    try {
+      adminFirestore = getFirestore(adminApp);
+      console.log("✅ Firebase Admin Firestore initialized successfully");
+    } catch (err: any) {
+      console.error("❌ Failed to initialize Firebase Admin Firestore:", err?.message);
+      adminFirestore = null;
+    }
+  } else {
+    console.warn("⚠️ Firebase Admin app not initialized. Admin features will not work.");
+    console.warn("   This may be normal during build time in some environments.");
   }
 
   // Detailed initialization check
