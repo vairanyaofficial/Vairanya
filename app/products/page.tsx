@@ -87,8 +87,8 @@ function ProductsContent() {
         } else {
           setProducts(prev => {
             // Prevent duplicates by checking product_id
-            const existingIds = new Set(prev.map(p => p.product_id));
-            const uniqueNewProducts = newProducts.filter(p => !existingIds.has(p.product_id));
+            const existingIds = new Set(prev.map((p: Product) => p.product_id));
+            const uniqueNewProducts = newProducts.filter((p: Product) => !existingIds.has(p.product_id));
             const combined = [...prev, ...uniqueNewProducts];
             console.log(`[loadProducts] Load more complete - added ${uniqueNewProducts.length} new products (${newProducts.length - uniqueNewProducts.length} duplicates skipped), total: ${combined.length}`);
             return combined;
