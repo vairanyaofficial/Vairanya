@@ -26,6 +26,8 @@ export default function Page() {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const reviewsScrollRef = React.useRef<HTMLDivElement>(null);
   const [isScrolling, setIsScrolling] = useState(false);
+  const productsScrollRefs = React.useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const [isProductsScrolling, setIsProductsScrolling] = useState<{ [key: string]: boolean }>({});
 
   // Function to fetch featured reviews
   const fetchReviews = () => {
@@ -126,6 +128,27 @@ export default function Page() {
       reviewsScrollRef.current.scrollLeft = startPosition;
     }
   }, [reviews.length]);
+
+  // Handle product slider scroll
+  const handleProductScroll = (collectionId: string, e: React.UIEvent<HTMLDivElement>) => {
+    if (isProductsScrolling[collectionId]) return;
+    const container = e.currentTarget;
+    const scrollLeft = container.scrollLeft;
+    const scrollWidth = container.scrollWidth;
+    const clientWidth = container.clientWidth;
+    const cardWidth = 280; // Product card width + gap
+    const products = featuredCollections.find(c => c.id === collectionId)?.product_ids
+      .map((productId) => allProducts.find((p) => p.product_id === productId))
+      .filter((p): p is Product => p !== undefined) || [];
+    const sectionWidth = products.length * cardWidth;
+    
+    // Infinite scroll logic
+    if (scrollLeft >= scrollWidth - clientWidth - 50) {
+      setIsProductsScrolling(prev => ({ ...prev, [collectionId]: true }));
+      container.scrollLeft = 0;
+      setTimeout(() => setIsProductsScrolling(prev => ({ ...prev, [collectionId]: false })), 50);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-white via-gray-50/50 to-white text-gray-900">
