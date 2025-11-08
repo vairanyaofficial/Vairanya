@@ -1,19 +1,39 @@
 // app/api/admin/login/route.ts
 import { NextResponse } from "next/server";
 import { adminAuth, adminFirestore } from "@/lib/firebaseAdmin.server";
+import { logger } from "@/lib/logger";
+import { rateLimiters } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
+    // Rate limiting for admin login
+    const rateLimitResult = rateLimiters.strict(req);
+    if (!rateLimitResult.allowed) {
+      logger.warn("Admin login rate limit exceeded", { ip: req.headers.get("x-forwarded-for") });
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
+            "X-RateLimit-Limit": "10",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": new Date(rateLimitResult.resetTime).toISOString(),
+          },
+        }
+      );
+    }
+
     // Check if Firebase Admin is properly initialized
     if (!adminAuth) {
-      console.error("[Admin Login] Firebase Admin Auth not initialized");
+      logger.error("Firebase Admin Auth not initialized");
       return NextResponse.json({ 
         error: "Server configuration error", 
         message: "Authentication service is not properly configured. Please contact support." 
       }, { status: 500 });
     }
     if (!adminFirestore) {
-      console.error("[Admin Login] Firebase Admin Firestore not initialized");
+      logger.error("Firebase Admin Firestore not initialized");
       return NextResponse.json({ 
         error: "Server configuration error", 
         message: "Database service is not properly configured. Please contact support." 
@@ -30,9 +50,8 @@ export async function POST(req: Request) {
     } catch (err: any) {
       // Log detailed error for debugging (remove sensitive info in production)
       const errorMessage = err?.message || String(err);
-      console.error("[Admin Login] verifyIdToken error:", {
+      logger.error("Admin login verifyIdToken error", err, {
         errorCode: err?.code,
-        errorMessage: errorMessage,
         hasToken: !!body.idToken,
         tokenLength: body.idToken?.length,
       });
@@ -73,7 +92,10 @@ export async function POST(req: Request) {
       
       if (!isCheckOnly) {
         // Log failed login attempt for security monitoring (without sensitive data)
-        console.warn(`[SECURITY] Unauthorized login attempt - UID: ${uid.substring(0, 8)}..., Email: ${decoded.email || 'N/A'}`);
+        logger.warn("Unauthorized admin login attempt", {
+          uid: uid.substring(0, 8) + "...",
+          email: decoded.email || "N/A",
+        });
       }
       
       return NextResponse.json({ 

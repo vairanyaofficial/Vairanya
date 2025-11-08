@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Razorpay from "razorpay";
-
-// Razorpay credentials - Key ID is public, Key Secret must be kept secure
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag";
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "test_secret";
+import { logger } from "@/lib/logger";
+import { getEnv } from "@/lib/env-validation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,11 +25,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if Razorpay keys are configured
-    const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+    const RAZORPAY_KEY_ID = getEnv("RAZORPAY_KEY_ID") || getEnv("NEXT_PUBLIC_RAZORPAY_KEY_ID");
+    const RAZORPAY_KEY_SECRET = getEnv("RAZORPAY_KEY_SECRET");
 
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-      console.error("Razorpay keys not configured");
+      logger.error("Razorpay keys not configured");
       return NextResponse.json(
         { 
           success: false, 
@@ -68,14 +66,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     // Enhanced error logging
-    console.error("Razorpay order creation error:", {
-      message: error.message,
+    logger.error("Razorpay order creation error", error, {
       description: error.description,
       field: error.field,
       source: error.source,
       step: error.step,
       reason: error.reason,
-      metadata: error.metadata,
       statusCode: error.statusCode,
     });
 

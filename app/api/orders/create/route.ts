@@ -2,10 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { createOrder } from "@/lib/orders-firestore";
 import { updateProduct } from "@/lib/products-firestore";
 import { incrementOfferUsage } from "@/lib/offers-firestore";
+import { logger } from "@/lib/logger";
+import { rateLimiters } from "@/lib/rate-limit";
 import type { Order } from "@/lib/orders-types";
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for order creation
+    const rateLimitResult = rateLimiters.standard(request);
+    if (!rateLimitResult.allowed) {
+      logger.warn("Order creation rate limit exceeded", {
+        ip: request.headers.get("x-forwarded-for"),
+      });
+      return NextResponse.json(
+        { success: false, error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
+            "X-RateLimit-Limit": "100",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": new Date(rateLimitResult.resetTime).toISOString(),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     const {
       items,
@@ -117,7 +139,7 @@ export async function POST(request: NextRequest) {
         await incrementOfferUsage(offer_id, customer.email, user_id || undefined);
       } catch (offerError) {
         // Continue even if offer usage increment fails
-        console.error("Failed to increment offer usage:", offerError);
+        logger.error("Failed to increment offer usage", offerError as Error);
       }
     }
 
@@ -143,7 +165,7 @@ export async function POST(request: NextRequest) {
       message: "Order created successfully",
     });
   } catch (error: any) {
-    console.error("Error creating order:", error);
+    logger.error("Error creating order", error);
     
     // Check if it's a Firebase/Firestore initialization error
     if (error.message && error.message.includes("Firestore not initialized")) {

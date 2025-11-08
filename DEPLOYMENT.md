@@ -6,18 +6,35 @@
 ## Pre-Deployment Checklist
 
 ### 1. Environment Variables
-Make sure you have all required environment variables set:
-- Firebase configuration
-- Razorpay keys
-- Admin credentials
-- Database configuration
+Make sure you have all required environment variables set. See `.env.example` for reference.
 
-### 2. Build Command
+**Required Variables:**
+- `FIREBASE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS`
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+
+**Recommended Variables:**
+- `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` (for payments)
+- `NEXTAUTH_SECRET` (for authentication)
+- `NEXTAUTH_URL` (your production URL)
+
+### 2. Validate Environment Variables
+```bash
+npm run validate-env
+```
+This will check if all required environment variables are set correctly.
+
+### 3. Build Command
 ```bash
 npm run build
 ```
+The build process will automatically validate environment variables after completion.
 
-### 3. Start Production Server
+### 4. Start Production Server
 ```bash
 npm start
 ```
@@ -51,21 +68,72 @@ EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
+## Production Features
+
+### Security
+- ✅ Security headers (CSP, XSS protection, HSTS, etc.)
+- ✅ Rate limiting on critical endpoints
+- ✅ Error boundaries for graceful error handling
+- ✅ Input validation on all API routes
+- ✅ Secure environment variable handling
+
+### Performance
+- ✅ Image optimization (AVIF, WebP formats)
+- ✅ Compression enabled
+- ✅ React Strict Mode
+- ✅ Optimized builds
+
+### Monitoring
+- ✅ Health check endpoint: `/api/health`
+- ✅ Production-safe logging (errors/warnings only in production)
+- ✅ Error tracking ready (integrate with Sentry/LogRocket)
+
+### Error Handling
+- ✅ Global error boundary
+- ✅ Error page (`app/error.tsx`)
+- ✅ 404 page (`app/not-found.tsx`)
+- ✅ Graceful error messages
+
 ## Important Notes
 
 1. **Cart Persistence**: Cart is stored in localStorage, so it persists across page refreshes
 2. **API Routes**: All API routes are server-rendered (dynamic)
 3. **Static Pages**: Most pages are static for better performance
 4. **Image Optimization**: Configured for external domains (Firebase, ImgBB, etc.)
+5. **Rate Limiting**: Admin login and order creation are rate-limited
+6. **Health Check**: Monitor `/api/health` for service status
 
 ## Build Output
-- Total Routes: 75
+- Total Routes: 75+
 - Static Pages: Most pages
 - Dynamic Routes: API routes and dynamic pages
 - Build Size: Optimized for production
 
+## Health Check
+
+The application includes a health check endpoint at `/api/health`:
+```bash
+curl https://your-domain.com/api/health
+```
+
+Response:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "uptime": 12345,
+  "services": {
+    "database": "ok",
+    "responseTime": 50
+  }
+}
+```
+
 ## Next Steps
-1. Set up environment variables in production
-2. Configure domain and SSL
-3. Set up monitoring and logging
-4. Test all functionality in production environment
+1. ✅ Set up environment variables in production
+2. ✅ Configure domain and SSL
+3. ⚠️ Set up monitoring and logging (integrate error tracking service)
+4. ✅ Test all functionality in production environment
+5. ⚠️ Set up automated backups for database
+6. ⚠️ Configure CDN for static assets (if needed)
+7. ⚠️ Set up analytics (Google Analytics, etc.)
