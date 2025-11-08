@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Package, Truck, CheckCircle, Clock, MapPin, XCircle, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Package, Truck, CheckCircle, Clock, MapPin, XCircle, AlertCircle, Loader2, Save } from "lucide-react";
 import type { Order } from "@/lib/orders-types";
 import { useToast } from "@/components/ToastProvider";
 
@@ -17,6 +17,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
   const { showToast } = useToast();
 
   const fetchOrder = async () => {
@@ -90,6 +91,50 @@ export default function OrderDetailPage() {
     if (!order) return false;
     const cancellableStatuses = ["pending", "confirmed", "processing", "packing"];
     return cancellableStatuses.includes(order.status);
+  };
+
+  const saveAddressFromOrder = async () => {
+    if (!order || !user) return;
+    try {
+      setIsSavingAddress(true);
+      const token = await user.getIdToken();
+      if (!token) {
+        showToast("Authentication required");
+        return;
+      }
+
+      const addressData = {
+        name: order.shipping_address.name,
+        address_line1: order.shipping_address.address_line1,
+        address_line2: order.shipping_address.address_line2 || "",
+        city: order.shipping_address.city,
+        state: order.shipping_address.state,
+        pincode: order.shipping_address.pincode,
+        country: order.shipping_address.country,
+        phone: order.customer.phone || "",
+        is_default: false,
+      };
+
+      const response = await fetch("/api/addresses", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(addressData),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        showToast("Address saved successfully!");
+      } else {
+        showToast(data.error || "Failed to save address");
+      }
+    } catch (error) {
+      showToast("Failed to save address");
+    } finally {
+      setIsSavingAddress(false);
+    }
   };
 
   const getRefundStatusColor = (status: string) => {
@@ -408,10 +453,22 @@ export default function OrderDetailPage() {
           {/* Order Summary */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h2 className="font-semibold mb-4 flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Shipping Address
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Shipping Address
+                </h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={saveAddressFromOrder}
+                  disabled={isSavingAddress}
+                  className="border-2 border-[#D4AF37] hover:bg-[#D4AF37] hover:text-white rounded-lg transition-all duration-300"
+                >
+                  <Save className="h-4 w-4 mr-1" />
+                  {isSavingAddress ? "Saving..." : "Save Address"}
+                </Button>
+              </div>
               <div className="text-sm text-gray-600 space-y-1">
                 <p className="font-medium text-gray-900">{order.shipping_address.name}</p>
                 <p>{order.shipping_address.address_line1}</p>
@@ -420,6 +477,7 @@ export default function OrderDetailPage() {
                   {order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.pincode}
                 </p>
                 <p>{order.shipping_address.country}</p>
+                {order.customer.phone && <p className="text-xs text-gray-500 mt-2">Phone: {order.customer.phone}</p>}
               </div>
             </div>
 

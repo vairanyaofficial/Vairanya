@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,11 @@ import {
   X,
   Save,
   AlertCircle,
+  Tag,
+  Copy,
 } from "lucide-react";
 import type { Order } from "@/lib/orders-types";
+import type { Offer } from "@/lib/offers-types";
 import { auth } from "@/lib/firebaseClient";
 import { updateProfile } from "firebase/auth";
 import { useToast } from "@/components/ToastProvider";
@@ -47,10 +50,11 @@ interface Profile {
   photoURL: string;
 }
 
-type Tab = "profile" | "addresses" | "orders";
+type Tab = "profile" | "addresses" | "orders" | "offers";
 
-export default function AccountPage() {
+function AccountPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -59,6 +63,8 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [addressLoading, setAddressLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offersLoading, setOffersLoading] = useState(false);
 
   // Edit states
   const [editingProfile, setEditingProfile] = useState(false);
@@ -84,10 +90,17 @@ export default function AccountPage() {
       return;
     }
 
+    // Check for tab query parameter
+    const tabParam = searchParams.get("tab");
+    if (tabParam && ["profile", "addresses", "orders", "offers"].includes(tabParam)) {
+      setActiveTab(tabParam as Tab);
+    }
+
     fetchProfile();
     fetchOrders();
     fetchAddresses();
-  }, [user, router]);
+    fetchOffers();
+  }, [user, router, searchParams]);
 
   const getAuthToken = async (): Promise<string | null> => {
     if (!user) return null;
@@ -289,6 +302,69 @@ export default function AccountPage() {
     setEditingAddress(null);
   };
 
+  const fetchOffers = async () => {
+    if (!user) return;
+    try {
+      setOffersLoading(true);
+      const response = await fetch(`/api/offers?customer_email=${encodeURIComponent(user.email || "")}&customer_id=${user.uid}`);
+      const data = await response.json();
+      if (data.success && data.offers) {
+        setOffers(data.offers);
+      }
+    } catch (error) {
+      console.error("Failed to fetch offers:", error);
+    } finally {
+      setOffersLoading(false);
+    }
+  };
+
+  const saveAddressFromOrder = async (orderAddress: Order["shipping_address"], orderCustomer: Order["customer"]) => {
+    if (!user) return;
+    try {
+      setAddressLoading(true);
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const addressData = {
+        name: orderAddress.name,
+        address_line1: orderAddress.address_line1,
+        address_line2: orderAddress.address_line2 || "",
+        city: orderAddress.city,
+        state: orderAddress.state,
+        pincode: orderAddress.pincode,
+        country: orderAddress.country,
+        phone: orderCustomer.phone || "",
+        is_default: false,
+      };
+
+      const response = await fetch("/api/addresses", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(addressData),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchAddresses();
+        showSuccess("Address saved successfully");
+      } else {
+        showError(data.error || "Failed to save address");
+      }
+    } catch (error) {
+      showError("Failed to save address");
+    } finally {
+      setAddressLoading(false);
+    }
+  };
+
+  const copyOfferCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    showSuccess("Offer code copied to clipboard!");
+  };
+
   if (!user) {
     return null; // Will redirect
   }
@@ -378,26 +454,48 @@ export default function AccountPage() {
                 Orders
               </div>
             </button>
+            <button
+              onClick={() => setActiveTab("offers")}
+              className={`py-4 px-1 border-b-2 font-semibold text-sm transition-all duration-300 relative ${
+                activeTab === "offers"
+                  ? "border-[#D4AF37] text-[#D4AF37]"
+                  : "border-transparent text-gray-500 hover:text-gray-900"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Tag className="h-5 w-5" />
+                My Offers
+                {offers.length > 0 && (
+                  <span className="bg-[#D4AF37] text-white text-xs px-2 py-0.5 rounded-full">
+                    {offers.length}
+                  </span>
+                )}
+              </div>
+            </button>
           </nav>
         </div>
 
         {/* Profile Tab */}
         {activeTab === "profile" && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="font-serif text-2xl font-medium">Account Information</h2>
-              {!editingProfile && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingProfile(true)}
-                  className="border-2 border-gray-300 hover:border-[#D4AF37] rounded-xl"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              )}
-            </div>
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="font-serif text-2xl font-medium mb-2">Account Settings</h2>
+                  <p className="text-gray-600 text-sm">Manage your account information and preferences</p>
+                </div>
+                {!editingProfile && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingProfile(true)}
+                    className="border-2 border-gray-300 hover:border-[#D4AF37] rounded-xl"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Profile
+                  </Button>
+                )}
+              </div>
 
             {loading ? (
               <p className="text-gray-600">Loading...</p>
@@ -470,24 +568,49 @@ export default function AccountPage() {
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
-                  <div className="p-4 rounded-xl bg-gray-50">
-                    <span className="text-sm text-gray-600 font-medium">Name:</span>
-                    <p className="font-semibold text-lg mt-1">{profile?.displayName || user.displayName || "N/A"}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 hover:shadow-md transition-all duration-300">
+                    <span className="text-sm text-gray-600 font-medium flex items-center gap-2 mb-2">
+                      <User className="h-4 w-4" />
+                      Full Name
+                    </span>
+                    <p className="font-semibold text-lg text-gray-900">
+                      {profile?.displayName || user.displayName || "Not set"}
+                    </p>
                   </div>
-                  <div className="p-4 rounded-xl bg-gray-50">
-                    <span className="text-sm text-gray-600 font-medium">Email:</span>
-                    <p className="font-semibold text-lg mt-1">{profile?.email || user.email}</p>
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 hover:shadow-md transition-all duration-300">
+                    <span className="text-sm text-gray-600 font-medium flex items-center gap-2 mb-2">
+                      <span className="h-4 w-4 flex items-center justify-center">@</span>
+                      Email Address
+                    </span>
+                    <p className="font-semibold text-lg text-gray-900 break-all">
+                      {profile?.email || user.email}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">Email cannot be changed</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-gray-50">
-                    <span className="text-sm text-gray-600 font-medium">Phone:</span>
-                    <p className="font-semibold text-lg mt-1">
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 hover:shadow-md transition-all duration-300">
+                    <span className="text-sm text-gray-600 font-medium flex items-center gap-2 mb-2">
+                      <span className="h-4 w-4 flex items-center justify-center">📱</span>
+                      Phone Number
+                    </span>
+                    <p className="font-semibold text-lg text-gray-900">
                       {profile?.phoneNumber || user.phoneNumber || "Not set"}
                     </p>
+                  </div>
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-[#D4AF37]/5 to-[#C19B2E]/5 border border-[#D4AF37]/20 hover:shadow-md transition-all duration-300">
+                    <span className="text-sm text-gray-600 font-medium flex items-center gap-2 mb-2">
+                      <Package className="h-4 w-4" />
+                      Total Orders
+                    </span>
+                    <p className="font-semibold text-lg text-[#D4AF37]">
+                      {orders.length}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">{orders.filter(o => o.status === "delivered").length} delivered</p>
                   </div>
                 </div>
               </div>
             )}
+            </div>
           </div>
         )}
 
@@ -798,6 +921,40 @@ export default function AccountPage() {
                       </div>
                     )}
 
+                    {/* Save Address from Order */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            Shipping Address
+                          </h4>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <p className="font-medium text-gray-900">{order.shipping_address.name}</p>
+                            <p>{order.shipping_address.address_line1}</p>
+                            {order.shipping_address.address_line2 && (
+                              <p>{order.shipping_address.address_line2}</p>
+                            )}
+                            <p>
+                              {order.shipping_address.city}, {order.shipping_address.state}{" "}
+                              {order.shipping_address.pincode}
+                            </p>
+                            <p>{order.shipping_address.country}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => saveAddressFromOrder(order.shipping_address, order.customer)}
+                          disabled={addressLoading}
+                          className="border-2 border-[#D4AF37] hover:bg-[#D4AF37] hover:text-white rounded-xl transition-all duration-300"
+                        >
+                          <MapPin className="h-4 w-4 mr-1" />
+                          {addressLoading ? "Saving..." : "Save Address"}
+                        </Button>
+                      </div>
+                    </div>
+
                     {order.status === "cancelled" && order.refund_status && (
                       <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
                         <div className="flex items-center gap-2 text-sm">
@@ -830,8 +987,148 @@ export default function AccountPage() {
             )}
           </div>
         )}
+
+        {/* Offers Tab */}
+        {activeTab === "offers" && (
+          <div className="space-y-8">
+            <div>
+              <h2 className="font-serif text-2xl font-medium mb-2">My Personal Offers</h2>
+              <p className="text-gray-600 text-sm">
+                Special offers exclusively for you
+              </p>
+            </div>
+
+            {offersLoading ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+                <p className="text-gray-600">Loading offers...</p>
+              </div>
+            ) : offers.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-16 text-center shadow-sm">
+                <Tag className="h-16 w-16 text-gray-300 mx-auto mb-6" />
+                <p className="text-gray-600 mb-2 text-lg">No personal offers available</p>
+                <p className="text-sm text-gray-500">
+                  Check back later for exclusive offers tailored just for you!
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {offers.map((offer) => {
+                  const now = new Date();
+                  const validUntil = new Date(offer.valid_until);
+                  const isValid = now <= validUntil && offer.is_active;
+                  const usageLeft = offer.usage_limit ? offer.usage_limit - offer.used_count : null;
+
+                  return (
+                    <div
+                      key={offer.id}
+                      className={`bg-gradient-to-br rounded-2xl border-2 p-6 shadow-sm hover:shadow-lg transition-all duration-300 ${
+                        isValid
+                          ? "from-[#D4AF37]/10 via-[#C19B2E]/5 to-[#D4AF37]/10 border-[#D4AF37]/30"
+                          : "from-gray-50 to-gray-100 border-gray-200 opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Tag className={`h-5 w-5 ${isValid ? "text-[#D4AF37]" : "text-gray-400"}`} />
+                            <h3 className="font-serif text-xl font-medium">{offer.title}</h3>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3">{offer.description}</p>
+                        </div>
+                        <div
+                          className={`px-3 py-1.5 rounded-full text-sm font-bold ${
+                            isValid
+                              ? "bg-gradient-to-r from-[#D4AF37] to-[#C19B2E] text-white"
+                              : "bg-gray-300 text-gray-600"
+                          }`}
+                        >
+                          {offer.discount_type === "percentage"
+                            ? `${offer.discount_value}% OFF`
+                            : `₹${offer.discount_value} OFF`}
+                        </div>
+                      </div>
+
+                      {offer.code && (
+                        <div className="bg-white rounded-xl p-3 mb-4 border border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Offer Code</p>
+                              <p className="font-mono font-semibold text-lg">{offer.code}</p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyOfferCode(offer.code!)}
+                              className="border-2 border-[#D4AF37] hover:bg-[#D4AF37] hover:text-white rounded-lg"
+                            >
+                              <Copy className="h-4 w-4 mr-1" />
+                              Copy
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-2 text-xs text-gray-600">
+                        {offer.min_order_amount && (
+                          <p>
+                            <span className="font-semibold">Min. Order:</span> ₹
+                            {offer.min_order_amount}
+                          </p>
+                        )}
+                        {offer.max_discount && offer.discount_type === "percentage" && (
+                          <p>
+                            <span className="font-semibold">Max Discount:</span> ₹
+                            {offer.max_discount}
+                          </p>
+                        )}
+                        <p>
+                          <span className="font-semibold">Valid Until:</span>{" "}
+                          {new Date(offer.valid_until).toLocaleDateString("en-IN", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                        {usageLeft !== null && (
+                          <p>
+                            <span className="font-semibold">Usage Left:</span> {usageLeft} time
+                            {usageLeft !== 1 ? "s" : ""}
+                          </p>
+                        )}
+                      </div>
+
+                      {!isValid && (
+                        <div className="mt-4 bg-gray-200 rounded-lg p-2 text-center">
+                          <p className="text-xs font-semibold text-gray-600">Offer Expired</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/30 to-white">
+        <Header />
+        <main className="max-w-7xl mx-auto px-6 py-12 md:py-16">
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    }>
+      <AccountPageContent />
+    </Suspense>
   );
 }

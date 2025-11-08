@@ -1,90 +1,71 @@
-# Vairanya Deployment Guide
+# Production Deployment Guide
 
-## Custom Domain Setup
+## Build Status
+✅ Build completed successfully!
 
-### Vercel Domain Configuration
+## Pre-Deployment Checklist
 
-1. **Add Domain in Vercel:**
-   - Go to Vercel Dashboard → Project Settings → Domains
-   - Add your custom domain (e.g., `vairanya.com`)
-   - Vercel will provide DNS records to configure
+### 1. Environment Variables
+Make sure you have all required environment variables set:
+- Firebase configuration
+- Razorpay keys
+- Admin credentials
+- Database configuration
 
-### DNS Records Configuration
-
-#### For Root Domain (vairanya.com):
-```
-Type: A
-Name: @
-Value: 76.76.21.21
-TTL: Auto
+### 2. Build Command
+```bash
+npm run build
 ```
 
-#### For WWW Subdomain (www.vairanya.com):
-```
-Type: CNAME
-Name: www
-Value: cname.vercel-dns.com
-TTL: Auto
+### 3. Start Production Server
+```bash
+npm start
 ```
 
-**Note:** Actual IP addresses may vary. Check Vercel dashboard for exact values.
+## Deployment Options
 
-### Domain Provider Instructions
+### Option 1: Vercel (Recommended)
+1. Push code to GitHub
+2. Import project in Vercel
+3. Add environment variables
+4. Deploy automatically
 
-#### GoDaddy:
-1. Login to GoDaddy
-2. My Products → DNS
-3. Click "Add" to create new record
-4. Add the records provided by Vercel
-5. Save changes
+### Option 2: Self-Hosted (Node.js Server)
+1. Run `npm run build`
+2. Run `npm start`
+3. Use PM2 or similar for process management:
+   ```bash
+   pm2 start npm --name "vairanya" -- start
+   ```
 
-#### Namecheap:
-1. Login to Namecheap
-2. Domain List → Manage
-3. Advanced DNS tab
-4. Add New Record
-5. Enter Type, Host, and Value
-6. Save
+### Option 3: Docker
+Create a `Dockerfile`:
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
+```
 
-#### Cloudflare:
-1. Login to Cloudflare
-2. Select your domain
-3. DNS → Records
-4. Add Record
-5. Enter Type, Name, and Content
-6. Save
+## Important Notes
 
-### Verification
+1. **Cart Persistence**: Cart is stored in localStorage, so it persists across page refreshes
+2. **API Routes**: All API routes are server-rendered (dynamic)
+3. **Static Pages**: Most pages are static for better performance
+4. **Image Optimization**: Configured for external domains (Firebase, ImgBB, etc.)
 
-1. Check Vercel Dashboard for domain status
-2. Wait for DNS propagation (usually 1-24 hours)
-3. SSL certificate will be automatically provisioned by Vercel
+## Build Output
+- Total Routes: 75
+- Static Pages: Most pages
+- Dynamic Routes: API routes and dynamic pages
+- Build Size: Optimized for production
 
-### Environment Variables
-
-Make sure these are set in Vercel:
-- `NEXT_PUBLIC_FIREBASE_API_KEY`
-- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-- `FIREBASE_SERVICE_ACCOUNT_JSON`
-- All other required environment variables
-
-### Firebase Authorized Domains
-
-After adding custom domain, update Firebase:
-1. Go to Firebase Console → Authentication → Settings
-2. Add your custom domain to "Authorized domains"
-3. Add both: `vairanya.com` and `www.vairanya.com`
-
-### Post-Deployment Checklist
-
-- [ ] Domain added to Vercel
-- [ ] DNS records configured
-- [ ] Domain verified in Vercel
-- [ ] SSL certificate active (automatic)
-- [ ] Firebase authorized domains updated
-- [ ] Test login functionality
-- [ ] Test all pages load correctly
-
-
-
+## Next Steps
+1. Set up environment variables in production
+2. Configure domain and SSL
+3. Set up monitoring and logging
+4. Test all functionality in production environment

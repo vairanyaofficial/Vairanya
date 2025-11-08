@@ -12,6 +12,7 @@ interface AppliedOffer {
 interface CartContextType {
   items: CartItem[];
   appliedOffer: AppliedOffer | null;
+  isLoading: boolean; // Add loading state
   addToCart: (product: Product, quantity?: number, selectedSize?: string) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -30,39 +31,88 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [appliedOffer, setAppliedOffer] = useState<AppliedOffer | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Track loading state
 
-  // Load cart and offer from localStorage on mount
+  // Load cart and offer from localStorage on mount (client-side only)
   useEffect(() => {
-    const savedCart = localStorage.getItem("vairanya_cart");
-    if (savedCart) {
-      try {
-        setItems(JSON.parse(savedCart));
-      } catch (error) {
-      }
+    // Check if we're on the client side
+    if (typeof window === "undefined") {
+      setIsLoading(false);
+      return;
     }
-    
-    const savedOffer = localStorage.getItem("vairanya_applied_offer");
-    if (savedOffer) {
-      try {
-        setAppliedOffer(JSON.parse(savedOffer));
-      } catch (error) {
+
+    try {
+      const savedCart = localStorage.getItem("vairanya_cart");
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart);
+          // Always set items if it's a valid array (even if empty)
+          if (Array.isArray(parsedCart)) {
+            setItems(parsedCart);
+          } else {
+            // Invalid data, remove it
+            localStorage.removeItem("vairanya_cart");
+          }
+        } catch (error) {
+          console.error("Error parsing saved cart:", error);
+          localStorage.removeItem("vairanya_cart");
+        }
       }
+      
+      const savedOffer = localStorage.getItem("vairanya_applied_offer");
+      if (savedOffer) {
+        try {
+          const parsedOffer = JSON.parse(savedOffer);
+          // Validate offer structure
+          if (parsedOffer && typeof parsedOffer === "object" && parsedOffer.id && parsedOffer.title) {
+            setAppliedOffer(parsedOffer);
+          } else {
+            // Invalid offer data, remove it
+            localStorage.removeItem("vairanya_applied_offer");
+          }
+        } catch (error) {
+          console.error("Error parsing saved offer:", error);
+          localStorage.removeItem("vairanya_applied_offer");
+        }
+      }
+    } catch (error) {
+      console.error("Error loading cart from localStorage:", error);
+    } finally {
+      setIsLoading(false); // Mark as loaded
     }
   }, []);
 
-  // Save cart to localStorage whenever it changes
+  // Save cart to localStorage whenever it changes (but not during initial load)
   useEffect(() => {
-    localStorage.setItem("vairanya_cart", JSON.stringify(items));
-  }, [items]);
-
-  // Save offer to localStorage whenever it changes
-  useEffect(() => {
-    if (appliedOffer) {
-      localStorage.setItem("vairanya_applied_offer", JSON.stringify(appliedOffer));
-    } else {
-      localStorage.removeItem("vairanya_applied_offer");
+    if (!isLoading && typeof window !== "undefined") {
+      try {
+        // Always save the current state to localStorage
+        // Empty array means cart is empty, which is a valid state
+        localStorage.setItem("vairanya_cart", JSON.stringify(items));
+      } catch (error) {
+        console.error("Error saving cart to localStorage:", error);
+        // If localStorage is full, try to handle it gracefully
+        if (error instanceof DOMException && error.code === 22) {
+          console.warn("LocalStorage is full. Consider clearing old data.");
+        }
+      }
     }
-  }, [appliedOffer]);
+  }, [items, isLoading]);
+
+  // Save offer to localStorage whenever it changes (but not during initial load)
+  useEffect(() => {
+    if (!isLoading && typeof window !== "undefined") {
+      try {
+        if (appliedOffer) {
+          localStorage.setItem("vairanya_applied_offer", JSON.stringify(appliedOffer));
+        } else {
+          localStorage.removeItem("vairanya_applied_offer");
+        }
+      } catch (error) {
+        console.error("Error saving offer to localStorage:", error);
+      }
+    }
+  }, [appliedOffer, isLoading]);
 
   const addToCart = (product: Product, quantity: number = 1, selectedSize?: string) => {
     // Prevent adding out-of-stock items to cart
@@ -109,8 +159,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = () => {
     setItems([]);
     setAppliedOffer(null);
-    localStorage.removeItem("vairanya_cart");
-    localStorage.removeItem("vairanya_applied_offer");
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("vairanya_cart");
+        localStorage.removeItem("vairanya_applied_offer");
+      } catch (error) {
+        console.error("Error clearing cart from localStorage:", error);
+      }
+    }
   };
 
   const applyOffer = (offer: AppliedOffer) => {
@@ -152,6 +208,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       value={{
         items,
         appliedOffer,
+        isLoading,
         addToCart,
         removeFromCart,
         updateQuantity,

@@ -10,6 +10,9 @@ import {
 import { requireAdmin } from "@/lib/admin-auth-server";
 import type { Collection } from "@/lib/collections-types";
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 // GET - Fetch all collections
 export async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
