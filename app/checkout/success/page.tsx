@@ -90,7 +90,7 @@ function SuccessContent() {
     // router.push is async but wrapping in setTimeout(..., 0) defers it after rendering
     const t = setTimeout(() => {
       // optional: you can use router.replace if you don't want history entry
-      router.push("/collection");
+      router.push("/products");
     }, 0);
 
     return () => clearTimeout(t);
@@ -150,7 +150,7 @@ function SuccessContent() {
               <Link href="/account">View My Orders</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/collection">Continue Shopping</Link>
+              <Link href="/products">Continue Shopping</Link>
             </Button>
           </div>
         </div>

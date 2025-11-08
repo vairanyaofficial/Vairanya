@@ -84,7 +84,7 @@ export default function AboutPage() {
 
           <div className="text-center pt-8">
             <Button asChild className="bg-[#D4AF37] hover:bg-[#C19B2E]">
-              <Link href="/collection">Explore Our Collection</Link>
+              <Link href="/products">Explore Our Products</Link>
             </Button>
           </div>
         </div>

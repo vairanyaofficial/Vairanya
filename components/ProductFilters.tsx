@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import type { Category, MetalFinish } from "@/lib/products-types";
 import { getAllCategories, getAllMetalFinishes } from "@/lib/products-types";
+import { X } from "lucide-react";
 
 interface ProductFiltersProps {
   selectedCategory: Category | "all";
@@ -52,7 +53,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         const res = await fetch("/api/products");
         const data = await res.json();
         if (data.success && Array.isArray(data.products)) {
-          // Extract all unique sizes from all products
           const allSizes = new Set<string>();
           data.products.forEach((product: any) => {
             if (product.size_options && Array.isArray(product.size_options)) {
@@ -64,7 +64,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
             }
           });
           const sortedSizes = Array.from(allSizes).sort((a, b) => {
-            // Sort numbers first, then letters
             const aNum = parseInt(a);
             const bNum = parseInt(b);
             if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
@@ -75,7 +74,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
           setAvailableSizes(sortedSizes);
         }
       } catch {
-        // Fallback to common sizes
         const commonSizes = ["S", "M", "L", "XL", "6", "7", "8", "9", "10", "11", "12"];
         setAvailableSizes(commonSizes);
       }
@@ -83,40 +81,45 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     fetchSizes();
   }, []);
 
+  const hasActiveFilters = selectedCategory !== "all" || selectedMetalFinish !== "all" || selectedSize !== "all" || (priceRange[0] !== 0 || priceRange[1] < 999999);
+
   return (
-    <div className="space-y-6 rounded-lg border bg-white p-6">
+    <div className="space-y-4 rounded-lg border bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="font-serif text-lg font-semibold">Filters</h3>
-        <button
-          onClick={onReset}
-          className="text-sm text-[#D4AF37] hover:underline"
-        >
-          Reset
-        </button>
+        <h3 className="text-sm font-semibold text-gray-900">Filters</h3>
+        {hasActiveFilters && (
+          <button
+            onClick={onReset}
+            className="text-xs text-[#D4AF37] hover:text-[#C19B2E] font-medium transition-colors flex items-center gap-1"
+          >
+            <X className="h-3 w-3" />
+            Reset
+          </button>
+        )}
       </div>
 
-      {/* Category Filter */}
+      {/* Category Filter - Compact */}
       <div>
-        <h4 className="mb-3 text-sm font-medium">Category</h4>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm">
+        <h4 className="mb-2 text-xs font-medium text-gray-700 uppercase tracking-wide">Category</h4>
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-xs cursor-pointer hover:text-[#D4AF37] transition-colors">
             <input
               type="radio"
               name="category"
               checked={selectedCategory === "all"}
               onChange={() => onCategoryChange("all")}
-              className="h-4 w-4 text-[#D4AF37]"
+              className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37]"
             />
             <span>All</span>
           </label>
           {categories.map((category) => (
-            <label key={category} className="flex items-center gap-2 text-sm capitalize">
+            <label key={category} className="flex items-center gap-2 text-xs capitalize cursor-pointer hover:text-[#D4AF37] transition-colors">
               <input
                 type="radio"
                 name="category"
                 checked={selectedCategory === category}
                 onChange={() => onCategoryChange(category as any)}
-                className="h-4 w-4 text-[#D4AF37]"
+                className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37]"
               />
               <span>{category}</span>
             </label>
@@ -124,67 +127,69 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         </div>
       </div>
 
-      {/* Metal Finish Filter */}
+      {/* Metal Finish Filter - Compact & Fixed */}
       <div>
-        <h4 className="mb-3 text-sm font-medium">Metal Finish</h4>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm">
+        <h4 className="mb-2 text-xs font-medium text-gray-700 uppercase tracking-wide">Metal Finish</h4>
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-xs cursor-pointer hover:text-[#D4AF37] transition-colors">
             <input
               type="radio"
               name="metalFinish"
               checked={selectedMetalFinish === "all"}
               onChange={() => onMetalFinishChange("all")}
-              className="h-4 w-4 text-[#D4AF37]"
+              className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37]"
             />
             <span>All</span>
           </label>
           {metalFinishes.map((finish) => (
-            <label key={finish} className="flex items-center gap-2 text-sm capitalize">
+            <label key={finish} className="flex items-center gap-2 text-xs capitalize cursor-pointer hover:text-[#D4AF37] transition-colors">
               <input
                 type="radio"
                 name="metalFinish"
                 checked={selectedMetalFinish === finish}
                 onChange={() => onMetalFinishChange(finish)}
-                className="h-4 w-4 text-[#D4AF37]"
+                className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37]"
               />
-              <span>{finish.replace("-", " ")}</span>
+              <span>{finish.replace(/-/g, " ")}</span>
             </label>
           ))}
         </div>
       </div>
 
-      {/* Size Filter */}
-      <div>
-        <h4 className="mb-3 text-sm font-medium">Size</h4>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name="size"
-              checked={selectedSize === "all"}
-              onChange={() => onSizeChange("all")}
-              className="h-4 w-4 text-[#D4AF37]"
-            />
-            <span>All</span>
-          </label>
-          {availableSizes.map((size) => (
-            <label key={size} className="flex items-center gap-2 text-sm">
+      {/* Size Filter - Compact */}
+      {availableSizes.length > 0 && (
+        <div>
+          <h4 className="mb-2 text-xs font-medium text-gray-700 uppercase tracking-wide">Size</h4>
+          <div className="space-y-1.5 max-h-32 overflow-y-auto">
+            <label className="flex items-center gap-2 text-xs cursor-pointer hover:text-[#D4AF37] transition-colors">
               <input
                 type="radio"
                 name="size"
-                checked={selectedSize === size}
-                onChange={() => onSizeChange(size)}
-                className="h-4 w-4 text-[#D4AF37]"
+                checked={selectedSize === "all"}
+                onChange={() => onSizeChange("all")}
+                className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37]"
               />
-              <span>{size}</span>
+              <span>All</span>
             </label>
-          ))}
+            {availableSizes.map((size) => (
+              <label key={size} className="flex items-center gap-2 text-xs cursor-pointer hover:text-[#D4AF37] transition-colors">
+                <input
+                  type="radio"
+                  name="size"
+                  checked={selectedSize === size}
+                  onChange={() => onSizeChange(size)}
+                  className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37]"
+                />
+                <span>{size}</span>
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Price Range Filter */}
+      {/* Price Range Filter - Compact */}
       <div>
-        <h4 className="mb-3 text-sm font-medium">Price Range</h4>
+        <h4 className="mb-2 text-xs font-medium text-gray-700 uppercase tracking-wide">Price Range</h4>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <input
@@ -194,18 +199,23 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
               onChange={(e) =>
                 onPriceRangeChange([Number(e.target.value) || 0, priceRange[1]])
               }
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#D4AF37] focus:border-[#D4AF37]"
+              min="0"
             />
-            <span className="text-gray-500">-</span>
+            <span className="text-gray-400 text-xs">-</span>
             <input
               type="number"
               placeholder="Max"
-              value={priceRange[1] || ""}
+              value={priceRange[1] === 999999 ? "" : priceRange[1]}
               onChange={(e) =>
-                onPriceRangeChange([priceRange[0], Number(e.target.value) || 9999])
+                onPriceRangeChange([priceRange[0], Number(e.target.value) || 999999])
               }
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#D4AF37] focus:border-[#D4AF37]"
+              min="0"
             />
+          </div>
+          <div className="text-xs text-gray-500">
+            ₹{priceRange[0].toLocaleString()} - ₹{priceRange[1] === 999999 ? "∞" : priceRange[1].toLocaleString()}
           </div>
         </div>
       </div>
@@ -214,4 +224,3 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
 };
 
 export default ProductFilters;
-

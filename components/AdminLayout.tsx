@@ -13,7 +13,7 @@ import {
   canCreateProduct,
 } from "@/lib/admin-auth";
 import { useAuth } from "@/components/AuthProvider";
-import { Package, Home, LogOut, Shield, User, Users, Tag, Star } from "lucide-react";
+import { Package, Home, LogOut, Shield, User, Users, Tag, Star, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [session, setSession] = useState<ReturnType<typeof getAdminSession>>(null);
   const { user, adminInfo, signout } = useAuth();
   const [hasRedirected, setHasRedirected] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -172,51 +173,51 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
-      {/* Admin Header */}
-      <header className="bg-[#2E2E2E] text-white border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-8 min-w-0 flex-1">
-              <Link href="/admin" className="font-serif text-xl">
+      {/* Admin Header - Compact */}
+      <header className="bg-[#2E2E2E] text-white border-b border-gray-700 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between gap-3 h-12">
+            <div className="flex items-center gap-4 min-w-0 flex-1">
+              <Link href="/admin" className="font-serif text-lg font-semibold text-[#D4AF37] hover:text-[#C19B2E] transition-colors">
                 Vairanya Admin
               </Link>
-              <nav className="hidden md:flex items-center gap-6">
+              <nav className="hidden lg:flex items-center gap-1 overflow-x-auto">
                 <Link
                   href="/admin"
-                  className={`text-sm hover:text-[#D4AF37] transition-colors ${
-                    pathname === "/admin" ? "text-[#D4AF37]" : ""
+                  className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
+                    pathname === "/admin" ? "text-[#D4AF37] bg-gray-700" : "text-gray-300"
                   }`}
                 >
                   Dashboard
                 </Link>
                 <Link
                   href="/admin/orders"
-                  className={`text-sm hover:text-[#D4AF37] transition-colors ${
-                    pathname?.startsWith("/admin/orders") ? "text-[#D4AF37]" : ""
+                  className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
+                    pathname?.startsWith("/admin/orders") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300"
                   }`}
                 >
                   Orders
                 </Link>
                 <Link
                   href="/admin/tasks"
-                  className={`text-sm hover:text-[#D4AF37] transition-colors ${
-                    pathname?.startsWith("/admin/tasks") ? "text-[#D4AF37]" : ""
+                  className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
+                    pathname?.startsWith("/admin/tasks") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300"
                   }`}
                 >
                   Tasks
                 </Link>
                 <Link
                   href="/admin/products"
-                  className={`text-sm hover:text-[#D4AF37] transition-colors ${
-                    pathname?.startsWith("/admin/products") ? "text-[#D4AF37]" : ""
+                  className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
+                    pathname?.startsWith("/admin/products") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300"
                   }`}
                 >
                   Products
                 </Link>
                 <Link
                   href="/admin/reviews"
-                  className={`text-sm hover:text-[#D4AF37] transition-colors ${
-                    pathname?.startsWith("/admin/reviews") ? "text-[#D4AF37]" : ""
+                  className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
+                    pathname?.startsWith("/admin/reviews") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300"
                   }`}
                 >
                   Reviews
@@ -226,27 +227,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <>
                     <Link
                       href="/admin/customers"
-                      className={`text-sm hover:text-[#D4AF37] transition-colors ${
-                        pathname?.startsWith("/admin/customers") ? "text-[#D4AF37]" : ""
+                      className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
+                        pathname?.startsWith("/admin/customers") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300"
                       }`}
                     >
                       Customers
                     </Link>
                     <Link
                       href="/admin/offers"
-                      className={`text-sm hover:text-[#D4AF37] transition-colors ${
-                        pathname?.startsWith("/admin/offers") ? "text-[#D4AF37]" : ""
+                      className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
+                        pathname?.startsWith("/admin/offers") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300"
                       }`}
                     >
                       Offers
                     </Link>
                     <Link
                       href="/admin/categories"
-                      className={`text-sm hover:text-[#D4AF37] transition-colors ${
-                        pathname?.startsWith("/admin/categories") ? "text-[#D4AF37]" : ""
+                      className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
+                        pathname?.startsWith("/admin/categories") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300"
                       }`}
                     >
                       Categories
+                    </Link>
+                    <Link
+                      href="/admin/collections"
+                      className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
+                        pathname?.startsWith("/admin/collections") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300"
+                      }`}
+                    >
+                      Collections
                     </Link>
                   </>
                 )}
@@ -254,53 +263,77 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {canManageWorkers() && (
                   <Link
                     href="/admin/workers"
-                    className={`text-sm hover:text-[#D4AF37] transition-colors ${
-                      pathname?.startsWith("/admin/workers") ? "text-[#D4AF37]" : ""
+                    className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
+                      pathname?.startsWith("/admin/workers") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300"
                     }`}
                   >
                     Workers
                   </Link>
                 )}
               </nav>
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="lg:hidden p-1.5 text-gray-300 hover:text-[#D4AF37] hover:bg-gray-700 rounded transition-colors"
+                aria-label="Menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
             </div>
-            <div className="flex items-center gap-4 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {session && (
-                <div className="flex items-start gap-2 text-sm min-w-0">
+                <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-300 min-w-0">
                   {isSuperAdmin() ? (
-                    <Shield className="h-4 w-4 text-[#D4AF37] flex-shrink-0 mt-0.5" />
+                    <Shield className="h-3.5 w-3.5 text-[#D4AF37] flex-shrink-0" />
                   ) : currentSession?.role === "admin" ? (
-                    <Shield className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <User className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                  )}
-                  <div className="hidden sm:block text-gray-300 min-w-0">
-                    <div className="truncate max-w-[200px]" title={session.name}>
-                      {session.name}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      {session.role === "superuser" ? "Super Admin" : session.role === "admin" ? "Admin" : "Worker"}
-                    </div>
+                    <Shield className="h-3.5 w-3.5 text-blue-400 flex-shrink-0" />
+                  ) : null}
+                  <div className="truncate max-w-[120px]" title={session.name}>
+                    {session.name}
                   </div>
                 </div>
               )}
               <Link
                 href="/"
-                className="text-sm hover:text-[#D4AF37] transition-colors flex items-center gap-2"
+                className="p-1.5 text-gray-300 hover:text-[#D4AF37] hover:bg-gray-700 rounded transition-colors"
+                title="View Site"
               >
                 <Home className="h-4 w-4" />
-                <span className="hidden sm:inline">View Site</span>
               </Link>
               <Button
                 onClick={handleLogout}
                 variant="secondary"
                 size="sm"
-                className="border-gray-600 text-white hover:bg-[#f7f1e0] hover:text-black text-[#D4AF37]"
+                className="h-7 px-2 text-xs border-gray-600 bg-transparent text-gray-300 hover:bg-gray-700 hover:text-white"
               >
-                <LogOut className="h-4 w-4 mr-2 text-[#D4AF37] hover:text-black"/>
-                Logout
+                <LogOut className="h-3.5 w-3.5 sm:mr-1.5"/>
+                <span className="hidden sm:inline">Logout</span>
               </Button>
             </div>
           </div>
+          {/* Mobile Navigation */}
+          {showMobileMenu && (
+            <nav className="lg:hidden border-t border-gray-700 py-2 px-4">
+            <div className="flex flex-col gap-1">
+              <Link href="/admin" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname === "/admin" ? "text-[#D4AF37] bg-gray-700" : "text-gray-300 hover:bg-gray-700"}`}>Dashboard</Link>
+              <Link href="/admin/orders" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/orders") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300 hover:bg-gray-700"}`}>Orders</Link>
+              <Link href="/admin/tasks" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/tasks") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300 hover:bg-gray-700"}`}>Tasks</Link>
+              <Link href="/admin/products" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/products") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300 hover:bg-gray-700"}`}>Products</Link>
+              <Link href="/admin/reviews" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/reviews") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300 hover:bg-gray-700"}`}>Reviews</Link>
+              {(isSuperUser() || currentSession?.role === "admin") && (
+                <>
+                  <Link href="/admin/customers" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/customers") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300 hover:bg-gray-700"}`}>Customers</Link>
+                  <Link href="/admin/offers" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/offers") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300 hover:bg-gray-700"}`}>Offers</Link>
+                  <Link href="/admin/categories" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/categories") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300 hover:bg-gray-700"}`}>Categories</Link>
+                  <Link href="/admin/collections" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/collections") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300 hover:bg-gray-700"}`}>Collections</Link>
+                </>
+              )}
+              {canManageWorkers() && (
+                <Link href="/admin/workers" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/workers") ? "text-[#D4AF37] bg-gray-700" : "text-gray-300 hover:bg-gray-700"}`}>Workers</Link>
+              )}
+            </div>
+            </nav>
+          )}
         </div>
       </header>
 

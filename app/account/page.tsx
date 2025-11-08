@@ -750,7 +750,7 @@ export default function AccountPage() {
               <div className="text-center py-16">
                 <Package className="h-16 w-16 text-gray-300 mx-auto mb-6" />
                 <p className="text-gray-600 mb-6 text-lg">No orders yet.</p>
-                <Link href="/collection">
+                <Link href="/products">
                   <Button className="bg-[#D4AF37] hover:bg-[#C19B2E] text-white px-8 py-6 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-300">
                     Start Shopping
                   </Button>

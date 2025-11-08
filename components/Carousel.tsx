@@ -122,7 +122,7 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
               {/* Buttons */}
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-4 items-start">
                 <Link
-                  href={currentSlide.link_url || "/collection"}
+                  href={currentSlide.link_url || "/products"}
                   className="inline-block bg-[#D4AF37] hover:bg-[#C19B2E] text-white px-3 py-1.5 sm:px-6 sm:py-4 md:px-8 md:py-6 text-xs sm:text-base font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-center w-fit"
                 >
                   {currentSlide.link_text || "Shop Collection"}

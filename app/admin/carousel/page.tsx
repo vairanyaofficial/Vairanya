@@ -354,7 +354,7 @@ export default function AdminCarouselPage() {
                   value={formData.link_url}
                   onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
                   className="w-full rounded border border-gray-300 px-3 py-2"
-                  placeholder="e.g., /collection"
+                  placeholder="e.g., /products"
                 />
               </div>
               <div>

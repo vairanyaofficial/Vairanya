@@ -3,14 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import type { Product } from "@/lib/products-types";
 import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/wishlist-context";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/ToastProvider";
-import { Heart, Bell } from "lucide-react";
+import { Heart, Bell, ShoppingBag } from "lucide-react";
 
 type Props = {
   product: Product;
@@ -34,6 +32,7 @@ const ProductCard: React.FC<Props> = ({ product }) => {
     }
     
     addToCart(product);
+    showSuccess("Added to cart");
   };
 
   const handleNotifyMe = (e: React.MouseEvent) => {
@@ -45,7 +44,6 @@ const ProductCard: React.FC<Props> = ({ product }) => {
       return;
     }
     
-    // TODO: Implement notify me functionality
     showSuccess("We'll notify you when this product is back in stock!");
   };
 
@@ -62,33 +60,21 @@ const ProductCard: React.FC<Props> = ({ product }) => {
       await removeFromWishlist(product.product_id);
     } else {
       await addToWishlist(product.product_id);
+      showSuccess("Added to wishlist");
     }
   };
 
   return (
-    <Card className={`group rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-all duration-300 relative border border-gray-100 ${isOutOfStock ? '[filter:grayscale(100%)]' : ''}`}>
-      {/* Wishlist Button */}
-      <button
-        onClick={handleWishlistToggle}
-        className="absolute top-3 right-3 z-10 p-2.5 rounded-full bg-white/90 backdrop-blur-md shadow-lg hover:bg-white transition-all duration-300 hover:scale-110"
-        aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
-      >
-        <Heart
-          className={`h-5 w-5 transition-all duration-300 ${
-            inWishlist
-              ? "fill-[#D4AF37] text-[#D4AF37] scale-110"
-              : "text-gray-600 hover:text-[#D4AF37]"
-          }`}
-        />
-      </button>
-      <Link href={`/products/${product.slug}`}>
-        <div className="h-64 w-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden relative group-hover:bg-gradient-to-br group-hover:from-gray-100 group-hover:to-gray-50 transition-all duration-300">
+    <div className={`group relative bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-[#D4AF37]/40 hover:shadow-md transition-all duration-200 ${isOutOfStock ? 'opacity-60' : ''}`}>
+      <Link href={`/products/${product.slug}`} className="block">
+        {/* Image Container - Compact */}
+        <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
           <Image
             src={product.images[0] || "/images/ring-1.jpg"}
             alt={product.title}
             fill
-            className="object-contain group-hover:scale-110 transition-transform duration-500"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             unoptimized={product.images[0]?.startsWith("http")}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -97,39 +83,63 @@ const ProductCard: React.FC<Props> = ({ product }) => {
               }
             }}
           />
+          {/* New Badge - Minimal */}
+          {product.is_new && !isOutOfStock && (
+            <span className="absolute top-2 left-2 bg-[#D4AF37] text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
+              New
+            </span>
+          )}
+          {/* Wishlist Button - Minimal */}
+          <button
+            onClick={handleWishlistToggle}
+            className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-200"
+            aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+          >
+            <Heart
+              className={`h-3.5 w-3.5 transition-all duration-200 ${
+                inWishlist
+                  ? "fill-[#D4AF37] text-[#D4AF37]"
+                  : "text-gray-400 hover:text-[#D4AF37]"
+              }`}
+            />
+          </button>
         </div>
-        <CardContent className="p-5">
-          <h4 className="font-medium text-base font-serif mb-2 group-hover:text-[#D4AF37] transition-colors">{product.title}</h4>
-          <p className="text-sm text-gray-500 mt-1 line-clamp-2 leading-relaxed">
-            {product.short_description || product.description}
-          </p>
-          <div className="mt-4 flex items-center justify-between">
-            <div className="font-semibold text-lg text-gray-900">₹{product.price}</div>
-            {product.is_new && !isOutOfStock && (
-              <span className="text-xs bg-gradient-to-r from-[#D4AF37] to-[#C19B2E] text-white px-3 py-1 rounded-full font-medium shadow-sm">New</span>
+
+        {/* Content - Compact */}
+        <div className="p-3">
+          <h4 className="font-medium text-sm font-serif mb-1 line-clamp-1 group-hover:text-[#D4AF37] transition-colors">
+            {product.title}
+          </h4>
+          <div className="flex items-center justify-between mt-2">
+            <span className="font-semibold text-base text-gray-900">₹{product.price.toLocaleString()}</span>
+            {product.mrp && product.mrp > product.price && (
+              <span className="text-xs text-gray-400 line-through">₹{product.mrp.toLocaleString()}</span>
             )}
           </div>
-        </CardContent>
+        </div>
       </Link>
-      <div className="px-5 pb-5">
+
+      {/* Add to Cart Button - Minimal */}
+      <div className="px-3 pb-3">
         {isOutOfStock ? (
-          <Button
+          <button
             onClick={handleNotifyMe}
-            className="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium py-2 rounded-md transition-all duration-200 flex items-center justify-center gap-1.5"
           >
-            <Bell className="h-5 w-5" />
+            <Bell className="h-3.5 w-3.5" />
             Notify Me
-          </Button>
+          </button>
         ) : (
-          <Button
+          <button
             onClick={handleAddToCart}
-            className="w-full bg-[#D4AF37] hover:bg-[#C19B2E] text-white font-medium py-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
+            className="w-full bg-[#D4AF37] hover:bg-[#C19B2E] text-white text-xs font-medium py-2 rounded-md transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm hover:shadow"
           >
+            <ShoppingBag className="h-3.5 w-3.5" />
             Add to Cart
-          </Button>
+          </button>
         )}
       </div>
-    </Card>
+    </div>
   );
 };
 

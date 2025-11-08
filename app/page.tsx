@@ -13,6 +13,7 @@ import type { Product } from "@/lib/products-types";
 import type { Offer } from "@/lib/offers-types";
 import type { CarouselSlide } from "@/lib/carousel-types";
 import type { Review } from "@/lib/reviews-types";
+import type { Collection } from "@/lib/collections-types";
 import ReviewForm from "@/components/ReviewForm";
 
 export default function Page() {
@@ -20,6 +21,8 @@ export default function Page() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [carouselSlides, setCarouselSlides] = useState<CarouselSlide[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [featuredCollections, setFeaturedCollections] = useState<Collection[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const reviewsScrollRef = React.useRef<HTMLDivElement>(null);
   const [isScrolling, setIsScrolling] = useState(false);
@@ -39,11 +42,12 @@ export default function Page() {
   };
 
   useEffect(() => {
-    // Fetch new products from public API endpoint
+    // Fetch all products from public API endpoint
     fetch("/api/products")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
+          setAllProducts(data.products);
           const newProducts = data.products.filter((p: Product) => p.is_new);
           // If we have new products, use them; otherwise use first 4 products
           if (newProducts.length > 0) {
@@ -57,6 +61,7 @@ export default function Page() {
       .catch(() => {
         // Fallback to static import
         import("@/lib/products").then((mod) => {
+          setAllProducts(mod.products);
           const staticNew = mod.products.filter((p: Product) => p.is_new);
           if (staticNew.length > 0) {
             setFeaturedProducts(staticNew.slice(0, 4));
@@ -64,6 +69,20 @@ export default function Page() {
             setFeaturedProducts(mod.products.slice(0, 4));
           }
         });
+      });
+
+    // Fetch featured collections
+    fetch("/api/collections?featured=true")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.collections) {
+          setFeaturedCollections(data.collections);
+        } else {
+          console.log("No featured collections found:", data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load collections:", err);
       });
 
     // Fetch active offers
@@ -123,7 +142,87 @@ export default function Page() {
         )}
       </section>
 
-      {/* Featured Collection */}
+      {/* Featured Collections */}
+      {featuredCollections.length > 0 && (
+        <>
+          {featuredCollections.map((collection) => {
+            const collectionProducts = collection.product_ids
+              .map((productId) => allProducts.find((p) => p.product_id === productId))
+              .filter((p): p is Product => p !== undefined);
+
+            if (collectionProducts.length === 0) return null;
+
+            return (
+              <section key={collection.id} className="max-w-7xl mx-auto px-6 py-16 md:py-24">
+                {collection.image ? (
+                  <div className="mb-12 md:mb-16 relative">
+                    <div className="relative w-full h-48 md:h-72 rounded-2xl shadow-lg overflow-hidden">
+                      <img
+                        src={collection.image}
+                        alt={collection.name}
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Collection Name Overlay - Centered */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+                        <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl font-light text-white tracking-tight text-center px-4 drop-shadow-2xl">
+                          {collection.name}
+                        </h2>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center mb-12 md:mb-16">
+                    <h2 className="font-serif text-4xl md:text-5xl font-light mb-4 tracking-tight">
+                      {collection.name}
+                    </h2>
+                    {collection.short_description && (
+                      <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                        {collection.short_description}
+                      </p>
+                    )}
+                    {collection.description && !collection.short_description && (
+                      <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                        {collection.description}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {/* Description below banner (if banner exists) */}
+                {collection.image && (collection.short_description || collection.description) && (
+                  <div className="text-center mb-12 md:mb-16">
+                    {collection.short_description && (
+                      <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                        {collection.short_description}
+                      </p>
+                    )}
+                    {collection.description && !collection.short_description && (
+                      <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                        {collection.description}
+                      </p>
+                    )}
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
+                  {collectionProducts.map((product) => (
+                    <ProductCard key={product.product_id} product={product} />
+                  ))}
+                </div>
+                {collectionProducts.length > 4 && (
+                  <div className="text-center mt-12">
+                    <Button asChild variant="outline" className="border-2 border-gray-300 hover:border-[#D4AF37] px-8 py-6 text-base font-medium rounded-lg hover:bg-[#D4AF37]/5 transition-all duration-300">
+                      <Link href={`/products?collection=${collection.slug}`}>
+                        View All {collection.name} Products
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </>
+      )}
+
+      {/* Featured Collection (Fallback - New Products) */}
       <section id="collection" className="max-w-7xl mx-auto px-6 py-16 md:py-24">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="font-serif text-4xl md:text-5xl font-light mb-4 tracking-tight">Featured Collection</h2>
@@ -136,7 +235,7 @@ export default function Page() {
         </div>
         <div className="text-center mt-12">
           <Button asChild variant="outline" className="border-2 border-gray-300 hover:border-[#D4AF37] px-8 py-6 text-base font-medium rounded-lg hover:bg-[#D4AF37]/5 transition-all duration-300">
-            <Link href="/collection">View All Products</Link>
+            <Link href="/products">View All Products</Link>
           </Button>
         </div>
       </section>
@@ -153,7 +252,7 @@ export default function Page() {
               {offers.map((offer) => (
                 <Link
                   key={offer.id}
-                  href="/collection"
+                  href="/products"
                   className="group relative bg-gradient-to-br from-[#D4AF37]/5 to-[#C19B2E]/5 rounded-xl p-6 border border-[#D4AF37]/20 hover:border-[#D4AF37]/40 hover:shadow-lg transition-all duration-300 overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/10 rounded-bl-full"></div>

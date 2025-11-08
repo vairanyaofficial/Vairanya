@@ -13,7 +13,7 @@ export default function NotFound() {
           The product you're looking for doesn't exist or has been removed.
         </p>
         <Button asChild className="bg-[#D4AF37] hover:bg-[#C19B2E]">
-          <Link href="/collection">Browse Collection</Link>
+          <Link href="/products">Browse Products</Link>
         </Button>
       </main>
       <Footer />

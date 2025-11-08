@@ -93,7 +93,7 @@ const Cart: React.FC<CartProps> = ({ open, onOpenChange }) => {
                 asChild
                 className="bg-[#D4AF37] hover:bg-[#C19B2E]"
               >
-                <Link href="/collection">Browse Collection</Link>
+                <Link href="/products">Browse Products</Link>
               </Button>
             </div>
           ) : (
@@ -204,7 +204,7 @@ const Cart: React.FC<CartProps> = ({ open, onOpenChange }) => {
               Proceed to Checkout
             </Button>
             <Link
-              href="/collection"
+              href="/products"
               onClick={() => onOpenChange(false)}
               className="block text-center text-sm text-gray-600 hover:text-[#D4AF37] transition-colors"
             >

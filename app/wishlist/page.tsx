@@ -93,7 +93,7 @@ export default function WishlistPage() {
             <p className="text-gray-600 mb-8 text-lg">
               Start adding products you love to your wishlist
             </p>
-            <Link href="/collection">
+            <Link href="/products">
               <Button className="bg-[#D4AF37] hover:bg-[#C19B2E] text-white px-8 py-6 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-300">
                 <ShoppingBag className="h-5 w-5 mr-2" />
                 Browse Collection

@@ -375,11 +375,11 @@ export default function CheckoutPage() {
             <h1 className="font-serif text-3xl mb-2">Your cart is empty</h1>
             <p className="text-gray-600 mb-6">Add some products before proceeding to checkout.</p>
             <Link
-              href="/collection"
+              href="/products"
               className="inline-flex items-center gap-2 px-5 py-3 rounded bg-[#D4AF37] text-white hover:bg-[#C19B2E]"
             >
               <ArrowLeft className="h-4 w-4" />
-              Go to Collection
+              Go to Products
             </Link>
           </div>
         </main>
@@ -393,7 +393,7 @@ export default function CheckoutPage() {
       <Header />
       <main className="max-w-7xl mx-auto px-6 py-6 md:py-8">
         <Link
-          href="/collection"
+          href="/products"
           className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
