@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { getAdminSession } from "@/lib/admin-auth";
 import { useRouter } from "next/navigation";
@@ -40,9 +40,11 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
     product?.metal_finish || "gold"
   );
 
-  // image + UX
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(product?.images?.[0] || null);
+  // image + UX - multiple images support
+  const [existingImages, setExistingImages] = useState<string[]>(product?.images || []);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const previewUrlsRef = useRef<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [msg, setMsg] = useState<{ type: "info" | "error" | "success"; text: string } | null>(null);
@@ -101,18 +103,34 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
       setSizesInput(product.size_options?.join(", ") || "");
       setSelectedCategory(product.category || "");
       setSelectedMetalFinish(product.metal_finish || "gold");
-      setPreview(product.images?.[0] || null);
+      setExistingImages(product.images || []);
     }
   }, [product]);
 
+  // Generate preview URLs for new files
   useEffect(() => {
-    if (!file) {
+    // Cleanup old preview URLs first
+    previewUrlsRef.current.forEach((url) => {
+      if (url.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
+      }
+    });
+
+    if (newFiles.length === 0) {
+      setPreviewUrls([]);
+      previewUrlsRef.current = [];
       return;
     }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    
+    const urls = newFiles.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+    previewUrlsRef.current = urls;
+    
+    // Cleanup preview URLs when component unmounts
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [newFiles]);
 
   const isPriceValid = (p: string) => /^[0-9]+(\.[0-9]{1,2})?$/.test(p.trim());
   const isStockValid = (s: string) => /^[0-9]+$/.test(s.trim()) || s.trim() === "";
@@ -170,14 +188,40 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMsg(null);
-    const f = e.target.files?.[0] ?? null;
-    if (!f) {
-      setFile(null);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) {
       return;
     }
-    if (!f.type.startsWith("image/")) return setMsg({ type: "error", text: "Select a valid image file." });
-    if (f.size > MAX_IMAGE_SIZE) return setMsg({ type: "error", text: "Image too large. Max 2 MB." });
-    setFile(f);
+
+    // Validate all files
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) {
+        setMsg({ type: "error", text: `"${file.name}" is not a valid image file.` });
+        return;
+      }
+      if (file.size > MAX_IMAGE_SIZE) {
+        setMsg({ type: "error", text: `"${file.name}" is too large. Max 2 MB per image.` });
+        return;
+      }
+    }
+
+    // Add new files to existing ones
+    setNewFiles((prev) => [...prev, ...files]);
+    
+    // Reset input to allow selecting the same file again
+    e.target.value = "";
+  };
+
+  const removeNewFile = (index: number) => {
+    setNewFiles((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      // The useEffect will automatically clean up the revoked URLs
+      return updated;
+    });
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,11 +242,20 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
     if (isEditMode && onSubmit) {
       setLoading(true);
       try {
-        let imageUrl = preview || "";
-        if (file) {
-          setMsg({ type: "info", text: "Uploading image..." });
-          imageUrl = await uploadToImgBB(file);
+        // Upload all new files
+        const uploadedUrls: string[] = [];
+        if (newFiles.length > 0) {
+          setMsg({ type: "info", text: `Uploading ${newFiles.length} image(s)...` });
+          for (let i = 0; i < newFiles.length; i++) {
+            setUploadProgress(Math.round(((i + 1) / newFiles.length) * 100));
+            const url = await uploadToImgBB(newFiles[i]);
+            uploadedUrls.push(url);
+          }
+          setUploadProgress(100);
         }
+
+        // Combine existing images (that weren't removed) with newly uploaded images
+        const allImages = [...existingImages, ...uploadedUrls];
 
         const productData: Partial<Product> = {
           title: title.trim(),
@@ -221,7 +274,7 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
             .split(",")
             .map((s) => s.trim())
             .filter(Boolean),
-          images: imageUrl ? [imageUrl] : (product?.images || []),
+          images: allImages,
           slug: product?.slug || title
             .toLowerCase()
             .trim()
@@ -234,8 +287,10 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
 
         await onSubmit(productData);
         setMsg({ type: "success", text: "Product updated successfully! ✅" });
+        setUploadProgress(0);
       } catch (err: any) {
         setMsg({ type: "error", text: "Error: " + (err?.message || "Failed to update product.") });
+        setUploadProgress(0);
       } finally {
         setLoading(false);
       }
@@ -247,10 +302,16 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
     setUploadProgress(0);
 
     try {
-      let imageUrl = "";
-      if (file) {
-        setMsg({ type: "info", text: "Uploading image..." });
-        imageUrl = await uploadToImgBB(file);
+      // Upload all new files
+      const uploadedUrls: string[] = [];
+      if (newFiles.length > 0) {
+        setMsg({ type: "info", text: `Uploading ${newFiles.length} image(s)...` });
+        for (let i = 0; i < newFiles.length; i++) {
+          setUploadProgress(Math.round(((i + 1) / newFiles.length) * 100));
+          const url = await uploadToImgBB(newFiles[i]);
+          uploadedUrls.push(url);
+        }
+        setUploadProgress(100);
       }
 
       // Generate slug from title
@@ -279,7 +340,7 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
-        images: imageUrl ? [imageUrl] : [],
+        images: uploadedUrls,
         slug: slug,
         metal_finish: selectedMetalFinish,
         is_new: true,
@@ -315,8 +376,9 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
       setSizesInput("");
       setSelectedCategory(availableCategories[0] || "");
       setSelectedMetalFinish("gold");
-      setFile(null);
-      setPreview(null);
+      setNewFiles([]);
+      setExistingImages([]);
+      setPreviewUrls([]);
       setUploadProgress(0);
 
       // Redirect to products list after 1 second
@@ -446,16 +508,80 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
           </label>
         </div>
 
-        {/* Image */}
-        <label className="block">
-          <span className="text-sm font-medium">Image (optional) — max 2MB</span>
-          <input type="file" accept="image/*" onChange={handleFileChange} className="mt-1 w-full" aria-label="Product image" />
-        </label>
+        {/* Images - Multiple */}
+        <div className="block">
+          <span className="text-sm font-medium block mb-2">Images (optional) — max 2MB per image</span>
+          <input 
+            type="file" 
+            accept="image/*" 
+            onChange={handleFileChange} 
+            multiple
+            className="mt-1 w-full" 
+            aria-label="Product images" 
+          />
+          <p className="text-xs text-gray-500 mt-1">You can select multiple images at once</p>
+        </div>
 
-        {preview && (
-          <div className="mt-2">
-            <div className="text-xs text-gray-500 mb-1">Preview</div>
-            <img src={preview} alt="Preview" className="w-full h-48 object-cover rounded border" />
+        {/* Existing Images */}
+        {existingImages.length > 0 && (
+          <div className="mt-3">
+            <div className="text-xs text-gray-500 mb-2">Existing Images (click X to remove)</div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {existingImages.map((img, index) => (
+                <div key={`existing-${index}`} className="relative group">
+                  <img 
+                    src={img} 
+                    alt={`Existing ${index + 1}`} 
+                    className="w-full h-32 object-cover rounded border" 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(index)}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Remove image"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* New Image Previews */}
+        {previewUrls.length > 0 && (
+          <div className="mt-3">
+            <div className="text-xs text-gray-500 mb-2">New Images (click X to remove)</div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {previewUrls.map((preview, index) => (
+                <div key={`new-${index}`} className="relative group">
+                  <img 
+                    src={preview} 
+                    alt={`New ${index + 1}`} 
+                    className="w-full h-32 object-cover rounded border" 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeNewFile(index)}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Remove image"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Image count info */}
+        {(existingImages.length > 0 || previewUrls.length > 0) && (
+          <div className="text-xs text-gray-500 mt-2">
+            Total images: {existingImages.length + previewUrls.length}
           </div>
         )}
 
