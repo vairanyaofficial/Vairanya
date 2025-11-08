@@ -40,6 +40,22 @@ export async function getAllProducts(): Promise<Product[]> {
   if (!adminFirestore) {
     const errorMsg = "Firestore not initialized. Please check FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS environment variables.";
     console.error("[getAllProducts]", errorMsg);
+    console.error("[getAllProducts] Environment check:", {
+      hasServiceAccountJson: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+      hasGoogleAppCreds: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
+      nodeEnv: process.env.NODE_ENV,
+      isVercel: !!process.env.VERCEL,
+    });
+    
+    // In production, provide more helpful error message
+    if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+      throw new Error(
+        "Firestore not initialized in production. " +
+        "Please verify FIREBASE_SERVICE_ACCOUNT_JSON is set correctly in Vercel environment variables. " +
+        "Visit /api/products/debug for detailed diagnostics."
+      );
+    }
+    
     throw new Error(errorMsg);
   }
 

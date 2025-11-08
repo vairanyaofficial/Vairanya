@@ -81,9 +81,23 @@ export default function Page() {
         }
       })
       .catch((error) => {
-        console.error("Failed to fetch products from API, using fallback:", error);
+        console.error("Failed to fetch products from API:", error);
+        console.error("Error details:", {
+          message: error?.message,
+          stack: error?.stack,
+        });
+        
+        // Log error for production debugging
+        if (process.env.NODE_ENV === "production") {
+          console.error("Production error - Products API failed. Check:");
+          console.error("1. Firestore initialization in Vercel logs");
+          console.error("2. FIREBASE_SERVICE_ACCOUNT_JSON environment variable");
+          console.error("3. Visit /api/products/debug for diagnostics");
+        }
+        
         // Fallback to static import
         import("@/lib/products").then((mod) => {
+          console.warn("Using fallback static products");
           setAllProducts(mod.products);
           const staticNew = mod.products.filter((p: Product) => p.is_new);
           if (staticNew.length > 0) {

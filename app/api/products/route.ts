@@ -15,6 +15,36 @@ export async function GET(request: NextRequest) {
 
     logger.info(`[API /api/products] Request - limit: ${limit}, offset: ${offset}, getAll: ${getAll}`);
 
+    // Check Firestore initialization before attempting to fetch
+    const { adminFirestore } = await import("@/lib/firebaseAdmin.server");
+    if (!adminFirestore) {
+      const errorMsg = "Firestore not initialized. Please check FIREBASE_SERVICE_ACCOUNT_JSON environment variable in Vercel.";
+      logger.error("[API /api/products] " + errorMsg);
+      console.error("[API /api/products] Firestore initialization check failed");
+      console.error("[API /api/products] Environment check:", {
+        hasServiceAccountJson: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+        hasGoogleAppCreds: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
+        nodeEnv: process.env.NODE_ENV,
+      });
+      
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: errorMsg,
+          errorCode: "FIRESTORE_NOT_INITIALIZED",
+          products: [],
+          total: 0,
+          hasMore: false,
+          debug: {
+            firestoreInitialized: false,
+            hasServiceAccountJson: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+            hasGoogleAppCreds: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
+          }
+        },
+        { status: 503 } // Service Unavailable
+      );
+    }
+
     // Fetch products from Firestore
     const allProducts = await getAllProducts();
     
@@ -48,6 +78,7 @@ export async function GET(request: NextRequest) {
     // Enhanced error logging for production debugging
     const errorMessage = error?.message || "Unknown error";
     const errorStack = error?.stack || "No stack trace";
+    const errorCode = error?.code || error?.name || "UNKNOWN_ERROR";
     
     logger.error("Error fetching products in API route", {
       message: errorMessage,
@@ -56,23 +87,34 @@ export async function GET(request: NextRequest) {
       code: error?.code,
     });
     
-    // Log to console for production debugging
+    // Log to console for production debugging (Vercel logs)
     console.error("[API /api/products] Error:", {
       message: errorMessage,
-      stack: errorStack,
+      code: errorCode,
       name: error?.name,
-      code: error?.code,
+      stack: process.env.NODE_ENV === "development" ? errorStack : undefined,
     });
+    
+    // Check if it's a Firestore initialization error
+    const isFirestoreError = errorMessage.includes("Firestore not initialized") || 
+                             errorMessage.includes("Firebase") ||
+                             errorCode.includes("FIRESTORE");
     
     return NextResponse.json(
       { 
         success: false, 
         error: errorMessage,
+        errorCode: isFirestoreError ? "FIRESTORE_ERROR" : errorCode,
         products: [], // Return empty array on error
         total: 0,
-        hasMore: false
+        hasMore: false,
+        debug: {
+          firestoreError: isFirestoreError,
+          hasServiceAccountJson: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+          hasGoogleAppCreds: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
+        }
       },
-      { status: 500 }
+      { status: isFirestoreError ? 503 : 500 }
     );
   }
 }

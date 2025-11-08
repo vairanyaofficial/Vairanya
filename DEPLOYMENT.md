@@ -138,6 +138,37 @@ Response:
 }
 ```
 
+## Debug Endpoints
+
+### Products Debug Endpoint
+If products are not loading in production, use the debug endpoint:
+```bash
+curl https://your-domain.com/api/products/debug
+```
+
+This endpoint provides:
+- Firestore initialization status
+- Environment variable checks
+- Sample product data
+- Detailed error information
+
+### Troubleshooting Products Not Loading
+
+If products are not loading in production:
+
+1. **Check Vercel Logs**: Look for Firestore initialization errors
+2. **Verify Environment Variables**: 
+   - Ensure `FIREBASE_SERVICE_ACCOUNT_JSON` is set in Vercel
+   - Verify the JSON is properly escaped (entire JSON on one line)
+   - Check that the service account has proper permissions
+3. **Use Debug Endpoint**: Visit `/api/products/debug` to see detailed diagnostics
+4. **Check Health Endpoint**: Visit `/api/health` to verify Firestore connectivity
+5. **Common Issues**:
+   - Missing `FIREBASE_SERVICE_ACCOUNT_JSON` in Vercel environment variables
+   - Malformed JSON (not properly escaped)
+   - Service account doesn't have Firestore permissions
+   - Firestore collection name mismatch (should be "products")
+
 ## Next Steps
 1. ✅ Set up environment variables in production
 2. ✅ Configure domain and SSL
