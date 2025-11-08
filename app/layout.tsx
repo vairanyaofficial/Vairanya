@@ -49,18 +49,18 @@ export default function RootLayout({
         className={`${playfair.variable} ${inter.variable} antialiased font-sans`}
       >
         <ErrorBoundary>
-          <AuthProvider>
-            <ToastProvider>
-              <WishlistProvider>
-                <CartProvider>
-                  <Suspense fallback={null}>
-                    <RouteLoader />
-                  </Suspense>
-                  {children}
-                </CartProvider>
-              </WishlistProvider>
-            </ToastProvider>
-          </AuthProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <WishlistProvider>
+              <CartProvider>
+                <Suspense fallback={null}>
+                  <RouteLoader />
+                </Suspense>
+                {children}
+              </CartProvider>
+            </WishlistProvider>
+          </ToastProvider>
+        </AuthProvider>
         </ErrorBoundary>
       </body>
     </html>

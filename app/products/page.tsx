@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import React, { useState, useMemo, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
@@ -9,12 +9,12 @@ import ProductFilters from "@/components/ProductFilters";
 import type { Category, MetalFinish, Product } from "@/lib/products-types";
 import type { Collection } from "@/lib/collections-types";
 import { Filter, X, Package } from "lucide-react";
-import Link from "next/link";
 import Image from "next/image";
 
 function ProductsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,6 +26,9 @@ function ProductsContent() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 999999]);
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Debounce timer for URL updates
+  const urlUpdateTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Initialize data on mount only
   useEffect(() => {
@@ -122,26 +125,136 @@ function ProductsContent() {
     };
   }, []); // Only run on mount
 
-  // Update filter state from URL params (without refetching)
+  // Cleanup timer on unmount
   useEffect(() => {
+    return () => {
+      if (urlUpdateTimerRef.current) {
+        clearTimeout(urlUpdateTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Track if we're updating from URL to prevent loops
+  const isUpdatingFromURL = React.useRef(false);
+
+  // Update filter state from URL params (only when URL changes from external source like browser back/forward)
+  useEffect(() => {
+    // Skip if we're currently updating URL ourselves (from user action)
+    if (isUpdatingFromURL.current) {
+      return;
+    }
+
     const search = searchParams.get("search");
     const category = searchParams.get("category");
     const collection = searchParams.get("collection");
     
-    if (search !== null) {
-      setSearchQuery(search || "");
+    // Only update state if it's different from current state to prevent unnecessary re-renders
+    // Use functional updates to avoid dependency issues
+    setSearchQuery((prev) => {
+      const newSearch = search || "";
+      return newSearch !== prev ? newSearch : prev;
+    });
+
+    setSelectedCategory((prev) => {
+      const urlCategory = category && ["rings", "earrings", "pendants", "bracelets", "necklaces"].includes(category)
+        ? (category as Category)
+        : "all";
+      return urlCategory !== prev ? urlCategory : prev;
+    });
+
+    setSelectedCollection((prev) => {
+      const urlCollection = collection || "all";
+      return urlCollection !== prev ? urlCollection : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]); // Only depend on searchParams to avoid loops - state updates are handled via functional updates
+
+  // Helper function to update URL params without page reload
+  const updateURLParams = useCallback((updates: {
+    category?: Category | "all";
+    collection?: string | "all";
+    search?: string;
+  }) => {
+    // Clear existing timer
+    if (urlUpdateTimerRef.current) {
+      clearTimeout(urlUpdateTimerRef.current);
     }
-    if (category && ["rings", "earrings", "pendants", "bracelets", "necklaces"].includes(category)) {
-      setSelectedCategory(category as Category);
-    } else if (category === null) {
-      setSelectedCategory("all");
-    }
-    if (collection) {
-      setSelectedCollection(collection);
-    } else if (collection === null) {
-      setSelectedCollection("all");
-    }
-  }, [searchParams]);
+
+    // Mark that we're updating from user action (not from URL)
+    isUpdatingFromURL.current = true;
+
+    // Debounce URL updates for smoother UX
+    urlUpdateTimerRef.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      let hasChanges = false;
+      
+      if (updates.category !== undefined) {
+        const currentCategory = searchParams.get("category");
+        if (updates.category === "all") {
+          if (currentCategory !== null) {
+            params.delete("category");
+            hasChanges = true;
+          }
+        } else {
+          if (currentCategory !== updates.category) {
+            params.set("category", updates.category);
+            hasChanges = true;
+          }
+        }
+      }
+      
+      if (updates.collection !== undefined) {
+        const currentCollection = searchParams.get("collection");
+        if (updates.collection === "all") {
+          if (currentCollection !== null) {
+            params.delete("collection");
+            hasChanges = true;
+          }
+        } else {
+          if (currentCollection !== updates.collection) {
+            params.set("collection", updates.collection);
+            hasChanges = true;
+          }
+        }
+      }
+      
+      if (updates.search !== undefined) {
+        const currentSearch = searchParams.get("search");
+        const newSearch = updates.search.trim();
+        if (!newSearch) {
+          if (currentSearch !== null) {
+            params.delete("search");
+            hasChanges = true;
+          }
+        } else {
+          if (currentSearch !== newSearch) {
+            params.set("search", newSearch);
+            hasChanges = true;
+          }
+        }
+      }
+
+      // Only update URL if there are actual changes
+      if (hasChanges) {
+        // Build new URL
+        const newURL = params.toString() 
+          ? `${pathname}?${params.toString()}`
+          : pathname;
+
+        // Use replace to avoid adding to history and prevent full reload
+        router.replace(newURL, { scroll: false });
+        
+        // Reset flag after a short delay to allow router to update
+        // The flag prevents the useEffect from running when URL updates
+        setTimeout(() => {
+          isUpdatingFromURL.current = false;
+        }, 150);
+      } else {
+        // Reset flag immediately if no changes
+        isUpdatingFromURL.current = false;
+      }
+    }, 100); // 100ms debounce
+  }, [searchParams, pathname, router]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -206,24 +319,40 @@ function ProductsContent() {
     });
   }, [products, selectedCategory, selectedMetalFinish, selectedSize, selectedCollection, priceRange, maxPrice, searchQuery, collections]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
+    // Reset all filters
     setSelectedCategory("all");
     setSelectedMetalFinish("all");
     setSelectedSize("all");
     setSelectedCollection("all");
     setPriceRange([0, maxPrice]);
     setSearchQuery("");
-    router.push("/products");
-  };
+    
+    // Mark that we're updating URL to prevent useEffect from running
+    isUpdatingFromURL.current = true;
+    
+    // Clear URL params
+    router.replace("/products", { scroll: false });
+    
+    // Reset flag after URL update
+    setTimeout(() => {
+      isUpdatingFromURL.current = false;
+    }, 150);
+  }, [maxPrice, router]);
 
-  const handleCollectionChange = (collectionSlug: string) => {
+  const handleCollectionChange = useCallback((collectionSlug: string) => {
+    // Update state immediately for instant UI feedback
     setSelectedCollection(collectionSlug);
-    if (collectionSlug === "all") {
-      router.push("/products");
-    } else {
-      router.push(`/products?collection=${collectionSlug}`);
-    }
-  };
+    // Update URL (which will sync with state via useEffect, but we prevent loops)
+    updateURLParams({ collection: collectionSlug });
+  }, [updateURLParams]);
+
+  const handleCategoryChange = useCallback((category: Category | "all") => {
+    // Update state immediately for instant UI feedback
+    setSelectedCategory(category);
+    // Update URL (which will sync with state via useEffect, but we prevent loops)
+    updateURLParams({ category });
+  }, [updateURLParams]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -276,7 +405,7 @@ function ProductsContent() {
               selectedMetalFinish={selectedMetalFinish}
               selectedSize={selectedSize}
               priceRange={priceRange}
-              onCategoryChange={setSelectedCategory}
+              onCategoryChange={handleCategoryChange}
               onMetalFinishChange={setSelectedMetalFinish}
               onSizeChange={setSelectedSize}
               onPriceRangeChange={setPriceRange}
@@ -306,7 +435,7 @@ function ProductsContent() {
                 selectedMetalFinish={selectedMetalFinish}
                 selectedSize={selectedSize}
                 priceRange={priceRange}
-                onCategoryChange={setSelectedCategory}
+                onCategoryChange={handleCategoryChange}
                 onMetalFinishChange={setSelectedMetalFinish}
                 onSizeChange={setSelectedSize}
                 onPriceRangeChange={setPriceRange}
@@ -375,15 +504,23 @@ function ProductsContent() {
                 <h2 className="text-xs font-semibold text-gray-900 mb-2.5 uppercase tracking-wider">Browse by Category</h2>
                 <div className="flex flex-wrap gap-2">
                   {(['rings', 'earrings', 'pendants', 'bracelets', 'necklaces'] as Category[]).map((category) => (
-                    <Link
+                    <button
                       key={category}
-                      href={`/products?category=${category}`}
-                      className="group px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 transition-all"
+                      onClick={() => handleCategoryChange(category)}
+                      className={`group px-3 py-1.5 rounded-md border transition-all ${
+                        selectedCategory === category
+                          ? "border-gray-900 bg-gray-900 text-white"
+                          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                      }`}
                     >
-                      <span className="text-[11px] font-medium text-gray-700 group-hover:text-gray-900 capitalize">
+                      <span className={`text-[11px] font-medium capitalize ${
+                        selectedCategory === category
+                          ? "text-white"
+                          : "text-gray-700 group-hover:text-gray-900"
+                      }`}>
                         {category}
                       </span>
-                    </Link>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -394,10 +531,14 @@ function ProductsContent() {
                   <h2 className="text-xs font-semibold text-gray-900 mb-2.5 uppercase tracking-wider">Featured Collections</h2>
                   <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
                     {collections.filter(c => c.is_featured).slice(0, 6).map((collection) => (
-                      <Link
+                      <button
                         key={collection.id}
-                        href={`/products?collection=${collection.slug}`}
-                        className="group relative flex-shrink-0 w-32 h-20 rounded-md border border-gray-200 bg-white hover:border-gray-300 transition-all overflow-hidden"
+                        onClick={() => handleCollectionChange(collection.slug)}
+                        className={`group relative flex-shrink-0 w-32 h-20 rounded-md border transition-all overflow-hidden ${
+                          selectedCollection === collection.slug
+                            ? "border-gray-900 ring-2 ring-gray-900"
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}
                       >
                         {collection.image ? (
                           <div className="absolute inset-0">
@@ -405,7 +546,11 @@ function ProductsContent() {
                               src={collection.image}
                               alt={collection.name}
                               fill
-                              className="object-cover opacity-70 group-hover:opacity-90 transition-opacity"
+                              className={`object-cover transition-opacity ${
+                                selectedCollection === collection.slug
+                                  ? "opacity-90"
+                                  : "opacity-70 group-hover:opacity-90"
+                              }`}
                               sizes="128px"
                             />
                           </div>
@@ -417,7 +562,7 @@ function ProductsContent() {
                             {collection.name}
                           </span>
                         </div>
-                      </Link>
+                      </button>
                     ))}
                   </div>
                 </div>
