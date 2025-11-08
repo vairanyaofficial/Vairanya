@@ -124,9 +124,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         {/* Main Image */}
-        <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-gray-100">
+        <div className="relative aspect-square w-full overflow-hidden rounded-lg md:rounded-lg bg-gray-100 dark:bg-[#1a1a1a]">
           <Image
             src={displayImages[selectedImage]}
             alt={`${productTitle} - Image ${selectedImage + 1}`}
@@ -144,24 +144,24 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
           />
           <button
             onClick={() => setZoomOpen(true)}
-            className="absolute bottom-4 right-4 rounded-full bg-white/80 p-2 shadow-md hover:bg-white transition-colors"
+            className="absolute bottom-3 right-3 md:bottom-4 md:right-4 rounded-full bg-white/90 dark:bg-black/90 p-2 shadow-md active:bg-white dark:active:bg-black md:hover:bg-white dark:md:hover:bg-black transition-colors touch-manipulation"
             aria-label="Zoom image"
           >
-            <ZoomIn className="h-5 w-5" />
+            <ZoomIn className="h-4 w-4 md:h-5 md:w-5 text-gray-900 dark:text-white" />
           </button>
         </div>
 
-        {/* Thumbnail Gallery */}
+        {/* Thumbnail Gallery - Compact Mobile */}
         {displayImages.length > 1 && (
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-2 md:gap-4">
             {displayImages.map((img, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedImage(index)}
-                className={`relative aspect-square overflow-hidden rounded-md border-2 transition-all ${
+                className={`relative aspect-square overflow-hidden rounded-md border-2 transition-all touch-manipulation ${
                   selectedImage === index
                     ? "border-[#D4AF37] ring-2 ring-[#D4AF37]/20"
-                    : "border-transparent hover:border-gray-300"
+                    : "border-transparent dark:border-white/10 active:border-gray-300 dark:active:border-white/30 md:hover:border-gray-300 dark:md:hover:border-white/30"
                 }`}
               >
                 <Image
@@ -196,26 +196,26 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
             <button
               onClick={handleZoomOut}
               disabled={scale <= 1}
-              className="rounded-full bg-white/90 hover:bg-white p-2.5 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-full bg-white/90 dark:bg-black/90 hover:bg-white dark:hover:bg-black p-2.5 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Zoom out"
             >
-              <ZoomOut className="h-5 w-5" />
+              <ZoomOut className="h-5 w-5 text-gray-900 dark:text-white" />
             </button>
             <button
               onClick={handleZoomIn}
               disabled={scale >= 5}
-              className="rounded-full bg-white/90 hover:bg-white p-2.5 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-full bg-white/90 dark:bg-black/90 hover:bg-white dark:hover:bg-black p-2.5 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Zoom in"
             >
-              <ZoomIn className="h-5 w-5" />
+              <ZoomIn className="h-5 w-5 text-gray-900 dark:text-white" />
             </button>
             {scale > 1 && (
               <button
                 onClick={handleResetZoom}
-                className="rounded-full bg-white/90 hover:bg-white p-2.5 shadow-lg transition-all"
+                className="rounded-full bg-white/90 dark:bg-black/90 hover:bg-white dark:hover:bg-black p-2.5 shadow-lg transition-all"
                 aria-label="Reset zoom"
               >
-                <Maximize2 className="h-5 w-5" />
+                <Maximize2 className="h-5 w-5 text-gray-900 dark:text-white" />
               </button>
             )}
           </div>
@@ -274,11 +274,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
                   setSelectedImage((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
                   handleResetZoom();
                 }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 hover:bg-white p-3 shadow-lg z-50 transition-all"
+                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 dark:bg-black/90 hover:bg-white dark:hover:bg-black p-3 shadow-lg z-50 transition-all"
                 aria-label="Previous image"
               >
                 <svg
-                  className="h-6 w-6"
+                  className="h-6 w-6 text-gray-900 dark:text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -296,11 +296,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
                   setSelectedImage((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
                   handleResetZoom();
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 hover:bg-white p-3 shadow-lg z-50 transition-all"
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 dark:bg-black/90 hover:bg-white dark:hover:bg-black p-3 shadow-lg z-50 transition-all"
                 aria-label="Next image"
               >
                 <svg
-                  className="h-6 w-6"
+                  className="h-6 w-6 text-gray-900 dark:text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -318,14 +318,14 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
 
           {/* Zoom Level Indicator */}
           {scale > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 px-4 py-2 rounded-full shadow-lg text-sm font-medium z-50">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-black/90 px-4 py-2 rounded-full shadow-lg text-sm font-medium z-50 text-gray-900 dark:text-white">
               {Math.round(scale * 100)}%
             </div>
           )}
 
           {/* Image Counter */}
           {displayImages.length > 1 && (
-            <div className="absolute bottom-4 right-4 bg-white/90 px-4 py-2 rounded-full shadow-lg text-sm font-medium z-50">
+            <div className="absolute bottom-4 right-4 bg-white/90 dark:bg-black/90 px-4 py-2 rounded-full shadow-lg text-sm font-medium z-50 text-gray-900 dark:text-white">
               {selectedImage + 1} / {displayImages.length}
             </div>
           )}

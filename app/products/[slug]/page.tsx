@@ -73,22 +73,22 @@ export default async function ProductPage({ params }: ProductPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-black">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Header />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12">
-        {/* Minimal Product Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-16">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 md:py-8 lg:py-12">
+        {/* Mobile Optimized Product Layout - Compact */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 lg:gap-12 mb-8 md:mb-16">
           {/* Image Gallery */}
-          <div>
+          <div className="order-1">
             <ImageGallery images={product.images} productTitle={product.title} />
           </div>
 
           {/* Product Details */}
-          <div>
+          <div className="order-2">
             <ProductDetailClient product={product} />
           </div>
         </div>

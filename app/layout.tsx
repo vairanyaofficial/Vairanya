@@ -5,9 +5,8 @@ import { CartProvider } from "@/lib/cart-context";
 import { WishlistProvider } from "@/lib/wishlist-context";
 import { ToastProvider } from "@/components/ToastProvider";
 import { AuthProvider } from "@/components/AuthProvider";
-import RouteLoader from "@/components/RouteLoader";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { Suspense } from "react";
 
 const playfair = Playfair_Display({
   variable: "--font-serif",
@@ -44,24 +43,39 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${playfair.variable} ${inter.variable} antialiased font-sans`}
       >
-        <ErrorBoundary>
-        <AuthProvider>
-          <ToastProvider>
-            <WishlistProvider>
-              <CartProvider>
-                <Suspense fallback={null}>
-                  <RouteLoader />
-                </Suspense>
-                {children}
-              </CartProvider>
-            </WishlistProvider>
-          </ToastProvider>
-        </AuthProvider>
-        </ErrorBoundary>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme');
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var shouldBeDark = theme === 'dark' || (!theme && prefersDark);
+                  if (shouldBeDark) {
+                    document.documentElement.classList.add('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+        <ThemeProvider>
+          <ErrorBoundary>
+            <AuthProvider>
+              <ToastProvider>
+                <WishlistProvider>
+                  <CartProvider>
+                    {children}
+                  </CartProvider>
+                </WishlistProvider>
+              </ToastProvider>
+            </AuthProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -8,6 +8,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { getAdminSession, setAdminSession } from "@/lib/admin-auth";
 
 import { Shield, Lock, Sparkles, ArrowRight, Mail, Key, Eye, EyeOff } from "lucide-react";
+import { LoginSkeleton } from "@/components/SkeletonLoader";
 
 // Google Icon Component
 const GoogleIcon = ({ className }: { className?: string }) => (
@@ -566,14 +567,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-amber-50/30 flex items-center justify-center px-4 sm:px-6 py-6 sm:py-8">
-        <div className="w-full max-w-[440px] text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#C19B2E] shadow-lg mb-3 animate-pulse">
-            <Sparkles className="h-6 w-6 text-white" />
-          </div>
-          <div className="text-slate-500">Loading...</div>
-        </div>
-      </main>
+      <LoginSkeleton />
     }>
       <LoginForm />
     </Suspense>

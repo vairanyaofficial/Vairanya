@@ -13,7 +13,6 @@ import {
   X,
   CheckCircle,
   XCircle,
-  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAdminSession, isAdminAuthenticated } from "@/lib/admin-auth";
@@ -35,7 +34,6 @@ export default function CollectionsPage() {
     name: "",
     description: "",
     short_description: "",
-    image: "",
     product_ids: [] as string[],
     is_featured: false,
     is_active: true,
@@ -127,7 +125,7 @@ export default function CollectionsPage() {
         name: formData.name,
         description: formData.description || "",
         short_description: formData.short_description || "",
-        image: formData.image || "",
+        image: "", // Banner image removed
         product_ids: formData.product_ids,
         is_featured: formData.is_featured,
         is_active: formData.is_active,
@@ -180,7 +178,6 @@ export default function CollectionsPage() {
       name: collection.name,
       description: collection.description || "",
       short_description: collection.short_description || "",
-      image: collection.image || "",
       product_ids: collection.product_ids || [],
       is_featured: collection.is_featured || false,
       is_active: collection.is_active !== false,
@@ -223,7 +220,6 @@ export default function CollectionsPage() {
       name: "",
       description: "",
       short_description: "",
-      image: "",
       product_ids: [],
       is_featured: false,
       is_active: true,
@@ -354,24 +350,6 @@ export default function CollectionsPage() {
                   rows={3}
                   placeholder="Full description of the collection..."
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Banner Image URL
-                </label>
-                <input
-                  type="url"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                  placeholder="https://example.com/image.jpg"
-                />
-                {formData.image && (
-                  <div className="mt-2">
-                    <img src={formData.image} alt="Preview" className="w-full h-32 object-cover rounded-lg border" />
-                  </div>
-                )}
               </div>
 
               <div>
@@ -512,21 +490,12 @@ export default function CollectionsPage() {
                 {collections.map((collection) => (
                   <tr key={collection.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        {collection.image && (
-                          <img
-                            src={collection.image}
-                            alt={collection.name}
-                            className="w-16 h-16 object-cover rounded border"
-                          />
+                      <div>
+                        <p className="font-medium text-gray-900">{collection.name}</p>
+                        {collection.short_description && (
+                          <p className="text-sm text-gray-500 mt-1">{collection.short_description}</p>
                         )}
-                        <div>
-                          <p className="font-medium text-gray-900">{collection.name}</p>
-                          {collection.short_description && (
-                            <p className="text-sm text-gray-500 mt-1">{collection.short_description}</p>
-                          )}
-                          <p className="text-xs text-gray-400 mt-1">/{collection.slug}</p>
-                        </div>
+                        <p className="text-xs text-gray-400 mt-1">/{collection.slug}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">

@@ -8,8 +8,9 @@ import ProductCard from "@/components/ProductCard";
 import ProductFilters from "@/components/ProductFilters";
 import type { Category, MetalFinish, Product } from "@/lib/products-types";
 import type { Collection } from "@/lib/collections-types";
-import { Filter, X, Package } from "lucide-react";
+import { Filter, X, Package, ChevronDown } from "lucide-react";
 import Image from "next/image";
+import { ProductGridSkeleton, LoadingMoreSkeleton } from "@/components/SkeletonLoader";
 
 function ProductsContent() {
   const searchParams = useSearchParams();
@@ -35,79 +36,40 @@ function ProductsContent() {
   
   // Debounce timer for URL updates
   const urlUpdateTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  // Load initial products and max price
-  useEffect(() => {
-    let isMounted = true;
-
-    const initializeData = async () => {
-      try {
-        setIsLoading(true);
-
-        // Fetch collections and max price in parallel
-        const [collectionsRes, maxPriceRes] = await Promise.all([
-          fetch("/api/collections").catch(() => null),
-          fetch("/api/products?all=true").catch(() => null), // Get all products for max price calculation
-        ]);
-
-        if (!isMounted) return;
-
-        // Set collections
-        if (collectionsRes) {
-          try {
-            const collectionData = await collectionsRes.json();
-            if (collectionData.success && collectionData.collections) {
-              setCollections(collectionData.collections.filter((c: Collection) => c.is_active));
-            }
-          } catch (err) {
-            console.error("Error parsing collections:", err);
-          }
-        }
-
-        // Calculate max price from all products
-        if (maxPriceRes) {
-          try {
-            const maxPriceData = await maxPriceRes.json();
-            if (maxPriceData.success && maxPriceData.products && maxPriceData.products.length > 0) {
-              const max = Math.max(...maxPriceData.products.map((p: Product) => p.price || 0));
-              const calculatedMax = Math.ceil(max * 1.1);
-              setMaxPrice(calculatedMax);
-              setPriceRange([0, calculatedMax]);
-              setTotalProducts(maxPriceData.total || maxPriceData.products.length);
-            }
-          } catch (err) {
-            console.error("Error calculating max price:", err);
-          }
-        }
-
-        // Load initial batch of products
-        await loadProducts(0, true);
-      } catch (err) {
-        console.error("Error initializing data:", err);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    initializeData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Only run on mount
+  
+  // Track loading states to prevent multiple simultaneous loads
+  const loadingStateRef = React.useRef({ isLoading: false, isLoadingMore: false });
+  
+  // Track if initialization has completed
+  const hasInitialized = React.useRef(false);
 
   // Function to load products with pagination
   const loadProducts = useCallback(async (offset: number, isInitial: boolean = false) => {
+    // Prevent multiple simultaneous loads
+    if (isInitial && loadingStateRef.current.isLoading) {
+      return;
+    }
+    if (!isInitial && loadingStateRef.current.isLoadingMore) {
+      return;
+    }
+
     try {
       if (isInitial) {
+        loadingStateRef.current.isLoading = true;
+        loadingStateRef.current.isLoadingMore = false;
         setIsLoading(true);
+        setIsLoadingMore(false);
       } else {
+        loadingStateRef.current.isLoadingMore = true;
         setIsLoadingMore(true);
       }
 
       const response = await fetch(`/api/products?limit=${PRODUCTS_PER_PAGE}&offset=${offset}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch products: ${response.statusText}`);
+      }
+      
       const data = await response.json();
 
       if (data.success && data.products) {
@@ -124,10 +86,123 @@ function ProductsContent() {
     } catch (error) {
       console.error("Error loading products:", error);
     } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
+      // Always reset loading states
+      if (isInitial) {
+        loadingStateRef.current.isLoading = false;
+        setIsLoading(false);
+      } else {
+        loadingStateRef.current.isLoadingMore = false;
+        setIsLoadingMore(false);
+      }
     }
   }, [PRODUCTS_PER_PAGE]);
+
+  // Load initial products and max price - only once on mount
+  useEffect(() => {
+    // Only run initialization once
+    if (hasInitialized.current) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const initializeData = async () => {
+      hasInitialized.current = true;
+
+      try {
+        setIsLoading(true);
+        setIsLoadingMore(false);
+        loadingStateRef.current.isLoading = true;
+        loadingStateRef.current.isLoadingMore = false;
+
+        // Fetch collections and max price in parallel
+        const [collectionsRes, maxPriceRes] = await Promise.all([
+          fetch("/api/collections").catch((err) => {
+            console.error("Error fetching collections:", err);
+            return null;
+          }),
+          fetch("/api/products?all=true").catch(() => null), // Get all products for max price calculation
+        ]);
+
+        if (!isMounted) {
+          setIsLoading(false);
+          loadingStateRef.current.isLoading = false;
+          return;
+        }
+
+        // Set collections
+        if (collectionsRes && collectionsRes.ok) {
+          try {
+            const collectionData = await collectionsRes.json();
+            if (collectionData.success && collectionData.collections && Array.isArray(collectionData.collections)) {
+              // Filter to only active collections, but log for debugging
+              const activeCollections = collectionData.collections.filter((c: Collection) => {
+                // Check if is_active exists and is true, or if is_active is undefined, include it
+                return c.is_active !== false; // Include if is_active is true or undefined
+              });
+              console.log(`Loaded ${activeCollections.length} active collections out of ${collectionData.collections.length} total`);
+              setCollections(activeCollections);
+            } else {
+              console.warn("Collections API returned unsuccessful response or invalid data:", collectionData);
+              setCollections([]);
+            }
+          } catch (err) {
+            console.error("Error parsing collections:", err);
+            setCollections([]);
+          }
+        } else {
+          if (collectionsRes) {
+            console.warn("Collections API returned non-ok status:", collectionsRes.status, collectionsRes.statusText);
+          } else {
+            console.warn("Collections API request failed - no response received");
+          }
+          setCollections([]);
+        }
+
+        // Calculate max price from all products
+        if (maxPriceRes) {
+          try {
+            const maxPriceData = await maxPriceRes.json();
+            if (maxPriceData.success && maxPriceData.products && maxPriceData.products.length > 0) {
+              const max = Math.max(...maxPriceData.products.map((p: Product) => p.price || 0));
+              const calculatedMax = Math.ceil(max * 1.1);
+              setMaxPrice(calculatedMax);
+              setPriceRange([0, calculatedMax]);
+              // Don't set totalProducts here - it will be set from the paginated products API call
+              // This prevents race conditions where totalProducts gets set to wrong value
+            }
+          } catch (err) {
+            console.error("Error calculating max price:", err);
+          }
+        }
+
+        // Load initial batch of products using the memoized function
+        if (isMounted && !loadingStateRef.current.isLoading) {
+          // Double check - if somehow isLoading got reset, set it again
+          setIsLoading(true);
+          loadingStateRef.current.isLoading = true;
+        }
+        
+        if (isMounted) {
+          await loadProducts(0, true);
+        }
+      } catch (err) {
+        console.error("Error initializing data:", err);
+        if (isMounted) {
+          setIsLoading(false);
+          setIsLoadingMore(false);
+          loadingStateRef.current.isLoading = false;
+          loadingStateRef.current.isLoadingMore = false;
+        }
+      }
+    };
+
+    initializeData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loadProducts]); // Include loadProducts - it's stable and memoized
 
   // Infinite scroll handler
   useEffect(() => {
@@ -187,6 +262,11 @@ function ProductsContent() {
       return;
     }
 
+    // Ensure loading state is false when filters change (filtering is instant, no API call)
+    if (isLoading && products.length > 0) {
+      setIsLoading(false);
+    }
+
     const search = searchParams.get("search");
     const category = searchParams.get("category");
     const collection = searchParams.get("collection");
@@ -210,7 +290,7 @@ function ProductsContent() {
       return urlCollection !== prev ? urlCollection : prev;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]); // Only depend on searchParams to avoid loops - state updates are handled via functional updates
+  }, [searchParams, isLoading, products.length]); // Only depend on searchParams to avoid loops - state updates are handled via functional updates
 
   // Helper function to update URL params without page reload
   const updateURLParams = useCallback((updates: {
@@ -372,10 +452,14 @@ function ProductsContent() {
                            searchQuery.trim() !== "" ||
                            (priceRange[0] !== 0 || priceRange[1] < maxPrice);
     
+    // Only auto-load if we're not currently loading and have products to load
     if (hasActiveFilter && filteredProducts.length < 8 && hasMore && !isLoadingMore && !isLoading && products.length > 0) {
       // Auto-load more products to ensure we have enough filtered results
       const timer = setTimeout(() => {
-        loadProducts(currentOffset);
+        // Double check conditions before loading to prevent unnecessary loads
+        if (!isLoadingMore && !isLoading && hasMore) {
+          loadProducts(currentOffset);
+        }
       }, 500); // Small delay to avoid rapid requests
       
       return () => clearTimeout(timer);
@@ -392,46 +476,59 @@ function ProductsContent() {
     // Reset pagination
     setCurrentOffset(0);
     setHasMore(true);
-    loadProducts(0, true);
+    // Only reload if we don't have products, otherwise just reset filters
+    if (products.length === 0) {
+      loadProducts(0, true);
+    }
     router.replace("/products", { scroll: false });
   };
 
   const handleCollectionChange = useCallback((collectionSlug: string) => {
+    // Ensure loading state is false when filters change
+    if (isLoading && products.length > 0) {
+      setIsLoading(false);
+      loadingStateRef.current.isLoading = false;
+    }
     // Update state immediately for instant UI feedback
     setSelectedCollection(collectionSlug);
     // Update URL (which will sync with state via useEffect, but we prevent loops)
     updateURLParams({ collection: collectionSlug });
-  }, [updateURLParams]);
+  }, [updateURLParams, isLoading, products.length]);
 
   const handleCategoryChange = useCallback((category: Category | "all") => {
+    // Ensure loading state is false when filters change
+    if (isLoading && products.length > 0) {
+      setIsLoading(false);
+      loadingStateRef.current.isLoading = false;
+    }
     // Update state immediately for instant UI feedback
     setSelectedCategory(category);
     // Update URL (which will sync with state via useEffect, but we prevent loops)
     updateURLParams({ category });
-  }, [updateURLParams]);
+  }, [updateURLParams, isLoading, products.length]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-black">
       <Header />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 md:py-6">
-        {/* Compact Header */}
-        <div className="mb-6">
-          <div className="flex items-baseline justify-between mb-3">
-            <h1 className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Products</h1>
-            <p className="text-xs text-gray-500">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6">
+        {/* Mobile Optimized Header */}
+        <div className="mb-4 md:mb-6">
+          <div className="flex items-baseline justify-between mb-3 md:mb-4">
+            <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">Products</h1>
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
               {filteredProducts.length > 0 ? `${filteredProducts.length} items` : ''}
             </p>
           </div>
 
-          {/* Collections Section - Compact Horizontal Pills */}
+          {/* Collections Section - Mobile Optimized Horizontal Pills */}
           {collections.length > 0 && (
-            <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+            <div className="flex gap-2 md:gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
               <button
                 onClick={() => handleCollectionChange("all")}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all whitespace-nowrap border ${
+                className={`flex-shrink-0 px-4 md:px-3 py-2 md:py-1.5 rounded-full text-xs md:text-[11px] font-semibold md:font-medium transition-all whitespace-nowrap border-2 md:border touch-manipulation ${
                   selectedCollection === "all"
-                    ? "bg-gray-900 text-white border-gray-900"
-                    : "bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:text-gray-900"
+                    ? "bg-[#D4AF37] text-white border-[#D4AF37] shadow-md"
+                    : "bg-white dark:bg-[#0a0a0a] border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 active:border-[#D4AF37] dark:active:border-[#D4AF37] active:text-[#D4AF37] dark:active:text-[#D4AF37] md:hover:border-[#D4AF37] dark:md:hover:border-[#D4AF37] md:hover:text-[#D4AF37] dark:md:hover:text-[#D4AF37]"
                 }`}
               >
                 All
@@ -440,10 +537,10 @@ function ProductsContent() {
                 <button
                   key={collection.id}
                   onClick={() => handleCollectionChange(collection.slug)}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all whitespace-nowrap border ${
+                  className={`flex-shrink-0 px-4 md:px-3 py-2 md:py-1.5 rounded-full text-xs md:text-[11px] font-semibold md:font-medium transition-all whitespace-nowrap border-2 md:border touch-manipulation ${
                     selectedCollection === collection.slug
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:text-gray-900"
+                      ? "bg-[#D4AF37] text-white border-[#D4AF37] shadow-md"
+                      : "bg-white dark:bg-[#0a0a0a] border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 active:border-[#D4AF37] dark:active:border-[#D4AF37] active:text-[#D4AF37] dark:active:text-[#D4AF37] md:hover:border-[#D4AF37] dark:md:hover:border-[#D4AF37] md:hover:text-[#D4AF37] dark:md:hover:text-[#D4AF37]"
                   }`}
                 >
                   {collection.name}
@@ -453,7 +550,7 @@ function ProductsContent() {
           )}
         </div>
 
-        <div className="flex gap-3 md:gap-4">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4">
           {/* Desktop Filters - More Compact */}
           <aside className="hidden md:block w-52 flex-shrink-0">
             <ProductFilters
@@ -462,80 +559,108 @@ function ProductsContent() {
               selectedSize={selectedSize}
               priceRange={priceRange}
               onCategoryChange={handleCategoryChange}
-              onMetalFinishChange={setSelectedMetalFinish}
-              onSizeChange={setSelectedSize}
-              onPriceRangeChange={setPriceRange}
+              onMetalFinishChange={(finish) => {
+                if (isLoading && products.length > 0) {
+                  setIsLoading(false);
+                  loadingStateRef.current.isLoading = false;
+                }
+                setSelectedMetalFinish(finish);
+              }}
+              onSizeChange={(size) => {
+                if (isLoading && products.length > 0) {
+                  setIsLoading(false);
+                  loadingStateRef.current.isLoading = false;
+                }
+                setSelectedSize(size);
+              }}
+              onPriceRangeChange={(range) => {
+                if (isLoading && products.length > 0) {
+                  setIsLoading(false);
+                  loadingStateRef.current.isLoading = false;
+                }
+                setPriceRange(range);
+              }}
               onReset={handleReset}
             />
           </aside>
 
-          {/* Mobile Filter Button */}
-          <div className="md:hidden mb-3 w-full">
+          {/* Mobile Filter Button - Better Touch Target */}
+          <div className="md:hidden mb-2 w-full">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center justify-between w-full rounded-md border bg-white px-3 py-2 text-xs hover:border-[#D4AF37] transition-colors"
+              className="flex items-center justify-between w-full rounded-xl border-2 border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] px-4 py-3 text-sm font-medium text-gray-900 dark:text-white active:border-[#D4AF37] active:bg-gray-50 dark:active:bg-[#1a1a1a] transition-colors touch-manipulation"
             >
-              <div className="flex items-center gap-2">
-                <Filter className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-2.5">
+                <Filter className="h-4 w-4" />
                 <span>Filters</span>
               </div>
-              {showFilters && <X className="h-3.5 w-3.5" />}
+              {showFilters ? <X className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
           </div>
 
-          {/* Mobile Filters */}
+          {/* Mobile Filters - Slide Down */}
           {showFilters && (
-            <div className="md:hidden mb-3 w-full">
+            <div className="md:hidden mb-3 w-full bg-white dark:bg-[#0a0a0a] border-2 border-gray-200 dark:border-white/10 rounded-xl p-4">
               <ProductFilters
                 selectedCategory={selectedCategory}
                 selectedMetalFinish={selectedMetalFinish}
                 selectedSize={selectedSize}
                 priceRange={priceRange}
                 onCategoryChange={handleCategoryChange}
-                onMetalFinishChange={setSelectedMetalFinish}
-                onSizeChange={setSelectedSize}
-                onPriceRangeChange={setPriceRange}
+                onMetalFinishChange={(finish) => {
+                  if (isLoading && products.length > 0) {
+                    setIsLoading(false);
+                    loadingStateRef.current.isLoading = false;
+                  }
+                  setSelectedMetalFinish(finish);
+                }}
+                onSizeChange={(size) => {
+                  if (isLoading && products.length > 0) {
+                    setIsLoading(false);
+                    loadingStateRef.current.isLoading = false;
+                  }
+                  setSelectedSize(size);
+                }}
+                onPriceRangeChange={(range) => {
+                  if (isLoading && products.length > 0) {
+                    setIsLoading(false);
+                    loadingStateRef.current.isLoading = false;
+                  }
+                  setPriceRange(range);
+                }}
                 onReset={handleReset}
               />
             </div>
           )}
 
-          {/* Products Grid */}
+          {/* Products Grid - Mobile Optimized */}
           <div className="flex-1 min-w-0">
-            {/* Compact filter info */}
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-[11px] text-gray-500">
+            {/* Mobile Optimized filter info */}
+            <div className="mb-3 md:mb-3 flex items-center justify-between">
+              <p className="text-xs md:text-[11px] text-gray-500 dark:text-gray-400 font-medium">
                 {filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"}
-                {totalProducts > 0 && ` of ${totalProducts}`}
+                {totalProducts > 0 && totalProducts >= filteredProducts.length && ` of ${totalProducts}`}
               </p>
               {(selectedCategory !== "all" || selectedMetalFinish !== "all" || selectedSize !== "all" || selectedCollection !== "all" || searchQuery.trim()) && (
                 <button
                   onClick={handleReset}
-                  className="text-[11px] text-gray-600 hover:text-gray-900 font-medium transition-colors flex items-center gap-1 underline"
+                  className="text-xs md:text-[11px] text-gray-600 dark:text-gray-400 active:text-gray-900 dark:active:text-white md:hover:text-gray-900 dark:md:hover:text-white font-semibold md:font-medium transition-colors flex items-center gap-1 underline touch-manipulation"
                 >
                   Clear filters
                 </button>
               )}
             </div>
 
+            {/* Show skeleton during initial load when no products exist */}
             {isLoading && products.length === 0 ? (
-              <div className="rounded-lg border border-gray-100 bg-white p-12 text-center">
-                <div className="animate-pulse space-y-3">
-                  <div className="h-3 bg-gray-200 rounded w-24 mx-auto"></div>
-                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                      <div key={i} className="bg-gray-200 rounded-lg aspect-square"></div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="rounded-lg border border-gray-100 bg-white p-12 text-center">
-                <Package className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-xs text-gray-500 mb-2">No products found</p>
+              <ProductGridSkeleton count={8} />
+            ) : filteredProducts.length === 0 && products.length > 0 ? (
+              <div className="rounded-xl md:rounded-lg border-2 md:border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] p-12 md:p-12 text-center">
+                <Package className="h-12 w-12 md:h-8 md:w-8 text-gray-300 dark:text-gray-700 mx-auto mb-3 md:mb-2" />
+                <p className="text-sm md:text-xs text-gray-500 dark:text-gray-400 mb-3 md:mb-2 font-medium">No products found</p>
                 <button
                   onClick={handleReset}
-                  className="text-[11px] text-gray-600 hover:text-gray-900 font-medium underline"
+                  className="text-sm md:text-[11px] text-gray-600 dark:text-gray-400 active:text-gray-900 dark:active:text-white md:hover:text-gray-900 dark:md:hover:text-white font-semibold md:font-medium underline touch-manipulation"
                 >
                   Clear filters
                 </button>
@@ -548,19 +673,12 @@ function ProductsContent() {
                   ))}
                 </div>
                 
-                {/* Loading more indicator */}
-                {isLoadingMore && (
-                  <div className="mt-6 flex justify-center">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <div className="h-4 w-4 border-2 border-gray-300 border-t-[#D4AF37] rounded-full animate-spin"></div>
-                      <span className="text-sm">Loading more products...</span>
-                    </div>
-                  </div>
-                )}
+                {/* Loading more skeleton */}
+                {isLoadingMore && <LoadingMoreSkeleton />}
                 
                 {/* End of results message */}
                 {!hasMore && filteredProducts.length > 0 && (
-                  <div className="mt-6 text-center text-sm text-gray-500">
+                  <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
                     No more products to load
                   </div>
                 )}
@@ -571,11 +689,11 @@ function ProductsContent() {
 
         {/* Compact Categories & Collections Section */}
         {!isLoading && filteredProducts.length > 0 && (
-          <section className="mt-8 md:mt-10 pt-6 border-t border-gray-100">
+          <section className="mt-8 md:mt-10 pt-6 border-t border-gray-100 dark:border-white/10">
             <div className="space-y-6">
               {/* Browse by Category - Compact */}
               <div>
-                <h2 className="text-xs font-semibold text-gray-900 mb-2.5 uppercase tracking-wider">Browse by Category</h2>
+                <h2 className="text-xs font-semibold text-gray-900 dark:text-white mb-2.5 uppercase tracking-wider">Browse by Category</h2>
                 <div className="flex flex-wrap gap-2">
                   {(['rings', 'earrings', 'pendants', 'bracelets', 'necklaces'] as Category[]).map((category) => (
                     <button
@@ -583,14 +701,14 @@ function ProductsContent() {
                       onClick={() => handleCategoryChange(category)}
                       className={`group px-3 py-1.5 rounded-md border transition-all ${
                         selectedCategory === category
-                          ? "border-gray-900 bg-gray-900 text-white"
-                          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                          ? "border-[#D4AF37] bg-[#D4AF37] text-white shadow-md"
+                          : "border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/5"
                       }`}
                     >
-                      <span className={`text-[11px] font-medium capitalize ${
+                      <span className={`text-[11px] font-medium capitalize transition-colors ${
                         selectedCategory === category
                           ? "text-white"
-                          : "text-gray-700 group-hover:text-gray-900"
+                          : "text-gray-700 dark:text-gray-300 group-hover:text-[#D4AF37] dark:group-hover:text-[#D4AF37]"
                       }`}>
                         {category}
                       </span>
@@ -602,7 +720,7 @@ function ProductsContent() {
               {/* Featured Collections - Compact Horizontal Scroll */}
               {collections.filter(c => c.is_featured).length > 0 && (
                 <div>
-                  <h2 className="text-xs font-semibold text-gray-900 mb-2.5 uppercase tracking-wider">Featured Collections</h2>
+                  <h2 className="text-xs font-semibold text-gray-900 dark:text-white mb-2.5 uppercase tracking-wider">Featured Collections</h2>
                   <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
                     {collections.filter(c => c.is_featured).slice(0, 6).map((collection) => (
                       <button
@@ -610,8 +728,8 @@ function ProductsContent() {
                         onClick={() => handleCollectionChange(collection.slug)}
                         className={`group relative flex-shrink-0 w-32 h-20 rounded-md border transition-all overflow-hidden ${
                           selectedCollection === collection.slug
-                            ? "border-gray-900 ring-2 ring-gray-900"
-                            : "border-gray-200 bg-white hover:border-gray-300"
+                            ? "border-[#D4AF37] ring-2 ring-[#D4AF37] shadow-lg"
+                            : "border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] hover:border-[#D4AF37] dark:hover:border-[#D4AF37]"
                         }`}
                       >
                         {collection.image ? (
@@ -629,9 +747,13 @@ function ProductsContent() {
                             />
                           </div>
                         ) : (
-                          <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100" />
+                          <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#1a1a1a] dark:to-[#0a0a0a]" />
                         )}
-                        <div className="absolute inset-0 flex items-end p-2 bg-gradient-to-t from-black/40 via-black/10 to-transparent">
+                        <div className={`absolute inset-0 flex items-end p-2 bg-gradient-to-t transition-colors ${
+                          selectedCollection === collection.slug
+                            ? "from-[#D4AF37]/60 via-[#D4AF37]/20 to-transparent"
+                            : "from-black/40 via-black/10 to-transparent group-hover:from-[#D4AF37]/40 group-hover:via-[#D4AF37]/10"
+                        }`}>
                           <span className="text-[10px] font-medium text-white drop-shadow-sm truncate w-full">
                             {collection.name}
                           </span>
@@ -653,10 +775,10 @@ function ProductsContent() {
 export default function ProductsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#FAF9F6]">
+      <div className="min-h-screen bg-[#FAF9F6] dark:bg-black">
         <Header />
         <main className="max-w-7xl mx-auto px-6 py-16">
-          <div className="text-center text-gray-500">Loading...</div>
+          <ProductGridSkeleton count={8} />
         </main>
         <Footer />
       </div>

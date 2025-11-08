@@ -186,7 +186,7 @@ export default function HorizontalSlider<T = any>({
             onClick={scrollLeft}
             className={`absolute ${
               buttonSize === 'lg' ? '-left-4 md:-left-6 p-3' : '-left-2 md:-left-4 p-2'
-            } top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full text-gray-700 hover:text-[#D4AF37] transition-all duration-300 z-10 shadow-lg border border-gray-200 hover:border-[#D4AF37]/30`}
+            } top-1/2 -translate-y-1/2 bg-black/80 dark:bg-black/80 hover:bg-black dark:hover:bg-black backdrop-blur-md rounded-full text-white hover:text-[#D4AF37] transition-all duration-300 z-10 shadow-lg border border-white/20 dark:border-white/20 hover:border-[#D4AF37]/50`}
             aria-label="Previous"
           >
             <ChevronLeft className={buttonSize === 'lg' ? "h-6 w-6" : "h-5 w-5"} />
@@ -195,7 +195,7 @@ export default function HorizontalSlider<T = any>({
             onClick={scrollRight}
             className={`absolute ${
               buttonSize === 'lg' ? '-right-4 md:-right-6 p-3' : '-right-2 md:-right-4 p-2'
-            } top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full text-gray-700 hover:text-[#D4AF37] transition-all duration-300 z-10 shadow-lg border border-gray-200 hover:border-[#D4AF37]/30`}
+            } top-1/2 -translate-y-1/2 bg-black/80 dark:bg-black/80 hover:bg-black dark:hover:bg-black backdrop-blur-md rounded-full text-white hover:text-[#D4AF37] transition-all duration-300 z-10 shadow-lg border border-white/20 dark:border-white/20 hover:border-[#D4AF37]/50`}
             aria-label="Next"
           >
             <ChevronRight className={buttonSize === 'lg' ? "h-6 w-6" : "h-5 w-5"} />

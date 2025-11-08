@@ -46,12 +46,12 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6]">
+    <div className="min-h-screen bg-[#FAF9F6] dark:bg-black">
       <Header />
       <main className="max-w-4xl mx-auto px-6 py-16">
         <div className="mb-12 text-center">
-          <h1 className="font-serif text-4xl md:text-5xl mb-4">Get in Touch</h1>
-          <p className="text-lg text-gray-600">
+          <h1 className="font-serif text-4xl md:text-5xl mb-4 dark:text-white">Get in Touch</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
             We'd love to hear from you. Send us a message and we'll respond as soon as possible.
           </p>
         </div>
@@ -60,15 +60,15 @@ export default function ContactPage() {
           {/* Contact Information */}
           <div className="space-y-6">
             <div>
-              <h2 className="font-serif text-2xl mb-6">Contact Information</h2>
+              <h2 className="font-serif text-2xl mb-6 dark:text-white">Contact Information</h2>
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
                   <Mail className="h-5 w-5 text-[#D4AF37] mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1">Email</h3>
+                    <h3 className="font-semibold mb-1 dark:text-white">Email</h3>
                     <a
                       href="mailto:hello@vairanya.in"
-                      className="text-gray-600 hover:text-[#D4AF37]"
+                      className="text-gray-600 dark:text-gray-400 hover:text-[#D4AF37]"
                     >
                       hello@vairanya.in
                     </a>
@@ -77,8 +77,8 @@ export default function ContactPage() {
                 <div className="flex items-start gap-4">
                   <Phone className="h-5 w-5 text-[#D4AF37] mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1">Phone</h3>
-                    <a href="tel:+919691998370" className="text-gray-600 hover:text-[#D4AF37]">
+                    <h3 className="font-semibold mb-1 dark:text-white">Phone</h3>
+                    <a href="tel:+919691998370" className="text-gray-600 dark:text-gray-400 hover:text-[#D4AF37]">
                       +91 9691998370
                     </a>
                   </div>
@@ -86,8 +86,8 @@ export default function ContactPage() {
                 <div className="flex items-start gap-4">
                   <MapPin className="h-5 w-5 text-[#D4AF37] mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1">Address</h3>
-                    <p className="text-gray-600">
+                    <h3 className="font-semibold mb-1 dark:text-white">Address</h3>
+                    <p className="text-gray-600 dark:text-gray-400">
                       Betul, Madhya Pradesh<br />
                       India
                     </p>
@@ -96,9 +96,9 @@ export default function ContactPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="font-semibold mb-2">Business Hours</h3>
-              <p className="text-sm text-gray-600">
+            <div className="bg-white dark:bg-[#0a0a0a] rounded-lg p-6 shadow-sm dark:shadow-none border border-gray-200/50 dark:border-white/10">
+              <h3 className="font-semibold mb-2 dark:text-white">Business Hours</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Monday - Friday: 10 AM - 6 PM<br />
                 Saturday: 10 AM - 2 PM<br />
                 Sunday: Closed
@@ -107,8 +107,8 @@ export default function ContactPage() {
           </div>
 
           {/* Contact Form */}
-          <div className="bg-white rounded-lg p-8 shadow-sm">
-            <h2 className="font-serif text-2xl mb-6">Send us a Message</h2>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg p-8 shadow-sm dark:shadow-none border border-gray-200/50 dark:border-white/10">
+            <h2 className="font-serif text-2xl mb-6 dark:text-white">Send us a Message</h2>
             {submitted ? (
               <div className="text-center py-8">
                 <div className="rounded-full bg-green-100 w-16 h-16 flex items-center justify-center mx-auto mb-4">
@@ -127,42 +127,42 @@ export default function ContactPage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Name</label>
+                  <label className="block text-sm font-medium mb-2 dark:text-white">Name</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full rounded border border-gray-300 px-3 py-2"
+                    className="w-full rounded border border-gray-300 dark:border-white/10 dark:bg-black dark:text-white px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Email</label>
+                  <label className="block text-sm font-medium mb-2 dark:text-white">Email</label>
                   <input
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full rounded border border-gray-300 px-3 py-2"
+                    className="w-full rounded border border-gray-300 dark:border-white/10 dark:bg-black dark:text-white px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Phone</label>
+                  <label className="block text-sm font-medium mb-2 dark:text-white">Phone</label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full rounded border border-gray-300 px-3 py-2"
+                    className="w-full rounded border border-gray-300 dark:border-white/10 dark:bg-black dark:text-white px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Message</label>
+                  <label className="block text-sm font-medium mb-2 dark:text-white">Message</label>
                   <textarea
                     required
                     rows={5}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full rounded border border-gray-300 px-3 py-2"
+                    className="w-full rounded border border-gray-300 dark:border-white/10 dark:bg-black dark:text-white px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
                   />
                 </div>
                 <Button

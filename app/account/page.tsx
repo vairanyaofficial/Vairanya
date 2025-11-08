@@ -28,6 +28,7 @@ import type { Offer } from "@/lib/offers-types";
 import { auth } from "@/lib/firebaseClient";
 import { updateProfile } from "firebase/auth";
 import { useToast } from "@/components/ToastProvider";
+import { AccountProfileSkeleton, AccountAddressesSkeleton, AccountOrdersSkeleton, AccountOffersSkeleton } from "@/components/SkeletonLoader";
 
 interface Address {
   id: string;
@@ -331,23 +332,23 @@ function AccountPageContent() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200";
       case "confirmed":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300";
       case "processing":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 dark:bg-yellow-950/30 text-yellow-800 dark:text-yellow-300";
       case "packing":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-100 dark:bg-purple-950/30 text-purple-800 dark:text-purple-300";
       case "packed":
-        return "bg-indigo-100 text-indigo-800";
+        return "bg-indigo-100 dark:bg-indigo-950/30 text-indigo-800 dark:text-indigo-300";
       case "shipped":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-300";
       case "delivered":
-        return "bg-emerald-100 text-emerald-800";
+        return "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300";
       case "cancelled":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200";
     }
   };
 
@@ -366,20 +367,20 @@ function AccountPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/30 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/30 to-white dark:from-black dark:via-black dark:to-black">
       <Header />
       <main className="max-w-7xl mx-auto px-6 py-12 md:py-16">
-        <h1 className="font-serif text-4xl md:text-5xl font-light mb-10 tracking-tight">My Account</h1>
+        <h1 className="font-serif text-4xl md:text-5xl font-light mb-10 tracking-tight text-gray-900 dark:text-white">My Account</h1>
 
         {/* Tabs */}
-        <div className="border-b border-gray-200 mb-8">
+        <div className="border-b border-gray-200 dark:border-white/10 mb-8">
           <nav className="flex space-x-8">
             <button
               onClick={() => setActiveTab("profile")}
               className={`py-4 px-1 border-b-2 font-semibold text-sm transition-all duration-300 relative ${
                 activeTab === "profile"
                   ? "border-[#D4AF37] text-[#D4AF37]"
-                  : "border-transparent text-gray-500 hover:text-gray-900"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -392,7 +393,7 @@ function AccountPageContent() {
               className={`py-4 px-1 border-b-2 font-semibold text-sm transition-all duration-300 relative ${
                 activeTab === "addresses"
                   ? "border-[#D4AF37] text-[#D4AF37]"
-                  : "border-transparent text-gray-500 hover:text-gray-900"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -405,7 +406,7 @@ function AccountPageContent() {
               className={`py-4 px-1 border-b-2 font-semibold text-sm transition-all duration-300 relative ${
                 activeTab === "orders"
                   ? "border-[#D4AF37] text-[#D4AF37]"
-                  : "border-transparent text-gray-500 hover:text-gray-900"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -418,7 +419,7 @@ function AccountPageContent() {
               className={`py-4 px-1 border-b-2 font-semibold text-sm transition-all duration-300 relative ${
                 activeTab === "offers"
                   ? "border-[#D4AF37] text-[#D4AF37]"
-                  : "border-transparent text-gray-500 hover:text-gray-900"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -437,18 +438,18 @@ function AccountPageContent() {
         {/* Profile Tab */}
         {activeTab === "profile" && (
           <div className="space-y-6">
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+            <div className="glass-card rounded-2xl border border-gray-200/50 dark:border-white/10 p-8 shadow-sm backdrop-blur-md">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="font-serif text-2xl font-medium mb-2">Account Settings</h2>
-                  <p className="text-gray-600 text-sm">Manage your account information and preferences</p>
+                  <h2 className="font-serif text-2xl font-medium mb-2 text-gray-900 dark:text-white">Account Settings</h2>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">Manage your account information and preferences</p>
                 </div>
                 {!editingProfile && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setEditingProfile(true)}
-                    className="border-2 border-gray-300 hover:border-[#D4AF37] rounded-xl"
+                    className="border-2 border-gray-300 dark:border-white/20 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] rounded-xl text-gray-900 dark:text-white"
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Profile
@@ -457,11 +458,11 @@ function AccountPageContent() {
               </div>
 
             {loading ? (
-              <p className="text-gray-600">Loading...</p>
+              <AccountProfileSkeleton />
             ) : editingProfile ? (
               <div className="space-y-6 max-w-md">
                 <div>
-                  <label className="block text-sm font-semibold mb-3 text-gray-900">
+                  <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                     Full Name
                   </label>
                   <input
@@ -470,25 +471,25 @@ function AccountPageContent() {
                     onChange={(e) =>
                       setProfileForm({ ...profileForm, displayName: e.target.value })
                     }
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
+                    className="w-full rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-3 text-gray-900">
+                  <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                     Email
                   </label>
                   <input
                     type="email"
                     value={profile?.email || ""}
                     disabled
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 bg-gray-50"
+                    className="w-full rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 bg-gray-50 dark:bg-[#1a1a1a] text-gray-900 dark:text-white"
                   />
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     Email cannot be changed
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-3 text-gray-900">
+                  <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                     Phone Number
                   </label>
                   <input
@@ -497,7 +498,7 @@ function AccountPageContent() {
                     onChange={(e) =>
                       setProfileForm({ ...profileForm, phoneNumber: e.target.value })
                     }
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
+                    className="w-full rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
                     placeholder="+91 1234567890"
                   />
                 </div>
@@ -519,7 +520,7 @@ function AccountPageContent() {
                         phoneNumber: profile?.phoneNumber || "",
                       });
                     }}
-                    className="border-2 border-gray-300 hover:border-[#D4AF37] px-6 py-6 rounded-xl font-medium hover:bg-[#D4AF37]/5 transition-all duration-300"
+                    className="border-2 border-gray-300 dark:border-white/20 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] px-6 py-6 rounded-xl font-medium hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/5 transition-all duration-300 text-gray-900 dark:text-white"
                   >
                     Cancel
                   </Button>
@@ -528,43 +529,43 @@ function AccountPageContent() {
             ) : (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 hover:shadow-md transition-all duration-300">
-                    <span className="text-sm text-gray-600 font-medium flex items-center gap-2 mb-2">
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#1a1a1a] dark:to-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:shadow-md transition-all duration-300">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 font-medium flex items-center gap-2 mb-2">
                       <User className="h-4 w-4" />
                       Full Name
                     </span>
-                    <p className="font-semibold text-lg text-gray-900">
+                    <p className="font-semibold text-lg text-gray-900 dark:text-white">
                       {profile?.displayName || user.displayName || "Not set"}
                     </p>
                   </div>
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 hover:shadow-md transition-all duration-300">
-                    <span className="text-sm text-gray-600 font-medium flex items-center gap-2 mb-2">
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#1a1a1a] dark:to-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:shadow-md transition-all duration-300">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 font-medium flex items-center gap-2 mb-2">
                       <span className="h-4 w-4 flex items-center justify-center">@</span>
                       Email Address
                     </span>
-                    <p className="font-semibold text-lg text-gray-900 break-all">
+                    <p className="font-semibold text-lg text-gray-900 dark:text-white break-all">
                       {profile?.email || user.email}
                     </p>
-                    <p className="text-xs text-gray-500 mt-2">Email cannot be changed</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Email cannot be changed</p>
                   </div>
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 hover:shadow-md transition-all duration-300">
-                    <span className="text-sm text-gray-600 font-medium flex items-center gap-2 mb-2">
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#1a1a1a] dark:to-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:shadow-md transition-all duration-300">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 font-medium flex items-center gap-2 mb-2">
                       <span className="h-4 w-4 flex items-center justify-center">📱</span>
                       Phone Number
                     </span>
-                    <p className="font-semibold text-lg text-gray-900">
+                    <p className="font-semibold text-lg text-gray-900 dark:text-white">
                       {profile?.phoneNumber || user.phoneNumber || "Not set"}
                     </p>
                   </div>
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-[#D4AF37]/5 to-[#C19B2E]/5 border border-[#D4AF37]/20 hover:shadow-md transition-all duration-300">
-                    <span className="text-sm text-gray-600 font-medium flex items-center gap-2 mb-2">
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-[#D4AF37]/5 to-[#C19B2E]/5 dark:from-[#D4AF37]/10 dark:to-[#C19B2E]/10 border border-[#D4AF37]/20 dark:border-[#D4AF37]/30 hover:shadow-md transition-all duration-300">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 font-medium flex items-center gap-2 mb-2">
                       <Package className="h-4 w-4" />
                       Total Orders
                     </span>
                     <p className="font-semibold text-lg text-[#D4AF37]">
                       {orders.length}
                     </p>
-                    <p className="text-xs text-gray-500 mt-2">{orders.filter(o => o.status === "delivered").length} delivered</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{orders.filter(o => o.status === "delivered").length} delivered</p>
                   </div>
                 </div>
               </div>
@@ -577,7 +578,7 @@ function AccountPageContent() {
         {activeTab === "addresses" && (
           <div className="space-y-8">
             <div className="flex items-center justify-between">
-              <h2 className="font-serif text-2xl font-medium">Saved Addresses</h2>
+              <h2 className="font-serif text-2xl font-medium text-gray-900 dark:text-white">Saved Addresses</h2>
               {!showAddAddress && (
                 <Button
                   onClick={() => {
@@ -593,9 +594,9 @@ function AccountPageContent() {
             </div>
 
             {showAddAddress && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+              <div className="glass-card rounded-2xl border border-gray-200/50 dark:border-white/10 p-8 shadow-sm backdrop-blur-md">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-serif text-xl font-medium">
+                  <h3 className="font-serif text-xl font-medium text-gray-900 dark:text-white">
                     {editingAddress ? "Edit Address" : "Add New Address"}
                   </h3>
                   <button
@@ -603,14 +604,14 @@ function AccountPageContent() {
                       setShowAddAddress(false);
                       resetAddressForm();
                     }}
-                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold mb-3 text-gray-900">
+                    <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                       Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -619,11 +620,11 @@ function AccountPageContent() {
                       onChange={(e) =>
                         setAddressForm({ ...addressForm, name: e.target.value })
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
+                      className="w-full rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-3 text-gray-900">
+                    <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                       Phone <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -632,11 +633,11 @@ function AccountPageContent() {
                       onChange={(e) =>
                         setAddressForm({ ...addressForm, phone: e.target.value })
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
+                      className="w-full rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold mb-3 text-gray-900">
+                    <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                       Address Line 1 <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -645,11 +646,11 @@ function AccountPageContent() {
                       onChange={(e) =>
                         setAddressForm({ ...addressForm, address_line1: e.target.value })
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
+                      className="w-full rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold mb-3 text-gray-900">
+                    <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                       Address Line 2
                     </label>
                     <input
@@ -658,11 +659,11 @@ function AccountPageContent() {
                       onChange={(e) =>
                         setAddressForm({ ...addressForm, address_line2: e.target.value })
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
+                      className="w-full rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-3 text-gray-900">
+                    <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                       City <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -671,11 +672,11 @@ function AccountPageContent() {
                       onChange={(e) =>
                         setAddressForm({ ...addressForm, city: e.target.value })
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
+                      className="w-full rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-3 text-gray-900">
+                    <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                       State <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -684,11 +685,11 @@ function AccountPageContent() {
                       onChange={(e) =>
                         setAddressForm({ ...addressForm, state: e.target.value })
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
+                      className="w-full rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-3 text-gray-900">
+                    <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                       Pincode <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -697,11 +698,11 @@ function AccountPageContent() {
                       onChange={(e) =>
                         setAddressForm({ ...addressForm, pincode: e.target.value })
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
+                      className="w-full rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-3 text-gray-900">
+                    <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                       Country <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -710,7 +711,7 @@ function AccountPageContent() {
                       onChange={(e) =>
                         setAddressForm({ ...addressForm, country: e.target.value })
                       }
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
+                      className="w-full rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -723,7 +724,7 @@ function AccountPageContent() {
                         }
                         className="h-5 w-5 text-[#D4AF37] rounded focus:ring-[#D4AF37]"
                       />
-                      <span className="text-sm font-medium">Set as default address</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">Set as default address</span>
                     </label>
                   </div>
                   <div className="md:col-span-2 flex gap-3 pt-2">
@@ -741,7 +742,7 @@ function AccountPageContent() {
                         setShowAddAddress(false);
                         resetAddressForm();
                       }}
-                      className="border-2 border-gray-300 hover:border-[#D4AF37] px-6 py-6 rounded-xl font-medium hover:bg-[#D4AF37]/5 transition-all duration-300"
+                      className="border-2 border-gray-300 dark:border-white/20 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] px-6 py-6 rounded-xl font-medium hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/5 transition-all duration-300 text-gray-900 dark:text-white"
                     >
                       Cancel
                     </Button>
@@ -751,11 +752,11 @@ function AccountPageContent() {
             )}
 
             {addressLoading && !showAddAddress ? (
-              <p className="text-gray-600">Loading addresses...</p>
+              <AccountAddressesSkeleton />
             ) : addresses.length === 0 && !showAddAddress ? (
-              <div className="bg-white rounded-2xl border border-gray-200 p-16 text-center shadow-sm">
-                <MapPin className="h-16 w-16 text-gray-300 mx-auto mb-6" />
-                <p className="text-gray-600 mb-6 text-lg">No saved addresses yet.</p>
+              <div className="glass-card rounded-2xl border border-gray-200/50 dark:border-white/10 p-16 text-center shadow-sm backdrop-blur-md">
+                <MapPin className="h-16 w-16 text-gray-300 dark:text-gray-700 mx-auto mb-6" />
+                <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg">No saved addresses yet.</p>
                 <Button
                   onClick={() => {
                     resetAddressForm();
@@ -773,7 +774,7 @@ function AccountPageContent() {
                   {addresses.map((address) => (
                     <div
                       key={address.id}
-                      className="bg-white rounded-2xl border border-gray-200 p-6 relative shadow-sm hover:shadow-md transition-all duration-300"
+                      className="glass-card rounded-2xl border border-gray-200/50 dark:border-white/10 p-6 relative shadow-sm hover:shadow-md transition-all duration-300 backdrop-blur-md"
                     >
                       {address.is_default && (
                         <span className="absolute top-4 right-4 bg-gradient-to-r from-[#D4AF37] to-[#C19B2E] text-white text-xs px-3 py-1.5 rounded-full font-medium shadow-sm">
@@ -781,17 +782,17 @@ function AccountPageContent() {
                         </span>
                       )}
                       <div className="space-y-3 mb-6">
-                        <p className="font-semibold text-lg">{address.name}</p>
-                        <p className="text-sm text-gray-600 leading-relaxed">
+                        <p className="font-semibold text-lg text-gray-900 dark:text-white">{address.name}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                           {address.address_line1}
                           {address.address_line2 && `, ${address.address_line2}`}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                           {address.city}, {address.state} {address.pincode}
                         </p>
-                        <p className="text-sm text-gray-600">{address.country}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{address.country}</p>
                         {address.phone && (
-                          <p className="text-sm text-gray-600">Phone: {address.phone}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Phone: {address.phone}</p>
                         )}
                       </div>
                       <div className="flex gap-3">
@@ -799,7 +800,7 @@ function AccountPageContent() {
                           variant="outline"
                           size="sm"
                           onClick={() => editAddress(address)}
-                          className="border-2 border-gray-300 hover:border-[#D4AF37] rounded-xl hover:bg-[#D4AF37]/5 transition-all duration-300"
+                          className="border-2 border-gray-300 dark:border-white/20 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] rounded-xl hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/5 transition-all duration-300 text-gray-900 dark:text-white"
                         >
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
@@ -808,7 +809,7 @@ function AccountPageContent() {
                           variant="outline"
                           size="sm"
                           onClick={() => deleteAddress(address.id)}
-                          className="border-2 border-red-300 hover:border-red-500 text-red-600 hover:text-red-700 rounded-xl hover:bg-red-50 transition-all duration-300"
+                          className="border-2 border-red-300 dark:border-red-500/50 hover:border-red-500 dark:hover:border-red-500 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-300"
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           Delete
@@ -824,14 +825,14 @@ function AccountPageContent() {
 
         {/* Orders Tab */}
         {activeTab === "orders" && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-            <h2 className="font-serif text-2xl font-medium mb-8">Order History</h2>
+          <div className="glass-card rounded-2xl border border-gray-200/50 dark:border-white/10 p-8 shadow-sm backdrop-blur-md">
+            <h2 className="font-serif text-2xl font-medium mb-8 text-gray-900 dark:text-white">Order History</h2>
             {loading ? (
-              <p className="text-gray-600">Loading orders...</p>
+              <AccountOrdersSkeleton />
             ) : orders.length === 0 ? (
               <div className="text-center py-16">
-                <Package className="h-16 w-16 text-gray-300 mx-auto mb-6" />
-                <p className="text-gray-600 mb-6 text-lg">No orders yet.</p>
+                <Package className="h-16 w-16 text-gray-300 dark:text-gray-700 mx-auto mb-6" />
+                <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg">No orders yet.</p>
                 <Link href="/products">
                   <Button className="bg-[#D4AF37] hover:bg-[#C19B2E] text-white px-8 py-6 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-300">
                     Start Shopping
@@ -843,12 +844,12 @@ function AccountPageContent() {
                 {orders.map((order) => (
                   <div
                     key={order.id}
-                    className="border-2 border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300"
+                    className="border-2 border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 glass-card backdrop-blur-sm"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <div className="font-semibold text-xl mb-2">{order.order_number}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="font-semibold text-xl mb-2 text-gray-900 dark:text-white">{order.order_number}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {new Date(order.created_at).toLocaleDateString("en-IN", {
                             year: "numeric",
                             month: "long",
@@ -867,10 +868,10 @@ function AccountPageContent() {
                     </div>
 
                     {order.tracking_number && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl p-4 mb-4">
                         <div className="flex items-center gap-2 text-sm">
-                          <Truck className="h-5 w-5 text-blue-600" />
-                          <span className="text-blue-800 font-medium">
+                          <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          <span className="text-blue-800 dark:text-blue-300 font-medium">
                             Tracking:{" "}
                             <span className="font-mono font-semibold">
                               {order.tracking_number}
@@ -881,13 +882,13 @@ function AccountPageContent() {
                     )}
 
                     {/* Shipping Address */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
-                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <div className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 mb-4">
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
                         <MapPin className="h-4 w-4" />
                         Shipping Address
                       </h4>
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <p className="font-medium text-gray-900">{order.shipping_address.name}</p>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        <p className="font-medium text-gray-900 dark:text-white">{order.shipping_address.name}</p>
                         <p>{order.shipping_address.address_line1}</p>
                         {order.shipping_address.address_line2 && (
                           <p>{order.shipping_address.address_line2}</p>
@@ -901,27 +902,27 @@ function AccountPageContent() {
                     </div>
 
                     {order.status === "cancelled" && order.refund_status && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+                      <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800/50 rounded-xl p-4 mb-4">
                         <div className="flex items-center gap-2 text-sm">
-                          <AlertCircle className="h-5 w-5 text-yellow-600" />
-                          <span className="text-yellow-800 font-medium">
+                          <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                          <span className="text-yellow-800 dark:text-yellow-300 font-medium">
                             Refund: <span className="font-semibold capitalize">{order.refund_status}</span>
                           </span>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-white/10">
                       <div className="flex-1">
-                        <div className="text-sm text-gray-600 mb-2">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                           {order.items.length} item(s) • ₹{order.total.toFixed(2)}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-500">
                           Payment: {order.payment_method.toUpperCase()} ({order.payment_status})
                         </div>
                       </div>
                       <Link href={`/account/orders/${order.id}`}>
-                        <Button variant="outline" size="sm" className="border-2 border-gray-300 hover:border-[#D4AF37] rounded-xl hover:bg-[#D4AF37]/5 transition-all duration-300">
+                        <Button variant="outline" size="sm" className="border-2 border-gray-300 dark:border-white/20 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] rounded-xl hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/5 transition-all duration-300 text-gray-900 dark:text-white">
                           View Details
                         </Button>
                       </Link>
@@ -937,21 +938,19 @@ function AccountPageContent() {
         {activeTab === "offers" && (
           <div className="space-y-8">
             <div>
-              <h2 className="font-serif text-2xl font-medium mb-2">My Personal Offers</h2>
-              <p className="text-gray-600 text-sm">
+              <h2 className="font-serif text-2xl font-medium mb-2 text-gray-900 dark:text-white">My Personal Offers</h2>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Special offers exclusively for you
               </p>
             </div>
 
             {offersLoading ? (
-              <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-                <p className="text-gray-600">Loading offers...</p>
-              </div>
+              <AccountOffersSkeleton />
             ) : offers.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-200 p-16 text-center shadow-sm">
-                <Tag className="h-16 w-16 text-gray-300 mx-auto mb-6" />
-                <p className="text-gray-600 mb-2 text-lg">No personal offers available</p>
-                <p className="text-sm text-gray-500">
+              <div className="glass-card rounded-2xl border border-gray-200/50 dark:border-white/10 p-16 text-center shadow-sm backdrop-blur-md">
+                <Tag className="h-16 w-16 text-gray-300 dark:text-gray-700 mx-auto mb-6" />
+                <p className="text-gray-600 dark:text-gray-400 mb-2 text-lg">No personal offers available</p>
+                <p className="text-sm text-gray-500 dark:text-gray-500">
                   Check back later for exclusive offers tailored just for you!
                 </p>
               </div>
@@ -966,25 +965,25 @@ function AccountPageContent() {
                   return (
                     <div
                       key={offer.id}
-                      className={`bg-gradient-to-br rounded-2xl border-2 p-6 shadow-sm hover:shadow-lg transition-all duration-300 ${
+                      className={`bg-gradient-to-br rounded-2xl border-2 p-6 shadow-sm hover:shadow-lg transition-all duration-300 backdrop-blur-sm ${
                         isValid
-                          ? "from-[#D4AF37]/10 via-[#C19B2E]/5 to-[#D4AF37]/10 border-[#D4AF37]/30"
-                          : "from-gray-50 to-gray-100 border-gray-200 opacity-60"
+                          ? "from-[#D4AF37]/10 via-[#C19B2E]/5 to-[#D4AF37]/10 dark:from-[#D4AF37]/20 dark:via-[#C19B2E]/10 dark:to-[#D4AF37]/20 border-[#D4AF37]/30 dark:border-[#D4AF37]/40"
+                          : "from-gray-50 to-gray-100 dark:from-[#1a1a1a] dark:to-[#0a0a0a] border-gray-200 dark:border-white/10 opacity-60"
                       }`}
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <Tag className={`h-5 w-5 ${isValid ? "text-[#D4AF37]" : "text-gray-400"}`} />
-                            <h3 className="font-serif text-xl font-medium">{offer.title}</h3>
+                            <Tag className={`h-5 w-5 ${isValid ? "text-[#D4AF37]" : "text-gray-400 dark:text-gray-600"}`} />
+                            <h3 className="font-serif text-xl font-medium text-gray-900 dark:text-white">{offer.title}</h3>
                           </div>
-                          <p className="text-sm text-gray-600 mb-3">{offer.description}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{offer.description}</p>
                         </div>
                         <div
                           className={`px-3 py-1.5 rounded-full text-sm font-bold ${
                             isValid
                               ? "bg-gradient-to-r from-[#D4AF37] to-[#C19B2E] text-white"
-                              : "bg-gray-300 text-gray-600"
+                              : "bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
                           }`}
                         >
                           {offer.discount_type === "percentage"
@@ -994,17 +993,17 @@ function AccountPageContent() {
                       </div>
 
                       {offer.code && (
-                        <div className="bg-white rounded-xl p-3 mb-4 border border-gray-200">
+                        <div className="bg-white dark:bg-[#0a0a0a] rounded-xl p-3 mb-4 border border-gray-200 dark:border-white/10">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-xs text-gray-500 mb-1">Offer Code</p>
-                              <p className="font-mono font-semibold text-lg">{offer.code}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Offer Code</p>
+                              <p className="font-mono font-semibold text-lg text-gray-900 dark:text-white">{offer.code}</p>
                             </div>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => copyOfferCode(offer.code!)}
-                              className="border-2 border-[#D4AF37] hover:bg-[#D4AF37] hover:text-white rounded-lg"
+                              className="border-2 border-[#D4AF37] hover:bg-[#D4AF37] hover:text-white dark:hover:text-white rounded-lg text-gray-900 dark:text-white"
                             >
                               <Copy className="h-4 w-4 mr-1" />
                               Copy
@@ -1013,7 +1012,7 @@ function AccountPageContent() {
                         </div>
                       )}
 
-                      <div className="space-y-2 text-xs text-gray-600">
+                      <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
                         {offer.min_order_amount && (
                           <p>
                             <span className="font-semibold">Min. Order:</span> ₹
@@ -1043,8 +1042,8 @@ function AccountPageContent() {
                       </div>
 
                       {!isValid && (
-                        <div className="mt-4 bg-gray-200 rounded-lg p-2 text-center">
-                          <p className="text-xs font-semibold text-gray-600">Offer Expired</p>
+                        <div className="mt-4 bg-gray-200 dark:bg-gray-800 rounded-lg p-2 text-center">
+                          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">Offer Expired</p>
                         </div>
                       )}
                     </div>
@@ -1063,12 +1062,10 @@ function AccountPageContent() {
 export default function AccountPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/30 to-white">
+      <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/30 to-white dark:from-black dark:via-black dark:to-black">
         <Header />
         <main className="max-w-7xl mx-auto px-6 py-12 md:py-16">
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin"></div>
-          </div>
+          <AccountProfileSkeleton />
         </main>
         <Footer />
       </div>

@@ -7,6 +7,7 @@ import ProductCard from "./ProductCard";
 import HorizontalSlider from "./HorizontalSlider";
 import type { Product } from "@/lib/products-types";
 import type { Collection } from "@/lib/collections-types";
+import { ProductSliderSkeleton } from "@/components/SkeletonLoader";
 
 interface ProductSuggestionsProps {
   product: Product;
@@ -60,14 +61,10 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
   // Show loading state
   if (isLoading) {
     return (
-      <div className="space-y-16 mt-20 border-t border-gray-100 pt-16">
-        <div className="animate-pulse space-y-8">
-          <div className="h-6 bg-gray-200 rounded w-48"></div>
-          <div className="flex gap-4 overflow-x-auto">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="min-w-[200px] h-64 bg-gray-200 rounded"></div>
-            ))}
-          </div>
+      <div className="space-y-10 md:space-y-16 mt-10 md:mt-20 border-t border-gray-100 dark:border-white/10 pt-8 md:pt-16">
+        <div className="space-y-6 md:space-y-8">
+          <div className="h-5 md:h-6 bg-gray-200 dark:bg-[#1a1a1a] rounded w-40 md:w-48 animate-pulse"></div>
+          <ProductSliderSkeleton count={4} />
         </div>
       </div>
     );
@@ -87,15 +84,15 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
     categoryImages,
   } = suggestions;
   return (
-    <div className="space-y-16 mt-20 border-t border-gray-100 pt-16">
+    <div className="space-y-10 md:space-y-16 mt-10 md:mt-20 border-t border-gray-100 dark:border-white/10 pt-8 md:pt-16">
       {/* Related Products - Same Category */}
       {relatedProducts.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-medium text-gray-900">Similar Products</h2>
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <h2 className="text-base md:text-lg font-medium text-gray-900 dark:text-white">Similar Products</h2>
             <Link 
               href={`/products?category=${product.category}`}
-              className="text-sm text-gray-600 hover:text-gray-900 underline"
+              className="text-xs md:text-sm text-gray-600 dark:text-gray-400 active:text-gray-900 dark:active:text-white md:hover:text-gray-900 dark:md:hover:text-white underline touch-manipulation"
             >
               View all {product.category}
             </Link>
@@ -115,11 +112,11 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
       {/* Products with Same Metal Finish */}
       {sameMetalFinishProducts.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-medium text-gray-900">More {product.metal_finish} Products</h2>
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <h2 className="text-base md:text-lg font-medium text-gray-900 dark:text-white">More {product.metal_finish} Products</h2>
             <Link 
               href={`/products?metal_finish=${product.metal_finish}`}
-              className="text-sm text-gray-600 hover:text-gray-900 underline"
+              className="text-xs md:text-sm text-gray-600 dark:text-gray-400 active:text-gray-900 dark:active:text-white md:hover:text-gray-900 dark:md:hover:text-white underline touch-manipulation"
             >
               View all
             </Link>
@@ -139,13 +136,13 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
       {/* Collections containing this product */}
       {productCollections.length > 0 && (
         <section>
-          <h2 className="text-lg font-medium text-gray-900 mb-6">Part of Collections</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <h2 className="text-base md:text-lg font-medium text-gray-900 dark:text-white mb-4 md:mb-6">Part of Collections</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {productCollections.map((collection) => (
               <Link
                 key={collection.id}
                 href={`/products?collection=${collection.slug}`}
-                className="group relative aspect-[4/3] rounded-lg border border-gray-200 bg-white hover:border-gray-400 transition-all overflow-hidden"
+                className="group relative aspect-[4/3] rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] hover:border-gray-400 dark:hover:border-white/30 transition-all overflow-hidden"
               >
                 {collection.image ? (
                   <div className="absolute inset-0">
@@ -158,10 +155,10 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
                     />
                   </div>
                 ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#1a1a1a] dark:to-[#0a0a0a]" />
                 )}
                 <div className="absolute inset-0 flex items-end p-3">
-                  <span className="text-xs font-medium text-gray-900">
+                  <span className="text-xs font-medium text-gray-900 dark:text-white">
                     {collection.name}
                   </span>
                 </div>
@@ -174,8 +171,8 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
 
       {/* Browse Other Categories */}
       <section>
-        <h2 className="text-lg font-medium text-gray-900 mb-6">Browse by Category</h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <h2 className="text-base md:text-lg font-medium text-gray-900 dark:text-white mb-4 md:mb-6">Browse by Category</h2>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
           {otherCategories.map((category) => {
             const categoryImage = categoryImages[category] || null;
             
@@ -183,7 +180,7 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
               <Link
                 key={category}
                 href={`/products?category=${category}`}
-                className="group relative aspect-square rounded-lg border border-gray-200 bg-white hover:border-gray-400 transition-all overflow-hidden"
+                className="group relative aspect-square rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] hover:border-gray-400 dark:hover:border-white/30 transition-all overflow-hidden"
               >
                 {categoryImage ? (
                   <div className="absolute inset-0">
@@ -196,14 +193,14 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
                     />
                   </div>
                 ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#1a1a1a] dark:to-[#0a0a0a]" />
                 )}
                 <div className="absolute inset-0 flex items-center justify-center p-4">
-                  <span className="text-sm font-medium text-gray-900 capitalize text-center z-10">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white capitalize text-center z-10">
                     {category}
                   </span>
                 </div>
-                <div className="absolute inset-0 bg-white/50 group-hover:bg-white/30 transition-colors" />
+                <div className="absolute inset-0 bg-white/50 dark:bg-black/50 group-hover:bg-white/30 dark:group-hover:bg-black/30 transition-colors" />
               </Link>
             );
           })}
@@ -213,13 +210,13 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
       {/* Suggested Collections */}
       {suggestedCollections.length > 0 && (
         <section>
-          <h2 className="text-lg font-medium text-gray-900 mb-6">Featured Collections</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <h2 className="text-base md:text-lg font-medium text-gray-900 dark:text-white mb-4 md:mb-6">Featured Collections</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {suggestedCollections.map((collection) => (
               <Link
                 key={collection.id}
                 href={`/products?collection=${collection.slug}`}
-                className="group relative aspect-[4/3] rounded-lg border border-gray-200 bg-white hover:border-gray-400 transition-all overflow-hidden"
+                className="group relative aspect-[4/3] rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] hover:border-gray-400 dark:hover:border-white/30 transition-all overflow-hidden"
               >
                 {collection.image ? (
                   <div className="absolute inset-0">
@@ -232,10 +229,10 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
                     />
                   </div>
                 ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#1a1a1a] dark:to-[#0a0a0a]" />
                 )}
                 <div className="absolute inset-0 flex items-end p-3">
-                  <span className="text-xs font-medium text-gray-900">
+                  <span className="text-xs font-medium text-gray-900 dark:text-white">
                     {collection.name}
                   </span>
                 </div>

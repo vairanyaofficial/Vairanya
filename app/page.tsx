@@ -6,7 +6,6 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import Carousel from "@/components/Carousel";
 import HorizontalSlider from "@/components/HorizontalSlider";
-import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Shield, Sparkles, Leaf, Star, Truck, RotateCcw } from "lucide-react";
@@ -23,19 +22,6 @@ import {
   OffersSkeleton,
   ReviewCardSkeleton,
 } from "@/components/SkeletonLoader";
-
-// Helper to determine if image should be optimized
-const shouldOptimizeImage = (url: string): boolean => {
-  if (!url) return false;
-  // Optimize images from known domains that support it
-  const optimizeDomains = [
-    'firebasestorage.googleapis.com',
-    'googleusercontent.com',
-    'ibb.co',
-    'i.ibb.co',
-  ];
-  return optimizeDomains.some(domain => url.includes(domain));
-};
 
 export default function Page() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -156,7 +142,7 @@ export default function Page() {
   ), []);
 
   const renderReviewItem = useCallback((review: Review) => (
-    <div className="bg-white rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 min-w-[240px] max-w-[240px]">
+    <div className="bg-black dark:bg-[#0a0a0a] rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-white/20 dark:border-white/20 min-w-[240px] max-w-[240px]">
       <div className="flex gap-0.5 mb-2.5">
         {[...Array(5)].map((_, i) => (
           <Star
@@ -164,25 +150,25 @@ export default function Page() {
             className={`h-3 w-3 ${
               i < review.rating
                 ? "fill-[#D4AF37] text-[#D4AF37]"
-                : "text-gray-300"
+                : "text-gray-600 dark:text-gray-600"
             }`}
           />
         ))}
       </div>
-      <p className="text-gray-700 mb-2.5 text-xs md:text-sm leading-relaxed line-clamp-3">
+      <p className="text-white dark:text-white mb-2.5 text-xs md:text-sm leading-relaxed line-clamp-3">
         "{review.review_text}"
       </p>
-      <p className="font-semibold text-xs md:text-sm text-gray-900">— {review.customer_name}</p>
+      <p className="font-semibold text-xs md:text-sm text-white dark:text-white">— {review.customer_name}</p>
     </div>
   ), []);
 
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white via-gray-50/50 to-white text-gray-900">
+    <main className="min-h-screen bg-gradient-to-b from-white via-gray-50/50 to-white dark:from-black dark:via-black dark:to-black text-gray-900 dark:text-white">
       <Header />
 
-      {/* Carousel */}
-      <section className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 pt-2 pb-3 md:pt-3 md:pb-4">
+      {/* Carousel - Mobile Optimized */}
+      <section className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-12 pt-2 pb-3 md:pt-3 md:pb-4">
         {isLoadingCarousel ? (
           <CarouselSkeleton />
         ) : carouselSlides.length > 0 ? (
@@ -190,19 +176,19 @@ export default function Page() {
         ) : null}
       </section>
 
-      {/* Special Offers - Compact */}
+      {/* Special Offers - Mobile Optimized */}
       {isLoadingOffers ? (
         <OffersSkeleton />
       ) : offers.length > 0 ? (
-        <section className="bg-gradient-to-r from-[#D4AF37]/5 via-[#C19B2E]/5 to-[#D4AF37]/5 py-4 md:py-5 border-y border-[#D4AF37]/10">
-          <div className="max-w-7xl mx-auto px-4 md:px-6">
-            <div className="flex items-center justify-center gap-2 md:gap-3 flex-wrap">
-              <span className="text-xs md:text-sm font-medium text-gray-700 whitespace-nowrap">Special Offers:</span>
+        <section className="bg-gradient-to-r from-[#D4AF37]/5 via-[#C19B2E]/5 to-[#D4AF37]/5 dark:from-[#D4AF37]/10 dark:via-[#C19B2E]/10 dark:to-[#D4AF37]/10 py-4 md:py-5 border-y border-[#D4AF37]/10 dark:border-[#D4AF37]/20">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
+            <div className="flex items-center justify-center gap-2 md:gap-3 flex-wrap px-2">
+              <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap">Special Offers:</span>
               {offers.slice(0, 3).map((offer, index) => (
                 <Link
                   key={offer.id}
                   href="/products"
-                  className="group inline-flex items-center gap-1.5 md:gap-2 bg-white/80 hover:bg-white px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 shadow-sm hover:shadow transition-all duration-200"
+                  className="group inline-flex items-center gap-1.5 md:gap-2 glass backdrop-blur-md active:glass-strong md:hover:glass-strong px-3 md:px-4 py-2 md:py-2 rounded-full border-2 md:border border-[#D4AF37]/30 active:border-[#D4AF37]/50 md:hover:border-[#D4AF37]/50 shadow-lg active:shadow-xl md:hover:shadow-xl transition-all duration-200 touch-manipulation"
                 >
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm md:text-base font-bold text-[#D4AF37]">
@@ -210,12 +196,12 @@ export default function Page() {
                         ? `${offer.discount_value}%`
                         : `₹${offer.discount_value}`}
                     </span>
-                    <span className="text-xs text-gray-600 font-medium">OFF</span>
+                    <span className="text-xs text-gray-600 dark:text-white font-semibold md:font-medium">OFF</span>
                   </div>
-                  <span className="text-xs text-gray-700 hidden sm:inline truncate max-w-[120px]">
+                  <span className="text-xs text-gray-700 dark:text-white hidden sm:inline truncate max-w-[120px]">
                     {offer.title}
                   </span>
-                  <div className="w-1 h-1 rounded-full bg-[#D4AF37]"></div>
+                  <div className="w-1.5 h-1.5 md:w-1 md:h-1 rounded-full bg-[#D4AF37] hidden sm:block"></div>
                 </Link>
               ))}
             </div>
@@ -225,11 +211,9 @@ export default function Page() {
 
       {/* Featured Collections */}
       {isLoadingCollections ? (
-        <section className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 py-6 md:py-8">
+        <section className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-12 py-4 md:py-6 lg:py-8">
           <CollectionBannerSkeleton />
-          <div className="mt-4">
-            <ProductSliderSkeleton count={4} />
-          </div>
+          <ProductSliderSkeleton count={4} />
         </section>
       ) : featuredCollections.length > 0 ? (
         <>
@@ -241,49 +225,17 @@ export default function Page() {
             if (collectionProducts.length === 0) return null;
 
             return (
-              <section key={collection.id} className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 py-6 md:py-8">
-                {collection.image ? (
-                  <div className="mb-4 md:mb-5 relative">
-                    <div className="relative w-full h-32 md:h-40 rounded-lg shadow-sm overflow-hidden">
-                      <Image
-                        src={collection.image}
-                        alt={collection.name}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 1280px"
-                        quality={85}
-                        loading="lazy"
-                        // Optimize images from known domains
-                        unoptimized={!shouldOptimizeImage(collection.image)}
-                      />
-                      {/* Collection Name Overlay - Centered */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-                        <h2 className="font-serif text-xl md:text-2xl font-light text-white tracking-tight text-center px-4 drop-shadow-2xl">
-                          {collection.name}
-                        </h2>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center mb-4 md:mb-5">
-                    <h2 className="font-serif text-2xl md:text-3xl font-light mb-1.5 tracking-tight">
-                      {collection.name}
-                    </h2>
-                    {collection.short_description && (
-                      <p className="text-sm md:text-base text-gray-600 max-w-2xl mx-auto">
-                        {collection.short_description}
-                      </p>
-                    )}
-                  </div>
-                )}
-                {/* Description below banner (if banner exists) */}
-                {collection.image && collection.short_description && (
-                  <div className="text-center mb-4">
-                    <p className="text-sm md:text-base text-gray-600 max-w-2xl mx-auto">
+              <section key={collection.id} className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-12 py-4 md:py-6 lg:py-8">
+                <div className="text-left mb-4 md:mb-5">
+                  <h2 className="font-serif text-2xl md:text-3xl font-light mb-1.5 tracking-tight px-4 text-gray-900 dark:text-white">
+                    {collection.name}
+                  </h2>
+                  {collection.short_description && (
+                    <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 max-w-2xl px-4">
                       {collection.short_description}
                     </p>
-                  </div>
-                )}
+                  )}
+                </div>
                 {/* Products Slider */}
                 <HorizontalSlider
                   items={collectionProducts}
@@ -295,8 +247,8 @@ export default function Page() {
                   emptyMessage="No products in this collection"
                 />
                 {collectionProducts.length > 2 && (
-                  <div className="text-center mt-4">
-                    <Button asChild variant="outline" className="border border-gray-300 hover:border-[#D4AF37] px-5 py-2 text-sm font-medium rounded-lg hover:bg-[#D4AF37]/5 transition-all duration-300">
+                  <div className="text-center mt-4 md:mt-6">
+                    <Button asChild variant="outline" className="border-2 md:border border-gray-300 dark:border-white active:border-[#D4AF37] dark:active:border-[#D4AF37] md:hover:border-[#D4AF37] dark:md:hover:border-[#D4AF37] px-6 md:px-5 py-3 md:py-2 text-sm font-semibold md:font-medium rounded-xl md:rounded-lg active:bg-[#D4AF37]/5 dark:active:bg-[#D4AF37]/5 md:hover:bg-[#D4AF37]/5 dark:md:hover:bg-[#D4AF37]/5 transition-all duration-300 touch-manipulation text-gray-900 dark:text-white active:text-[#D4AF37] dark:active:text-[#D4AF37] md:hover:text-[#D4AF37] dark:md:hover:text-[#D4AF37]">
                       <Link href={`/products?collection=${collection.slug}`}>
                         View All {collection.name}
                       </Link>
@@ -334,44 +286,44 @@ export default function Page() {
             emptyMessage="No featured products available"
           />
           <div className="text-center mt-4">
-            <Button asChild variant="outline" className="border border-gray-300 hover:border-[#D4AF37] px-5 py-2 text-sm font-medium rounded-lg hover:bg-[#D4AF37]/5 transition-all duration-300">
+            <Button asChild variant="outline" className="border border-gray-300 dark:border-white hover:border-[#D4AF37] dark:hover:border-[#D4AF37] px-5 py-2 text-sm font-medium rounded-lg hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/5 transition-all duration-300 text-gray-900 dark:text-white hover:text-[#D4AF37] dark:hover:text-[#D4AF37]">
               <Link href="/products">View All Products</Link>
             </Button>
           </div>
         </section>
       ) : null}
 
-      {/* How It's Made */}
-      <section className="bg-white py-6 md:py-8">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12">
-          <h2 className="font-serif text-2xl md:text-3xl font-light text-center mb-6 md:mb-8 tracking-tight">How It's Made</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+      {/* How It's Made - Mobile Optimized */}
+      <section className="bg-white dark:bg-black py-6 md:py-8 lg:py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 lg:px-12">
+          <h2 className="font-serif text-2xl md:text-3xl font-light text-center mb-6 md:mb-8 tracking-tight px-4 text-gray-900 dark:text-white">How It's Made</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 lg:gap-8">
             <div className="text-center group">
-              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 w-16 h-16 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
-                <Sparkles className="h-8 w-8 text-[#D4AF37]" />
+              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 w-20 h-20 md:w-16 md:h-16 flex items-center justify-center mx-auto mb-4 md:mb-3 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Sparkles className="h-10 w-10 md:h-8 md:w-8 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-base md:text-lg font-medium mb-1.5">Crafted</h3>
-              <p className="text-gray-600 text-xs md:text-sm leading-relaxed">
+              <h3 className="font-serif text-lg md:text-lg font-medium mb-2 md:mb-1.5 text-gray-900 dark:text-white">Crafted</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-sm md:text-sm leading-relaxed max-w-sm mx-auto px-4 md:px-0">
                 Each piece is carefully handcrafted by skilled artisans, ensuring quality and
                 attention to detail.
               </p>
             </div>
             <div className="text-center group">
-              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 w-16 h-16 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
-                <Shield className="h-8 w-8 text-[#D4AF37]" />
+              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 w-20 h-20 md:w-16 md:h-16 flex items-center justify-center mx-auto mb-4 md:mb-3 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Shield className="h-10 w-10 md:h-8 md:w-8 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-base md:text-lg font-medium mb-1.5">Anti-tarnish</h3>
-              <p className="text-gray-600 text-xs md:text-sm leading-relaxed">
+              <h3 className="font-serif text-lg md:text-lg font-medium mb-2 md:mb-1.5 text-gray-900 dark:text-white">Anti-tarnish</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-sm md:text-sm leading-relaxed max-w-sm mx-auto px-4 md:px-0">
                 Advanced plating technology prevents tarnishing, keeping your jewellery looking
                 new for years.
               </p>
             </div>
             <div className="text-center group">
-              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 w-16 h-16 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
-                <Leaf className="h-8 w-8 text-[#D4AF37]" />
+              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 w-20 h-20 md:w-16 md:h-16 flex items-center justify-center mx-auto mb-4 md:mb-3 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Leaf className="h-10 w-10 md:h-8 md:w-8 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-base md:text-lg font-medium mb-1.5">Sustainable</h3>
-              <p className="text-gray-600 text-xs md:text-sm leading-relaxed">
+              <h3 className="font-serif text-lg md:text-lg font-medium mb-2 md:mb-1.5 text-gray-900 dark:text-white">Sustainable</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-sm md:text-sm leading-relaxed max-w-sm mx-auto px-4 md:px-0">
                 We're committed to ethical practices and sustainable materials, ensuring beauty
                 that lasts.
               </p>
@@ -380,20 +332,21 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 py-5 md:py-6">
-        <div className="text-center mb-5">
-          <h2 className="font-serif text-2xl md:text-3xl font-light mb-1.5 tracking-tight">What Our Customers Say</h2>
-          <p className="text-gray-600 text-xs md:text-sm mb-2">
-            You can also be featured!{" "}
-            <button
-              onClick={() => setShowReviewForm(true)}
-              className="text-[#D4AF37] hover:underline font-medium"
-            >
-              Write a review
-            </button>
-          </p>
-        </div>
+      {/* Testimonials - Mobile Optimized */}
+      <section className="bg-black dark:bg-black py-5 md:py-6 lg:py-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-12">
+          <div className="text-center mb-5 md:mb-6 px-4">
+            <h2 className="font-serif text-2xl md:text-3xl font-light mb-2 md:mb-1.5 tracking-tight text-white dark:text-white">What Our Customers Say</h2>
+            <p className="text-white/80 dark:text-white/80 text-sm md:text-sm mb-2">
+              You can also be featured!{" "}
+              <button
+                onClick={() => setShowReviewForm(true)}
+                className="text-[#D4AF37] active:underline md:hover:underline font-semibold md:font-medium touch-manipulation"
+              >
+                Write a review
+              </button>
+            </p>
+          </div>
 
         {isLoadingReviews ? (
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
@@ -409,54 +362,55 @@ export default function Page() {
             renderItem={renderReviewItem}
             cardWidth={256} // 240px card + 16px gap
             gap={16}
-            infiniteScroll={true}
+            infiniteScroll={reviews.length > 2}
             showNavigation={reviews.length > 1}
             buttonSize="sm"
             emptyMessage="No reviews yet. Be the first to review!"
           />
         )}
+        </div>
       </section>
 
       <ReviewForm open={showReviewForm} onOpenChange={setShowReviewForm} onReviewSubmitted={fetchReviews} />
 
-      {/* Why Choose Vairanya - Compact Horizontal */}
-      <section className="bg-gradient-to-br from-gray-50/50 to-white py-6 md:py-8 border-t border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12">
-          <h2 className="font-serif text-2xl md:text-3xl font-light text-center mb-5 md:mb-6 tracking-tight">Why Choose Vairanya</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+      {/* Why Choose Vairanya - Mobile Optimized */}
+      <section className="bg-gradient-to-br from-gray-50/50 to-white dark:from-black dark:to-black py-6 md:py-8 lg:py-10 border-t border-gray-100 dark:border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 lg:px-12">
+          <h2 className="font-serif text-2xl md:text-3xl font-light text-center mb-6 md:mb-8 tracking-tight px-4 text-gray-900 dark:text-white">Why Choose Vairanya</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4 lg:gap-6">
             <div className="text-center group">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 mb-2.5 group-hover:scale-110 transition-transform duration-300">
-                <Shield className="h-6 w-6 text-[#D4AF37]" />
+              <div className="inline-flex items-center justify-center w-14 h-14 md:w-12 md:h-12 rounded-xl md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-3 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Shield className="h-7 w-7 md:h-6 md:w-6 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-base md:text-lg font-medium mb-1">Premium Quality</h3>
-              <p className="text-gray-600 text-xs md:text-sm leading-relaxed">
+              <h3 className="font-serif text-base md:text-lg font-medium mb-1.5 md:mb-1 text-gray-900 dark:text-white">Premium Quality</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-xs md:text-sm leading-relaxed px-2 md:px-0">
                 Finest materials and craftsmanship
               </p>
             </div>
             <div className="text-center group">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 mb-2.5 group-hover:scale-110 transition-transform duration-300">
-                <Truck className="h-6 w-6 text-[#D4AF37]" />
+              <div className="inline-flex items-center justify-center w-14 h-14 md:w-12 md:h-12 rounded-xl md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-3 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Truck className="h-7 w-7 md:h-6 md:w-6 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-base md:text-lg font-medium mb-1">Free Shipping</h3>
-              <p className="text-gray-600 text-xs md:text-sm leading-relaxed">
+              <h3 className="font-serif text-base md:text-lg font-medium mb-1.5 md:mb-1 text-gray-900 dark:text-white">Free Shipping</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-xs md:text-sm leading-relaxed px-2 md:px-0">
                 Over ₹999 with fast delivery
               </p>
             </div>
             <div className="text-center group">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 mb-2.5 group-hover:scale-110 transition-transform duration-300">
-                <RotateCcw className="h-6 w-6 text-[#D4AF37]" />
+              <div className="inline-flex items-center justify-center w-14 h-14 md:w-12 md:h-12 rounded-xl md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-3 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <RotateCcw className="h-7 w-7 md:h-6 md:w-6 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-base md:text-lg font-medium mb-1">Easy Returns</h3>
-              <p className="text-gray-600 text-xs md:text-sm leading-relaxed">
+              <h3 className="font-serif text-base md:text-lg font-medium mb-1.5 md:mb-1 text-gray-900 dark:text-white">Easy Returns</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-xs md:text-sm leading-relaxed px-2 md:px-0">
                 30-day hassle-free policy
               </p>
             </div>
             <div className="text-center group">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 mb-2.5 group-hover:scale-110 transition-transform duration-300">
-                <Star className="h-6 w-6 text-[#D4AF37]" />
+              <div className="inline-flex items-center justify-center w-14 h-14 md:w-12 md:h-12 rounded-xl md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-3 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Star className="h-7 w-7 md:h-6 md:w-6 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-base md:text-lg font-medium mb-1">Lifetime Care</h3>
-              <p className="text-gray-600 text-xs md:text-sm leading-relaxed">
+              <h3 className="font-serif text-base md:text-lg font-medium mb-1.5 md:mb-1 text-gray-900 dark:text-white">Lifetime Care</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-xs md:text-sm leading-relaxed px-2 md:px-0">
                 Expert guidance and support
               </p>
             </div>
