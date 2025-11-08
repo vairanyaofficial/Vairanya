@@ -80,7 +80,7 @@ export default function Page() {
           setAllProducts(data.products);
           // Products are already sorted by createdAt desc from API
           // Show the 4 most recent products (newest first)
-          // This ensures newly seeded products appear on homepage
+          // This ensures newly added products appear on homepage
           setFeaturedProducts(data.products.slice(0, 4));
         }
         setIsLoadingProducts(false);

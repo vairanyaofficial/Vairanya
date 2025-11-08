@@ -8,9 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "validate-env": "tsx scripts/validate-env.ts",
-    "postbuild": "npm run validate-env",
-    "seed": "tsx scripts/seed-products.ts",
-    "seed:products": "tsx scripts/seed-products.ts"
+    "postbuild": "npm run validate-env"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.1",
