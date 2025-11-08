@@ -46,7 +46,7 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/auth/login?callbackUrl=/account");
+      router.push("/login?callbackUrl=/account");
       return;
     }
 

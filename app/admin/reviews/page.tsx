@@ -23,7 +23,7 @@ export default function ReviewsPage() {
     }
 
     if (!isAdminAuthenticated()) {
-      router.replace("/admin/login");
+      router.replace("/login?mode=admin");
       return;
     }
 

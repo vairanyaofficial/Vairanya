@@ -56,7 +56,7 @@ export default function CheckoutPage() {
       
       if (!user && !hasRedirected) {
         setHasRedirected(true);
-        router.replace("/auth/login?callbackUrl=/checkout");
+        router.replace("/login?callbackUrl=/checkout");
         return;
       }
     }, 200);

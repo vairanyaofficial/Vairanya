@@ -24,7 +24,7 @@ export default function CustomersPage() {
     }
     
     if (!isAdminAuthenticated()) {
-      router.replace("/admin/login");
+      router.replace("/login?mode=admin");
       return;
     }
     

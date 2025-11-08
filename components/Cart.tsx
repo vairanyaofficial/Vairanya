@@ -193,7 +193,7 @@ const Cart: React.FC<CartProps> = ({ open, onOpenChange }) => {
               onClick={() => {
                 if (!user) {
                   onOpenChange(false);
-                  router.push("/auth/login?callbackUrl=/checkout");
+                  router.push("/login?callbackUrl=/checkout");
                   return;
                 }
                 onOpenChange(false);

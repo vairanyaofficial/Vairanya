@@ -43,7 +43,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
     if (!user) {
       showWarning("Please login to get notified when this product is back in stock");
       const currentPath = typeof window !== "undefined" ? window.location.pathname : "/";
-      router.push("/auth/login?callbackUrl=" + encodeURIComponent(currentPath));
+      router.push("/login?callbackUrl=" + encodeURIComponent(currentPath));
       return;
     }
     
@@ -55,7 +55,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
     if (!user) {
       showToast("Please login to add items to wishlist");
       const currentPath = typeof window !== "undefined" ? window.location.pathname : "/";
-      router.push("/auth/login?callbackUrl=" + encodeURIComponent(currentPath));
+      router.push("/login?callbackUrl=" + encodeURIComponent(currentPath));
       return;
     }
 

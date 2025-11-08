@@ -23,7 +23,7 @@ const Header: React.FC = () => {
   const [isWorker, setIsWorker] = useState(false);
   const [adminDashboardPath, setAdminDashboardPath] = useState("/admin");
   const { getTotalItems } = useCart();
-  const { user, signinWithGoogle, signout, adminInfo } = useAuth();
+  const { user, signout, adminInfo } = useAuth();
   const { items: wishlistItems } = useWishlist();
 
   const totalItems = getTotalItems?.() ?? 0;
@@ -98,12 +98,12 @@ const Header: React.FC = () => {
                     </button>
                   </>
                 ) : (
-                  <button
-                    onClick={signinWithGoogle}
+                  <Link
+                    href="/login"
                     className="hover:text-white transition-colors text-xs"
                   >
                     Sign In
-                  </button>
+                  </Link>
                 )}
               </div>
             </div>
@@ -260,14 +260,14 @@ const Header: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  <button
-                    onClick={signinWithGoogle}
+                  <Link
+                    href="/login"
                     className="flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 hover:text-[#D4AF37] transition-colors rounded-lg hover:bg-gray-50"
                     aria-label="Sign in"
                   >
                     <LogIn className="h-5 w-5" />
                     <span className="hidden sm:inline text-sm font-medium">Sign In</span>
-                  </button>
+                  </Link>
                 )}
               </div>
 
@@ -363,16 +363,14 @@ const Header: React.FC = () => {
                 </div>
               ) : (
                 <div className="mb-4 pb-4 border-b border-gray-200">
-                  <button
-                    onClick={() => {
-                      setShowMobileMenu(false);
-                      signinWithGoogle();
-                    }}
+                  <Link
+                    href="/login"
+                    onClick={() => setShowMobileMenu(false)}
                     className="flex items-center gap-2 w-full px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#D4AF37] rounded-lg transition-colors"
                   >
                     <LogIn className="h-5 w-5" />
                     Sign In
-                  </button>
+                  </Link>
                 </div>
               )}
 

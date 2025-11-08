@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   isAdminAuthenticated,
@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [session, setSession] = useState<ReturnType<typeof getAdminSession>>(null);
   const { user, adminInfo, signout } = useAuth();
@@ -28,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setMounted(true);
     
     // Skip all redirect logic if we're on login page
-    if (pathname === "/admin/login") {
+    if (pathname === "/login" && searchParams.get("mode") === "admin") {
       return;
     }
     
@@ -129,7 +130,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // If no user signed in, redirect to login
     if (!user && !isAdminAuth) {
       setHasRedirected(true);
-      window.location.href = "/admin/login";
+      window.location.href = "/login?mode=admin";
       return;
     }
     
@@ -147,7 +148,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   // Always allow login page to render without layout
-  if (pathname === "/admin/login") {
+  if (pathname === "/login" && searchParams.get("mode") === "admin") {
     return <>{children}</>;
   }
 

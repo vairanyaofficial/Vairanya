@@ -104,7 +104,7 @@ export default function AdminDashboardPage() {
       setAuthChecked(true);
       setIsLoading(false);
       setHasRedirected(true);
-      window.location.href = "/admin/login";
+      window.location.href = "/login?mode=admin";
       return;
     }
     

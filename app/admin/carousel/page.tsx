@@ -27,7 +27,7 @@ export default function AdminCarouselPage() {
 
   useEffect(() => {
     if (!isAdminAuthenticated()) {
-      router.replace("/admin/login");
+      router.replace("/login?mode=admin");
       return;
     }
     loadSlides();

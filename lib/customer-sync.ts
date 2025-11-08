@@ -8,7 +8,7 @@ export interface CustomerData {
   email: string;
   name: string;
   phone?: string;
-  user_id?: string; // Firebase user ID or Prisma user ID
+  user_id?: string; // Firebase user ID
   created_at: string;
   updated_at: string;
   last_login?: string; // Track last login time

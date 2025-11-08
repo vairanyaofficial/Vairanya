@@ -125,6 +125,12 @@ const Footer: React.FC = () => {
                   +91 9691998370
                 </a>
               </li>
+              <li className="flex items-start gap-2.5">
+                <Phone className="h-4 w-4 mt-0.5 flex-shrink-0 text-[#D4AF37]" />
+                <a href="tel:+919131394450" className="hover:text-white transition-colors duration-200">
+                  +91 91313 94450
+                </a>
+              </li>
               <li className="flex items-start gap-2.5 pt-1">
                 <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-[#D4AF37]" />
                 <div>

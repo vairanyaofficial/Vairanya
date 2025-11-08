@@ -6,8 +6,12 @@ import { auth } from "@/lib/firebaseClient";
 import {
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  updateProfile,
+  sendEmailVerification,
   type User,
 } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -17,6 +21,8 @@ type AdminInfo = { username: string; role: string; name?: string } | null;
 type AuthContextType = {
   user: User | null;
   signinWithGoogle: () => Promise<void>;
+  signinWithEmailPassword: (email: string, password: string) => Promise<void>;
+  signupWithEmailPassword: (email: string, password: string, name: string, phone?: string) => Promise<void>;
   signinAsAdmin: () => Promise<void>;
   signout: () => Promise<void>;
   adminInfo: AdminInfo;
@@ -25,6 +31,8 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   signinWithGoogle: async () => {},
+  signinWithEmailPassword: async () => {},
+  signupWithEmailPassword: async () => {},
   signinAsAdmin: async () => {},
   signout: async () => {},
   adminInfo: null,
@@ -52,6 +60,7 @@ function getAdminSessionLocal(): AdminInfo {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [adminInfo, setAdminInfo] = useState<AdminInfo>(() => (typeof window !== "undefined" ? getAdminSessionLocal() : null));
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -86,16 +95,150 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [adminInfo]);
 
   const signinWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    // Prevent multiple simultaneous popup requests
+    if (isPopupOpen) {
+      throw new Error("A sign-in popup is already open. Please wait or close it and try again.");
+    }
+    
+    setIsPopupOpen(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      // Set additional OAuth parameters to prevent popup blocking
+      provider.setCustomParameters({
+        prompt: "select_account",
+      });
+      await signInWithPopup(auth, provider);
+      // Reset immediately on success
+      setIsPopupOpen(false);
+    } catch (err: any) {
+      setIsPopupOpen(false);
+      // Handle cancelled popup gracefully
+      if (err?.code === "auth/cancelled-popup-request") {
+        throw new Error("Sign-in was interrupted. Please try again.");
+      }
+      if (err?.code === "auth/popup-closed-by-user") {
+        throw new Error("Sign-in cancelled. Please try again if you want to continue.");
+      }
+      if (err?.code === "auth/popup-blocked") {
+        throw new Error("Popup was blocked. Please allow popups for this site and try again.");
+      }
+      throw err;
+    }
+  };
+
+  const signinWithEmailPassword = async (email: string, password: string) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Sync customer to Firestore
+      if (userCredential.user.email) {
+        try {
+          await fetch("/api/customer/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: userCredential.user.email,
+              name: userCredential.user.displayName || userCredential.user.email.split("@")[0],
+              phone: userCredential.user.phoneNumber || undefined,
+              userId: userCredential.user.uid,
+            }),
+          }).catch(() => {});
+        } catch (err) {
+          // Silently fail
+        }
+      }
+    } catch (err: any) {
+      // Handle Firebase auth errors
+      if (err?.code === "auth/user-not-found") {
+        throw new Error("No account found with this email address.");
+      }
+      if (err?.code === "auth/wrong-password") {
+        throw new Error("Incorrect password. Please try again.");
+      }
+      if (err?.code === "auth/invalid-email") {
+        throw new Error("Invalid email address.");
+      }
+      if (err?.code === "auth/user-disabled") {
+        throw new Error("This account has been disabled.");
+      }
+      if (err?.code === "auth/too-many-requests") {
+        throw new Error("Too many failed attempts. Please try again later.");
+      }
+      throw new Error(err?.message || "Sign in failed. Please try again.");
+    }
+  };
+
+  const signupWithEmailPassword = async (email: string, password: string, name: string, phone?: string) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Update profile with name
+      if (name) {
+        await updateProfile(userCredential.user, { displayName: name });
+      }
+      
+      // Send email verification
+      await sendEmailVerification(userCredential.user).catch(() => {});
+      
+      // Sync customer to Firestore (including phone if provided)
+      try {
+        await fetch("/api/customer/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: userCredential.user.email,
+            name: name || userCredential.user.email?.split("@")[0] || "",
+            phone: phone || userCredential.user.phoneNumber || undefined,
+            userId: userCredential.user.uid,
+          }),
+        }).catch(() => {});
+      } catch (err) {
+        // Silently fail
+      }
+    } catch (err: any) {
+      // Handle Firebase auth errors
+      if (err?.code === "auth/email-already-in-use") {
+        throw new Error("An account with this email already exists.");
+      }
+      if (err?.code === "auth/invalid-email") {
+        throw new Error("Invalid email address.");
+      }
+      if (err?.code === "auth/weak-password") {
+        throw new Error("Password is too weak. Please use at least 6 characters.");
+      }
+      throw new Error(err?.message || "Registration failed. Please try again.");
+    }
   };
 
   const signinAsAdmin = async () => {
+    // Prevent multiple simultaneous popup requests
+    if (isPopupOpen) {
+      throw new Error("A sign-in popup is already open. Please wait or close it and try again.");
+    }
+    
+    setIsPopupOpen(true);
     const provider = new GoogleAuthProvider();
+    // Set additional OAuth parameters to prevent popup blocking
+    provider.setCustomParameters({
+      prompt: "select_account",
+    });
     let result;
     try {
       result = await signInWithPopup(auth, provider);
+      // Reset immediately on success
+      setIsPopupOpen(false);
     } catch (err: any) {
+      setIsPopupOpen(false);
+      // Handle cancelled popup gracefully
+      if (err?.code === "auth/cancelled-popup-request") {
+        throw new Error("Sign-in was interrupted. Please try again.");
+      }
+      if (err?.code === "auth/popup-closed-by-user") {
+        throw new Error("Sign-in cancelled. Please try again if you want to continue.");
+      }
+      if (err?.code === "auth/popup-blocked") {
+        throw new Error("Popup was blocked. Please allow popups for this site and try again.");
+      }
       throw err;
     }
 
@@ -196,7 +339,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Use window.location.href for hard redirect to prevent loops
     if (typeof window !== "undefined") {
       if (isAdmin) {
-        window.location.href = "/admin/login";
+        window.location.href = "/login?mode=admin";
       } else {
         window.location.href = "/";
       }
@@ -204,7 +347,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, signinWithGoogle, signinAsAdmin, signout, adminInfo }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      signinWithGoogle, 
+      signinWithEmailPassword,
+      signupWithEmailPassword,
+      signinAsAdmin, 
+      signout, 
+      adminInfo 
+    }}>
       {children}
     </AuthContext.Provider>
   );

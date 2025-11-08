@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   isAdminAuthenticated,
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 export default function WorkerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [session, setSession] = useState<ReturnType<typeof getAdminSession>>(null);
 
@@ -22,8 +23,8 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
     const currentSession = getAdminSession();
     
     // Check if user is authenticated and is a worker
-    if (!isAdminAuthenticated() && pathname !== "/admin/login") {
-      router.push("/admin/login");
+    if (!isAdminAuthenticated() && !(pathname === "/login" && searchParams?.get("mode") === "admin")) {
+      router.push("/login?mode=admin");
     } else if (currentSession && currentSession.role !== "worker" && pathname?.startsWith("/worker")) {
       // If not a worker, redirect to admin dashboard
       router.push("/admin");
@@ -34,14 +35,14 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
 
   const handleLogout = () => {
     clearAdminSession();
-    router.push("/admin/login");
+    router.push("/login?mode=admin");
   };
 
   if (!mounted) {
     return null;
   }
 
-  if (pathname === "/admin/login") {
+  if (pathname === "/login" && searchParams?.get("mode") === "admin") {
     return <>{children}</>;
   }
 

@@ -69,7 +69,7 @@ export default function OffersPage() {
     }
     
     if (!isAdminAuthenticated()) {
-      router.replace("/admin/login");
+      router.replace("/login?mode=admin");
       return;
     }
     
