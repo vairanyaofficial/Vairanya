@@ -53,7 +53,7 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
 
   return (
     <div
-      className="relative w-full h-[500px] md:h-[600px] lg:h-[700px] overflow-hidden rounded-2xl shadow-2xl"
+      className="relative w-full h-[320px] md:h-[400px] lg:h-[450px] overflow-hidden rounded-xl shadow-lg"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -86,17 +86,17 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
 
         {/* Content Overlay - Left Side */}
         <div className="absolute inset-0 flex items-center z-10">
-          <div className="max-w-7xl mx-auto px-6 md:px-12 w-full">
-            <div className="max-w-2xl space-y-6 lg:space-y-8">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 w-full">
+            <div className="max-w-xl space-y-3 md:space-y-4">
               {/* Badge/Tag */}
               <div className="inline-block">
-                <span className="text-xs md:text-sm font-semibold text-[#D4AF37] uppercase tracking-wider bg-[#D4AF37]/20 backdrop-blur-sm px-4 py-2 rounded-full border border-[#D4AF37]/30">
+                <span className="text-[10px] md:text-xs font-semibold text-[#D4AF37] uppercase tracking-wider bg-[#D4AF37]/20 backdrop-blur-sm px-3 py-1 rounded-full border border-[#D4AF37]/30">
                   {currentSlide.subtitle || "HANDCRAFTED EXCELLENCE"}
                 </span>
               </div>
 
               {/* Title */}
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif font-light leading-tight tracking-tight text-white">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-serif font-light leading-tight tracking-tight text-white">
                 {currentSlide.title ? (
                   <>
                     {currentSlide.title.split('\n').map((line, idx) => (
@@ -120,16 +120,16 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
               </h1>
 
               {/* Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-4 items-start">
+              <div className="flex flex-col sm:flex-row gap-2 pt-2 items-start">
                 <Link
                   href={currentSlide.link_url || "/products"}
-                  className="inline-block bg-[#D4AF37] hover:bg-[#C19B2E] text-white px-3 py-1.5 sm:px-6 sm:py-4 md:px-8 md:py-6 text-xs sm:text-base font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-center w-fit"
+                  className="inline-block bg-[#D4AF37] hover:bg-[#C19B2E] text-white px-4 py-2 md:px-5 md:py-2.5 text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 text-center w-fit"
                 >
                   {currentSlide.link_text || "Shop Collection"}
                 </Link>
                 <Link
                   href="/about"
-                  className="inline-block border-2 border-white/30 hover:border-white/50 text-white px-3 py-1.5 sm:px-6 sm:py-4 md:px-8 md:py-6 text-xs sm:text-base font-medium rounded-lg hover:bg-white/10 transition-all duration-300 text-center backdrop-blur-sm w-fit"
+                  className="inline-block border border-white/30 hover:border-white/50 text-white px-4 py-2 md:px-5 md:py-2.5 text-sm font-medium rounded-lg hover:bg-white/10 transition-all duration-300 text-center backdrop-blur-sm w-fit"
                 >
                   Our Story
                 </Link>
@@ -144,32 +144,32 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
         <>
           <button
             onClick={goToPrevious}
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full p-3 text-white transition-all duration-300 z-20 shadow-lg"
+            className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full p-2 text-white transition-all duration-300 z-20 shadow-md"
             aria-label="Previous slide"
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
           </button>
           <button
             onClick={goToNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full p-3 text-white transition-all duration-300 z-20 shadow-lg"
+            className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full p-2 text-white transition-all duration-300 z-20 shadow-md"
             aria-label="Next slide"
           >
-            <ChevronRight className="h-6 w-6" />
+            <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
           </button>
         </>
       )}
 
       {/* Dots Indicator */}
       {slides.length > 1 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+        <div className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
           {slides.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`h-2 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition-all duration-300 ${
                 index === currentIndex
-                  ? "w-8 bg-[#D4AF37]"
-                  : "w-2 bg-white/50 hover:bg-white/70"
+                  ? "w-6 bg-[#D4AF37]"
+                  : "w-1.5 bg-white/50 hover:bg-white/70"
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />
@@ -179,7 +179,7 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
 
       {/* Slide Counter (for multiple slides) */}
       {slides.length > 1 && (
-        <div className="absolute top-6 right-6 bg-black/30 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium z-20">
+        <div className="absolute top-3 md:top-4 right-3 md:right-4 bg-black/30 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-medium z-20">
           {currentIndex + 1} / {slides.length}
         </div>
       )}
