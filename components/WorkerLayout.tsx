@@ -8,8 +8,9 @@ import {
   clearAdminSession,
   getAdminSession,
 } from "@/lib/admin-auth";
-import { Home, LogOut, User, ClipboardList } from "lucide-react";
+import { Home, LogOut, User, ClipboardList, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function WorkerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [session, setSession] = useState<ReturnType<typeof getAdminSession>>(null);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
@@ -51,9 +53,9 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6]">
+    <div className="min-h-screen bg-[#FAF9F6] dark:bg-black">
       {/* Worker Header */}
-      <header className="bg-[#2E2E2E] text-white border-b border-gray-700">
+      <header className="bg-[#2E2E2E] dark:bg-[#0a0a0a] text-white border-b border-gray-700 dark:border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
@@ -63,7 +65,7 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
               <nav className="hidden md:flex items-center gap-6">
                 <Link
                   href="/worker/dashboard"
-                  className={`text-sm hover:text-[#D4AF37] transition-colors flex items-center gap-2 ${
+                  className={`text-sm hover:text-[#D4AF37] transition-colors flex items-center gap-2 text-gray-300 dark:text-gray-400 ${
                     pathname === "/worker/dashboard" ? "text-[#D4AF37]" : ""
                   }`}
                 >
@@ -75,15 +77,28 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
             <div className="flex items-center gap-4">
               {session && (
                 <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-gray-400" />
-                  <span className="hidden sm:inline text-gray-300">
+                  <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                  <span className="hidden sm:inline text-gray-300 dark:text-gray-400">
                     {session.name || session.username}
                   </span>
                 </div>
               )}
+              <Button
+                onClick={toggleTheme}
+                variant="secondary"
+                size="sm"
+                className="h-8 w-8 p-0 border-gray-600 dark:border-white/20 bg-transparent text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10 hover:text-white dark:hover:text-white"
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
               <Link
                 href="/"
-                className="text-sm hover:text-[#D4AF37] transition-colors flex items-center gap-2"
+                className="text-sm hover:text-[#D4AF37] transition-colors flex items-center gap-2 text-gray-300 dark:text-gray-400"
               >
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">View Site</span>
@@ -92,9 +107,9 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
                 onClick={handleLogout}
                 variant="secondary"
                 size="sm"
-                className="border-gray-600 text-white hover:bg-[#f7f1e0] hover:text-black text-[#D4AF37]"
+                className="border-gray-600 dark:border-white/20 bg-transparent text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10 hover:text-white dark:hover:text-white"
               >
-                <LogOut className="h-4 w-4 mr-2 text-[#D4AF37] hover:text-black"/>
+                <LogOut className="h-4 w-4 mr-2"/>
                 Logout
               </Button>
             </div>
@@ -103,7 +118,7 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
       </header>
 
       {/* Worker Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
+      <main className="max-w-7xl mx-auto px-6 py-8 text-gray-900 dark:text-white">{children}</main>
     </div>
   );
 }

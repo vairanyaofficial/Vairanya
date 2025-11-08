@@ -183,15 +183,15 @@ export default function WorkersPage() {
     const baseClasses = "px-2 py-1 text-xs rounded-full";
     switch (status) {
       case "completed":
-        return `${baseClasses} bg-green-100 text-green-800`;
+        return `${baseClasses} bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300`;
       case "in_progress":
-        return `${baseClasses} bg-yellow-100 text-yellow-800`;
+        return `${baseClasses} bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300`;
       case "pending":
-        return `${baseClasses} bg-gray-100 text-gray-800`;
+        return `${baseClasses} bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300`;
       case "cancelled":
-        return `${baseClasses} bg-red-100 text-red-800`;
+        return `${baseClasses} bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300`;
       default:
-        return `${baseClasses} bg-gray-100 text-gray-800`;
+        return `${baseClasses} bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300`;
     }
   };
 
@@ -381,7 +381,7 @@ export default function WorkersPage() {
   const getRoleBadge = (role: string) => {
     if (role === "superadmin") {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-[#D4AF37]/20 text-[#D4AF37]">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-[#D4AF37]/20 dark:bg-[#D4AF37]/10 text-[#D4AF37]">
           <Shield className="h-3 w-3" />
           Super Admin
         </span>
@@ -389,14 +389,14 @@ export default function WorkersPage() {
     }
     if (role === "admin") {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-700">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300">
           <Shield className="h-3 w-3" />
           Admin
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300">
         <User className="h-3 w-3" />
         Worker
       </span>
@@ -407,7 +407,7 @@ export default function WorkersPage() {
   if (!isSuperUser()) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">You don't have permission to access this page. Only superadmins can manage workers.</p>
+        <p className="text-gray-500 dark:text-gray-400">You don't have permission to access this page. Only superadmins can manage workers.</p>
       </div>
     );
   }
@@ -416,11 +416,11 @@ export default function WorkersPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-serif text-3xl mb-2 flex items-center gap-2">
+          <h1 className="font-serif text-3xl mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
             <Users className="h-8 w-8" />
             Workers Management
           </h1>
-          <p className="text-gray-600">Manage workers and their roles</p>
+          <p className="text-gray-600 dark:text-gray-400">Manage workers and their roles</p>
         </div>
         <Button
           onClick={() => {
@@ -436,57 +436,57 @@ export default function WorkersPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+        <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-300">
           {success}
         </div>
       )}
 
       {isLoading ? (
         <div className="text-center py-12">
-          <p className="text-gray-500">Loading workers...</p>
+          <p className="text-gray-500 dark:text-gray-400">Loading workers...</p>
         </div>
       ) : (
         <div className="space-y-4">
           {/* Workers Table */}
-          <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-gray-50 dark:bg-[#0a0a0a] border-b dark:border-white/10">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-8"></th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-8"></th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Email
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Role
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Orders
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       UID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Created
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 dark:divide-white/10">
                   {workers.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                      <td colSpan={8} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                         No workers found. Add your first worker to get started.
                       </td>
                     </tr>
@@ -498,12 +498,12 @@ export default function WorkersPage() {
                       
                       return (
                         <React.Fragment key={worker.uid}>
-                          <tr className="hover:bg-gray-50">
+                          <tr className="hover:bg-gray-50 dark:hover:bg-white/5">
                             <td className="px-6 py-4">
                               {worker.role === "worker" && ordersCount > 0 && (
                                 <button
                                   onClick={() => toggleWorkerExpanded(worker.uid)}
-                                  className="text-gray-500 hover:text-gray-700"
+                                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                                 >
                                   {isExpanded ? (
                                     <ChevronDown className="h-5 w-5" />
@@ -513,35 +513,35 @@ export default function WorkersPage() {
                                 </button>
                               )}
                             </td>
-                            <td className="px-6 py-4 text-sm font-medium">{worker.name}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600 flex items-center gap-2">
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{worker.name}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
                               {worker.email && (
                                 <>
-                                  <Mail className="h-4 w-4 text-gray-400" />
+                                  <Mail className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                                   {worker.email}
                                 </>
                               )}
-                              {!worker.email && <span className="text-gray-400">No email</span>}
+                              {!worker.email && <span className="text-gray-400 dark:text-gray-500">No email</span>}
                             </td>
                             <td className="px-6 py-4">{getRoleBadge(worker.role)}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                               {worker.role === "worker" ? (
                                 <span className="font-medium">{ordersCount} order(s)</span>
                               ) : (
-                                <span className="text-gray-400">N/A</span>
+                                <span className="text-gray-400 dark:text-gray-500">N/A</span>
                               )}
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-500 font-mono text-xs">
+                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono text-xs">
                               {worker.uid.substring(0, 8)}...
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
+                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                               {worker.createdAt ? (
                                 <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 text-gray-400" />
+                                  <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                                   {new Date(worker.createdAt).toLocaleDateString()}
                                 </div>
                               ) : (
-                                <span className="text-gray-400">N/A</span>
+                                <span className="text-gray-400 dark:text-gray-500">N/A</span>
                               )}
                             </td>
                             <td className="px-6 py-4 text-right">
@@ -558,7 +558,7 @@ export default function WorkersPage() {
                                     onClick={() => handleDeleteWorker(worker.uid)}
                                     variant="outline"
                                     size="sm"
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -569,9 +569,9 @@ export default function WorkersPage() {
                           {/* Expanded Orders and Tasks */}
                           {isExpanded && workerData && workerData.orders.length > 0 && (
                             <tr>
-                              <td colSpan={8} className="px-6 py-4 bg-gray-50">
+                              <td colSpan={8} className="px-6 py-4 bg-gray-50 dark:bg-[#1a1a1a]">
                                 <div className="space-y-3">
-                                  <h4 className="font-semibold text-sm text-gray-700 mb-3">
+                                  <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3">
                                     Orders & Tasks for {worker.name}
                                   </h4>
                                   {workerData.orders.map((order) => {
@@ -579,13 +579,13 @@ export default function WorkersPage() {
                                     const isOrderExpanded = expandedOrders.has(order.id);
                                     
                                     return (
-                                      <div key={order.id} className="bg-white border rounded-lg p-4">
+                                      <div key={order.id} className="bg-white dark:bg-[#0a0a0a] border dark:border-white/10 rounded-lg p-4">
                                         <div 
                                           className="flex items-center justify-between cursor-pointer"
                                           onClick={() => toggleOrderExpanded(order.id)}
                                         >
                                           <div className="flex items-center gap-3 flex-1">
-                                            <button className="text-gray-500">
+                                            <button className="text-gray-500 dark:text-gray-400">
                                               {isOrderExpanded ? (
                                                 <ChevronDown className="h-4 w-4" />
                                               ) : (
@@ -597,21 +597,21 @@ export default function WorkersPage() {
                                               <div className="flex items-center gap-3">
                                                 <Link 
                                                   href={`/admin/orders/${order.id}`}
-                                                  className="font-medium text-sm hover:text-[#D4AF37]"
+                                                  className="font-medium text-sm hover:text-[#D4AF37] text-gray-900 dark:text-white"
                                                   onClick={(e) => e.stopPropagation()}
                                                 >
                                                   {order.order_number}
                                                 </Link>
                                                 <span className={`px-2 py-1 text-xs rounded-full ${
-                                                  order.status === "delivered" ? "bg-green-100 text-green-800" :
-                                                  order.status === "processing" || order.status === "packing" || order.status === "packed" ? "bg-yellow-100 text-yellow-800" :
-                                                  order.status === "cancelled" ? "bg-red-100 text-red-800" :
-                                                  "bg-gray-100 text-gray-800"
+                                                  order.status === "delivered" ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300" :
+                                                  order.status === "processing" || order.status === "packing" || order.status === "packed" ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300" :
+                                                  order.status === "cancelled" ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300" :
+                                                  "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300"
                                                 }`}>
                                                   {order.status}
                                                 </span>
                                               </div>
-                                              <div className="text-xs text-gray-500 mt-1">
+                                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                                 {order.customer.name} • ₹{order.total.toLocaleString()} • {tasks.length} task(s)
                                               </div>
                                             </div>
@@ -623,26 +623,26 @@ export default function WorkersPage() {
                                             {tasks.map((task) => (
                                               <div 
                                                 key={task.id} 
-                                                className="bg-gray-50 rounded p-3 border-l-2 border-[#D4AF37]"
+                                                className="bg-gray-50 dark:bg-[#1a1a1a] rounded p-3 border-l-2 border-[#D4AF37]"
                                               >
                                                 <div className="flex items-center justify-between">
                                                   <div className="flex items-center gap-2">
                                                     {getTaskStatusIcon(task.status)}
-                                                    <span className="text-sm font-medium">{task.type}</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{task.type}</span>
                                                     <span className={getTaskStatusBadge(task.status)}>
                                                       {task.status}
                                                     </span>
                                                   </div>
-                                                  <div className="text-xs text-gray-500">
+                                                  <div className="text-xs text-gray-500 dark:text-gray-400">
                                                     Priority: {task.priority}
                                                   </div>
                                                 </div>
                                                 {task.notes && (
-                                                  <div className="text-xs text-gray-600 mt-1 ml-6">
+                                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 ml-6">
                                                     {task.notes}
                                                   </div>
                                                 )}
-                                                <div className="text-xs text-gray-400 mt-1 ml-6">
+                                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-6">
                                                   Created: {new Date(task.created_at).toLocaleDateString()}
                                                 </div>
                                               </div>
@@ -650,7 +650,7 @@ export default function WorkersPage() {
                                           </div>
                                         )}
                                         {isOrderExpanded && tasks.length === 0 && (
-                                          <div className="mt-3 ml-8 text-sm text-gray-500">
+                                          <div className="mt-3 ml-8 text-sm text-gray-500 dark:text-gray-400">
                                             No tasks for this order
                                           </div>
                                         )}
@@ -658,7 +658,7 @@ export default function WorkersPage() {
                                     );
                                   })}
                                   {workerData.orders.length === 0 && (
-                                    <div className="text-sm text-gray-500 py-4">
+                                    <div className="text-sm text-gray-500 dark:text-gray-400 py-4">
                                       No orders assigned to this worker
                                     </div>
                                   )}
@@ -679,13 +679,13 @@ export default function WorkersPage() {
 
       {/* Add Worker Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="font-serif text-2xl mb-4">Add New Worker</h2>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-xl max-w-md w-full p-6 border dark:border-white/10">
+            <h2 className="font-serif text-2xl mb-4 text-gray-900 dark:text-white">Add New Worker</h2>
             <form onSubmit={handleAddWorker}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Firebase UID <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -694,14 +694,14 @@ export default function WorkersPage() {
                     value={formData.uid}
                     onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
                     placeholder="Enter Firebase UID"
-                    className="w-full rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Get this from Firebase Authentication console
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -710,27 +710,27 @@ export default function WorkersPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter worker name"
-                    className="w-full rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="Enter email (optional)"
-                    className="w-full rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Role <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
                   >
                     <option value="worker">Worker</option>
                     <option value="admin">Admin</option>
@@ -761,23 +761,23 @@ export default function WorkersPage() {
 
       {/* Edit Worker Modal */}
       {showEditModal && editingWorker && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="font-serif text-2xl mb-4">Edit Worker</h2>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-xl max-w-md w-full p-6 border dark:border-white/10">
+            <h2 className="font-serif text-2xl mb-4 text-gray-900 dark:text-white">Edit Worker</h2>
             <form onSubmit={handleEditWorker}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">UID</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">UID</label>
                   <input
                     type="text"
                     value={editingWorker.uid}
                     disabled
-                    className="w-full rounded-md border border-gray-300 px-4 py-2 bg-gray-50 text-gray-500"
+                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 bg-gray-50 dark:bg-[#1a1a1a] text-gray-500 dark:text-gray-400"
                   />
-                  <p className="text-xs text-gray-500 mt-1">UID cannot be changed</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">UID cannot be changed</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -786,27 +786,27 @@ export default function WorkersPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter worker name"
-                    className="w-full rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="Enter email (optional)"
-                    className="w-full rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Role <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
                     disabled={editingWorker.uid === session?.username}
                   >
                     <option value="worker">Worker</option>
@@ -814,7 +814,7 @@ export default function WorkersPage() {
                     <option value="superadmin">Super Admin</option>
                   </select>
                   {editingWorker.uid === session?.username && (
-                    <p className="text-xs text-gray-500 mt-1">You cannot change your own role</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">You cannot change your own role</p>
                   )}
                 </div>
               </div>

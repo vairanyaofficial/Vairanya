@@ -34,15 +34,15 @@ function ProductsContent() {
   // Load products from Firestore
   const loadProducts = useCallback(async () => {
     try {
-      setIsLoading(true);
+        setIsLoading(true);
       setError(null);
-      
+
       const response = await fetch("/api/products?all=true");
       const data = await response.json();
-      
+
       if (data.success && Array.isArray(data.products)) {
         setAllProducts(data.products);
-        setProducts(data.products);
+          setProducts(data.products);
         
         // Calculate max price
         if (data.products.length > 0) {
@@ -60,7 +60,7 @@ function ProductsContent() {
       setProducts([]);
       setAllProducts([]);
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   }, []);
 
@@ -75,12 +75,12 @@ function ProductsContent() {
         const activeCollections = data.collections.filter(
           (c: Collection) => c.is_active !== false
         );
-        setCollections(activeCollections);
-      }
-    } catch (err) {
+              setCollections(activeCollections);
+            }
+          } catch (err) {
       console.error("Error loading collections:", err);
-      setCollections([]);
-    }
+            setCollections([]);
+          }
   }, []);
 
   // Initialize data
@@ -135,8 +135,8 @@ function ProductsContent() {
     let filtered = [...allProducts];
 
     // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
       filtered = filtered.filter((product) => {
         return (
           product.title.toLowerCase().includes(query) ||
@@ -145,15 +145,15 @@ function ProductsContent() {
           product.tags.some((tag) => tag.toLowerCase().includes(query))
         );
       });
-    }
+      }
 
-    // Category filter
+      // Category filter
     if (selectedCategory !== "all") {
       filtered = filtered.filter((product) => product.category === selectedCategory);
-    }
+      }
 
     // Metal finish filter
-    if (selectedMetalFinish !== "all") {
+      if (selectedMetalFinish !== "all") {
       filtered = filtered.filter((product) => {
         const productFinish = (product.metal_finish || "").toLowerCase().trim().replace(/\s+/g, "-");
         const selectedFinish = selectedMetalFinish.toLowerCase().trim().replace(/\s+/g, "-");
@@ -166,27 +166,27 @@ function ProductsContent() {
       filtered = filtered.filter((product) => {
         return product.size_options && product.size_options.includes(selectedSize);
       });
-    }
+      }
 
-    // Collection filter
-    if (selectedCollection !== "all") {
+      // Collection filter
+      if (selectedCollection !== "all") {
       const collection = collections.find((c) => c.slug === selectedCollection);
-      if (collection && collection.product_ids) {
+        if (collection && collection.product_ids) {
         filtered = filtered.filter((product) =>
           collection.product_ids.includes(product.product_id)
         );
-      } else {
+        } else {
         filtered = [];
+        }
       }
-    }
 
-    // Price range filter
-    const isDefaultRange = priceRange[0] === 0 && priceRange[1] >= maxPrice;
-    if (!isDefaultRange) {
+      // Price range filter
+      const isDefaultRange = priceRange[0] === 0 && priceRange[1] >= maxPrice;
+      if (!isDefaultRange) {
       filtered = filtered.filter(
         (product) => product.price >= priceRange[0] && product.price <= priceRange[1]
       );
-    }
+      }
 
     return filtered;
   }, [
@@ -548,20 +548,20 @@ function ProductsContent() {
                     : "No products available at the moment"}
                 </p>
                 {hasActiveFilters && (
-                  <button
-                    onClick={handleReset}
+                <button
+                  onClick={handleReset}
                     className="px-4 py-2 bg-[#D4AF37] text-white rounded-lg hover:bg-[#C19B2E] transition-colors"
-                  >
+                >
                     Clear Filters
-                  </button>
+                </button>
                 )}
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.product_id} product={product} />
-                ))}
-              </div>
+                  {filteredProducts.map((product) => (
+                    <ProductCard key={product.product_id} product={product} />
+                  ))}
+                </div>
             )}
           </div>
         </div>
@@ -577,12 +577,12 @@ export default function ProductsPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-white dark:bg-black">
-          <Header />
+        <Header />
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
             <ProductGridSkeleton count={12} />
-          </main>
-          <Footer />
-        </div>
+        </main>
+        <Footer />
+      </div>
       }
     >
       <ProductsContent />

@@ -394,17 +394,17 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded shadow space-y-4">
+    <div className="max-w-2xl mx-auto p-6 bg-white dark:bg-[#0a0a0a] rounded shadow space-y-4 border dark:border-white/10">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">{isEditMode ? "Edit Product" : "Add Product"}</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{isEditMode ? "Edit Product" : "Add Product"}</h2>
         <div className="text-right text-sm">
           {adminInfo ? (
             <div>
-              <div className="font-medium">{adminInfo.name || "Admin"}</div>
-              <div className="text-gray-500">Signed in</div>
+              <div className="font-medium text-gray-900 dark:text-white">{adminInfo.name || "Admin"}</div>
+              <div className="text-gray-500 dark:text-gray-400">Signed in</div>
             </div>
           ) : (
-            <div className="text-red-600 text-sm">Please sign in as admin</div>
+            <div className="text-red-600 dark:text-red-400 text-sm">Please sign in as admin</div>
           )}
         </div>
       </div>
@@ -412,47 +412,47 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
       <form onSubmit={handleSubmit} className="space-y-3" aria-live="polite">
         {/* Basic */}
         <label className="block">
-          <span className="text-sm font-medium">Title *</span>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Product title" className="mt-1 w-full border p-2 rounded" required />
+          <span className="text-sm font-medium text-gray-900 dark:text-white">Title *</span>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Product title" className="mt-1 w-full border dark:border-white/10 p-2 rounded bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" required />
         </label>
 
         <label className="block">
-          <span className="text-sm font-medium">Description</span>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Product description" className="mt-1 w-full border p-2 rounded" rows={3} />
+          <span className="text-sm font-medium text-gray-900 dark:text-white">Description</span>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Product description" className="mt-1 w-full border dark:border-white/10 p-2 rounded bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" rows={3} />
         </label>
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="text-sm font-medium">Price (INR) *</span>
-            <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="e.g., 499.99" className="mt-1 w-full border p-2 rounded" inputMode="decimal" required />
+            <span className="text-sm font-medium text-gray-900 dark:text-white">Price (INR) *</span>
+            <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="e.g., 499.99" className="mt-1 w-full border dark:border-white/10 p-2 rounded bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" inputMode="decimal" required />
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium">MRP (INR)</span>
-            <input value={mrp} onChange={(e) => setMrp(e.target.value)} placeholder="e.g., 599.99" className="mt-1 w-full border p-2 rounded" inputMode="decimal" />
+            <span className="text-sm font-medium text-gray-900 dark:text-white">MRP (INR)</span>
+            <input value={mrp} onChange={(e) => setMrp(e.target.value)} placeholder="e.g., 599.99" className="mt-1 w-full border dark:border-white/10 p-2 rounded bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" inputMode="decimal" />
           </label>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="text-sm font-medium">Stock qty</span>
-            <input value={stock} onChange={(e) => setStock(e.target.value)} placeholder="e.g., 10" className="mt-1 w-full border p-2 rounded" inputMode="numeric" />
+            <span className="text-sm font-medium text-gray-900 dark:text-white">Stock qty</span>
+            <input value={stock} onChange={(e) => setStock(e.target.value)} placeholder="e.g., 10" className="mt-1 w-full border dark:border-white/10 p-2 rounded bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" inputMode="numeric" />
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium">SKU</span>
-            <input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="SKU (optional)" className="mt-1 w-full border p-2 rounded" />
+            <span className="text-sm font-medium text-gray-900 dark:text-white">SKU</span>
+            <input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="SKU (optional)" className="mt-1 w-full border dark:border-white/10 p-2 rounded bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
           </label>
         </div>
 
         {/* Category Selection */}
         <div>
           <label className="block">
-            <span className="text-sm font-medium">Category *</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">Category *</span>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="mt-1 w-full border p-2 rounded"
+              className="mt-1 w-full border dark:border-white/10 p-2 rounded bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
               required
             >
               <option value="">Select a category</option>
@@ -463,7 +463,7 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
               ))}
             </select>
           </label>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Manage categories in <a href="/admin/categories" className="text-[#D4AF37] hover:underline">Categories</a> section
           </p>
         </div>
@@ -471,11 +471,11 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
         {/* Metal Finish */}
         <div>
           <label className="block">
-            <span className="text-sm font-medium">Metal Finish *</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">Metal Finish *</span>
             <select
               value={selectedMetalFinish}
               onChange={(e) => setSelectedMetalFinish(e.target.value as "gold" | "rose-gold" | "silver" | "platinum")}
-              className="mt-1 w-full border p-2 rounded"
+              className="mt-1 w-full border dark:border-white/10 p-2 rounded bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
               required
             >
               <option value="gold">Gold</option>
@@ -489,50 +489,50 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
         {/* Sizes */}
         <div>
           <label className="block">
-            <span className="text-sm font-medium">Sizes (comma separated)</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">Sizes (comma separated)</span>
             <input
               value={sizesInput}
               onChange={(e) => setSizesInput(e.target.value)}
               placeholder="e.g., S, M, L, XL or 6, 7, 8, 9"
-              className="mt-1 w-full border p-2 rounded"
+              className="mt-1 w-full border dark:border-white/10 p-2 rounded bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
             />
           </label>
-          <p className="text-xs text-gray-500 mt-1">Enter sizes separated by commas (e.g., S, M, L or 6, 7, 8)</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter sizes separated by commas (e.g., S, M, L or 6, 7, 8)</p>
         </div>
 
         {/* Tags */}
         <div>
           <label className="block">
-            <span className="text-sm font-medium">Tags (comma separated)</span>
-            <input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="e.g., elegant, minimalist, everyday" className="mt-1 w-full border p-2 rounded" />
+            <span className="text-sm font-medium text-gray-900 dark:text-white">Tags (comma separated)</span>
+            <input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="e.g., elegant, minimalist, everyday" className="mt-1 w-full border dark:border-white/10 p-2 rounded bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
           </label>
         </div>
 
         {/* Images - Multiple */}
         <div className="block">
-          <span className="text-sm font-medium block mb-2">Images (optional) — max 2MB per image</span>
+          <span className="text-sm font-medium block mb-2 text-gray-900 dark:text-white">Images (optional) — max 2MB per image</span>
           <input 
             type="file" 
             accept="image/*" 
             onChange={handleFileChange} 
             multiple
-            className="mt-1 w-full" 
+            className="mt-1 w-full text-gray-900 dark:text-white" 
             aria-label="Product images" 
           />
-          <p className="text-xs text-gray-500 mt-1">You can select multiple images at once</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">You can select multiple images at once</p>
         </div>
 
         {/* Existing Images */}
         {existingImages.length > 0 && (
           <div className="mt-3">
-            <div className="text-xs text-gray-500 mb-2">Existing Images (click X to remove)</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Existing Images (click X to remove)</div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {existingImages.map((img, index) => (
                 <div key={`existing-${index}`} className="relative group">
                   <img 
                     src={img} 
                     alt={`Existing ${index + 1}`} 
-                    className="w-full h-32 object-cover rounded border" 
+                    className="w-full h-32 object-cover rounded border dark:border-white/10" 
                   />
                   <button
                     type="button"
@@ -553,14 +553,14 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
         {/* New Image Previews */}
         {previewUrls.length > 0 && (
           <div className="mt-3">
-            <div className="text-xs text-gray-500 mb-2">New Images (click X to remove)</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">New Images (click X to remove)</div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {previewUrls.map((preview, index) => (
                 <div key={`new-${index}`} className="relative group">
                   <img 
                     src={preview} 
                     alt={`New ${index + 1}`} 
-                    className="w-full h-32 object-cover rounded border" 
+                    className="w-full h-32 object-cover rounded border dark:border-white/10" 
                   />
                   <button
                     type="button"
@@ -580,26 +580,26 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
 
         {/* Image count info */}
         {(existingImages.length > 0 || previewUrls.length > 0) && (
-          <div className="text-xs text-gray-500 mt-2">
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
             Total images: {existingImages.length + previewUrls.length}
           </div>
         )}
 
         {uploadProgress > 0 && (
-          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mt-2">
+          <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden mt-2">
             <div className="h-2 rounded-full transition-all" style={{ width: `${uploadProgress}%`, background: "linear-gradient(90deg,#D4AF37,#C19B2E)" }} />
           </div>
         )}
 
         {/* Submit */}
         <div>
-          <button type="submit" disabled={loading || isSaving || !adminInfo} className={`w-full px-4 py-2 rounded text-white transition ${loading || isSaving || !adminInfo ? "bg-gray-400 cursor-not-allowed" : "bg-[#D4AF37] hover:bg-[#C19B2E]"}`}>
+          <button type="submit" disabled={loading || isSaving || !adminInfo} className={`w-full px-4 py-2 rounded text-white transition ${loading || isSaving || !adminInfo ? "bg-gray-400 dark:bg-gray-700 cursor-not-allowed" : "bg-[#D4AF37] hover:bg-[#C19B2E]"}`}>
             {loading || isSaving ? "Saving..." : isEditMode ? "Update Product" : "Save Product"}
           </button>
         </div>
 
         {msg && (
-          <div className={`mt-2 text-center text-sm ${msg.type === "error" ? "text-red-600" : msg.type === "success" ? "text-green-600" : "text-gray-700"}`} role={msg.type === "error" ? "alert" : "status"}>
+          <div className={`mt-2 text-center text-sm ${msg.type === "error" ? "text-red-600 dark:text-red-400" : msg.type === "success" ? "text-green-600 dark:text-green-400" : "text-gray-700 dark:text-gray-300"}`} role={msg.type === "error" ? "alert" : "status"}>
             {msg.text}
           </div>
         )}

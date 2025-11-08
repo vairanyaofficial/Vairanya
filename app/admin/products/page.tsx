@@ -176,7 +176,7 @@ export default function AdminProductsPage() {
   return (
     <div>
         <div className="flex items-center justify-between mb-8">
-          <h1 className="font-serif text-3xl">Products</h1>
+          <h1 className="font-serif text-3xl text-gray-900 dark:text-white">Products</h1>
           <div className="flex items-center gap-3">
             {selectedProducts.size > 0 && canDeleteProduct() && (
               <Button
@@ -200,19 +200,19 @@ export default function AdminProductsPage() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">
             {error}
           </div>
         )}
 
         {isLoading ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <p className="text-gray-500">Loading products...</p>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-12 text-center border dark:border-white/10">
+            <p className="text-gray-500 dark:text-gray-400">Loading products...</p>
           </div>
         ) : products.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">No products found</p>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-12 text-center border dark:border-white/10">
+            <Package className="h-12 w-12 text-gray-300 dark:text-gray-700 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 mb-4">No products found</p>
             {canCreateProduct() && (
               <Button asChild className="bg-[#D4AF37] hover:bg-[#C19B2E]">
                 <Link href="/admin/products/new">Add Your First Product</Link>
@@ -220,70 +220,70 @@ export default function AdminProductsPage() {
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-gray-50 dark:bg-[#0a0a0a] border-b dark:border-white/10">
                   <tr>
                     {canDeleteProduct() && (
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12">
                         <button
                           onClick={handleSelectAll}
-                          className="flex items-center justify-center w-5 h-5 border border-gray-300 rounded hover:border-[#D4AF37] transition-colors"
+                          className="flex items-center justify-center w-5 h-5 border border-gray-300 dark:border-white/20 rounded hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors bg-white dark:bg-[#0a0a0a]"
                           title={selectedProducts.size === products.length ? "Deselect all" : "Select all"}
                         >
                           {selectedProducts.size === products.length && products.length > 0 ? (
                             <CheckSquare className="h-4 w-4 text-[#D4AF37]" />
                           ) : (
-                            <Square className="h-4 w-4 text-gray-400" />
+                            <Square className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                           )}
                         </button>
                       </th>
                     )}
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Product
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Category
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Price
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Stock
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-[#0a0a0a] divide-y divide-gray-200 dark:divide-white/10">
                   {products.map((product) => (
                     <tr 
                       key={product.product_id} 
-                      className={`hover:bg-gray-50 ${selectedProducts.has(product.product_id) ? 'bg-blue-50' : ''}`}
+                      className={`hover:bg-gray-50 dark:hover:bg-white/5 ${selectedProducts.has(product.product_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                     >
                       {canDeleteProduct() && (
                         <td className="px-6 py-4 whitespace-nowrap">
                           <button
                             onClick={() => handleSelectProduct(product.product_id)}
-                            className="flex items-center justify-center w-5 h-5 border border-gray-300 rounded hover:border-[#D4AF37] transition-colors"
+                            className="flex items-center justify-center w-5 h-5 border border-gray-300 dark:border-white/20 rounded hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors bg-white dark:bg-[#0a0a0a]"
                             title={selectedProducts.has(product.product_id) ? "Deselect" : "Select"}
                           >
                             {selectedProducts.has(product.product_id) ? (
                               <CheckSquare className="h-4 w-4 text-[#D4AF37]" />
                             ) : (
-                              <Square className="h-4 w-4 text-gray-400" />
+                              <Square className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                             )}
                           </button>
                         </td>
                       )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-12 w-12 bg-gray-100 rounded overflow-hidden">
+                          <div className="flex-shrink-0 h-12 w-12 bg-gray-100 dark:bg-[#1a1a1a] rounded overflow-hidden">
                             {product.images && product.images.length > 0 ? (
                               <img
                                 src={product.images[0]}
@@ -292,32 +292,32 @@ export default function AdminProductsPage() {
                               />
                             ) : (
                               <div className="h-full w-full flex items-center justify-center">
-                                <Package className="h-6 w-6 text-gray-400" />
+                                <Package className="h-6 w-6 text-gray-400 dark:text-gray-600" />
                               </div>
                             )}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {product.title}
                             </div>
-                            <div className="text-sm text-gray-500">{product.sku}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{product.sku}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900 capitalize">
+                        <span className="text-sm text-gray-900 dark:text-white capitalize">
                           {product.category}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
                           ₹{product.price}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`text-sm ${
-                            product.stock_qty > 0 ? "text-green-600" : "text-red-600"
+                            product.stock_qty > 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"
                           }`}
                         >
                           {product.stock_qty}
@@ -327,8 +327,8 @@ export default function AdminProductsPage() {
                         <span
                           className={`px-2 py-1 text-xs rounded-full ${
                             product.stock_qty > 0
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                              : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
                           }`}
                         >
                           {product.stock_qty > 0 ? "In Stock" : "Out of Stock"}
@@ -339,7 +339,7 @@ export default function AdminProductsPage() {
                           <Link
                             href={`/products/${product.slug}`}
                             target="_blank"
-                            className="text-gray-600 hover:text-[#D4AF37]"
+                            className="text-gray-600 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37]"
                             title="View on site"
                           >
                             <Eye className="h-4 w-4" />
@@ -347,7 +347,7 @@ export default function AdminProductsPage() {
                           {canEditProduct() && (
                             <Link
                               href={`/admin/products/${product.product_id}/edit`}
-                              className="text-blue-600 hover:text-blue-900"
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
                               title="Edit"
                             >
                               <Edit className="h-4 w-4" />
@@ -358,7 +358,7 @@ export default function AdminProductsPage() {
                               onClick={() =>
                                 handleDelete(product.product_id, product.title)
                               }
-                              className="text-red-600 hover:text-red-900"
+                              className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                               title="Delete"
                             >
                               <Trash2 className="h-4 w-4" />

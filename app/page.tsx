@@ -73,7 +73,7 @@ export default function Page() {
           // Show the 4 most recent products (newest first)
           // This ensures newly added products appear on homepage
           setFeaturedProducts(data.products.slice(0, 4));
-          setIsLoadingProducts(false);
+        setIsLoadingProducts(false);
         } else {
           // API returned success: false or invalid data, try fallback
           console.warn("API returned unsuccessful response, trying fallback:", data.error || "Unknown error");

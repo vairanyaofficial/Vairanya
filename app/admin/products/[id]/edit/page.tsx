@@ -83,7 +83,7 @@ export default function EditProductPage() {
   if (isLoading) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Loading product...</p>
+        <p className="text-gray-500 dark:text-gray-400">Loading product...</p>
       </div>
     );
   }
@@ -94,7 +94,7 @@ export default function EditProductPage() {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl mb-8">Edit Product</h1>
+      <h1 className="font-serif text-3xl mb-8 text-gray-900 dark:text-white">Edit Product</h1>
       <ProductForm product={product} onSubmit={handleSubmit} isSaving={isSaving} />
     </div>
   );

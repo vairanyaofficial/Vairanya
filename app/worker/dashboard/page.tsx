@@ -346,38 +346,38 @@ export default function WorkerDashboardPage() {
   };
 
   const getStatusColor = (status: string | undefined) => {
-    if (!status) return "bg-gray-100 text-gray-800";
+    if (!status) return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300";
     switch (status.toLowerCase()) {
       case "pending":
       case "confirmed":
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300";
       case "in_progress":
       case "processing":
       case "packing":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300";
       case "completed":
       case "packed":
       case "shipped":
       case "delivered":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300";
       case "cancelled":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300";
     }
   };
 
   const getPriorityColor = (priority: string | undefined) => {
-    if (!priority) return "bg-gray-100 text-gray-800 border-gray-300";
+    if (!priority) return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-white/20";
     switch (priority) {
       case "high":
-        return "bg-red-100 text-red-800 border-red-300";
+        return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-300 dark:border-red-800/50";
       case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-800/50";
       case "low":
-        return "bg-green-100 text-green-800 border-green-300";
+        return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-800/50";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-white/20";
     }
   };
 
@@ -397,7 +397,7 @@ export default function WorkerDashboardPage() {
   if (isLoading) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Loading your tasks...</p>
+        <p className="text-gray-500 dark:text-gray-400">Loading your tasks...</p>
       </div>
     );
   }
@@ -406,81 +406,81 @@ export default function WorkerDashboardPage() {
     <div>
       {/* Welcome Section */}
       <div className="mb-8">
-        <h1 className="font-serif text-3xl mb-2">
+        <h1 className="font-serif text-3xl mb-2 text-gray-900 dark:text-white">
           Welcome, {session?.name || session?.username || "Worker"}!
         </h1>
-        <p className="text-gray-600">Manage your assigned tasks and track your progress</p>
+        <p className="text-gray-600 dark:text-gray-400">Manage your assigned tasks and track your progress</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Total Tasks</p>
-              <p className="text-2xl font-bold text-[#2E2E2E]">{stats.total}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Tasks</p>
+              <p className="text-2xl font-bold text-[#2E2E2E] dark:text-white">{stats.total}</p>
             </div>
-            <div className="bg-[#D4AF37]/10 rounded-full p-3">
+            <div className="bg-[#D4AF37]/10 dark:bg-[#D4AF37]/20 rounded-full p-3">
               <FileText className="h-6 w-6 text-[#D4AF37]" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Pending</p>
-              <p className="text-2xl font-bold text-gray-600">{stats.pending}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Pending</p>
+              <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">{stats.pending}</p>
             </div>
-            <div className="bg-gray-100 rounded-full p-3">
-              <Clock className="h-6 w-6 text-gray-600" />
+            <div className="bg-gray-100 dark:bg-[#1a1a1a] rounded-full p-3">
+              <Clock className="h-6 w-6 text-gray-600 dark:text-gray-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">In Progress</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.in_progress}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">In Progress</p>
+              <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">{stats.in_progress}</p>
             </div>
-            <div className="bg-yellow-100 rounded-full p-3">
-              <TrendingUp className="h-6 w-6 text-yellow-600" />
+            <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-full p-3">
+              <TrendingUp className="h-6 w-6 text-yellow-600 dark:text-yellow-500" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Completed</p>
-              <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Completed</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-500">{stats.completed}</p>
             </div>
-            <div className="bg-green-100 rounded-full p-3">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="bg-green-100 dark:bg-green-900/30 rounded-full p-3">
+              <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-500" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm p-4 border mb-6">
+      <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 border dark:border-white/10 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
               placeholder="Search by order number, task type, or customer name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+              className="w-full pl-10 pr-4 py-2 border dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
           <div className="flex items-center gap-2">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+              className="px-4 py-2 border dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -499,17 +499,17 @@ export default function WorkerDashboardPage() {
       </div>
 
       {/* Orders and Tasks List */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10 overflow-hidden">
         {ordersWithTasks.ordersWithTasks.length === 0 && ordersWithTasks.standaloneTasks.length === 0 ? (
           <div className="text-center py-12">
-            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg mb-2">No orders or tasks found</p>
-            <p className="text-gray-400 text-sm">
+            <Package className="h-12 w-12 text-gray-400 dark:text-gray-700 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No orders or tasks found</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm">
               You don't have any assigned orders or tasks yet.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-200 dark:divide-white/10">
             {/* Display Orders with Tasks */}
             {ordersWithTasks.ordersWithTasks.map(({ order, tasks: orderTasks }) => {
               const isExpanded = expandedOrders.has(order.id);
@@ -540,15 +540,15 @@ export default function WorkerDashboardPage() {
               }
 
               return (
-                <div key={order.id} className="border-b border-gray-200">
+                <div key={order.id} className="border-b border-gray-200 dark:border-white/10">
                   {/* Order Header */}
-                  <div className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="p-6 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
                           <button
                             onClick={() => toggleOrderExpanded(order.id)}
-                            className="text-gray-500 hover:text-gray-700"
+                            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                           >
                             {isExpanded ? (
                               <ChevronDown className="h-5 w-5" />
@@ -560,10 +560,10 @@ export default function WorkerDashboardPage() {
                             <Package className="h-6 w-6" />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-lg">
+                            <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
                               Order {order.order_number}
                             </h3>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                               Status: <span className="font-medium capitalize">{order.status}</span>
                               {filteredOrderTasks.length > 0 && (
                                 <> • {filteredOrderTasks.length} task(s)</>
@@ -578,15 +578,15 @@ export default function WorkerDashboardPage() {
                           >
                             {order.status.toUpperCase()}
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
                             Assigned: {new Date(order.created_at).toLocaleDateString()}
                           </span>
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                             <User className="h-3 w-3" />
                             {order.customer.name}
                           </span>
                           {order.shipping_address && (
-                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               {order.shipping_address.city}, {order.shipping_address.state}
                             </span>
@@ -603,7 +603,7 @@ export default function WorkerDashboardPage() {
                         <Link href={`/worker/orders/${order.id}`}>
                           <Button
                             variant="outline"
-                            className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                            className="border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                           >
                             <Printer className="h-4 w-4 mr-2" />
                             Print
@@ -614,14 +614,14 @@ export default function WorkerDashboardPage() {
 
                     {/* Expanded Tasks Section */}
                     {isExpanded && filteredOrderTasks.length > 0 && (
-                      <div className="mt-4 ml-11 space-y-3 border-t pt-4">
-                        <h4 className="font-semibold text-sm text-gray-700 mb-3">
+                      <div className="mt-4 ml-11 space-y-3 border-t dark:border-white/10 pt-4">
+                        <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3">
                           Tasks for this order:
                         </h4>
                         {filteredOrderTasks.map((task) => (
                           <div
                             key={task.id}
-                            className="bg-gray-50 rounded-lg p-4 border-l-2 border-[#D4AF37]"
+                            className="bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-4 border-l-2 border-[#D4AF37]"
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -630,7 +630,7 @@ export default function WorkerDashboardPage() {
                                     {getTaskTypeIcon(task.type)}
                                   </div>
                                   <div>
-                                    <h4 className="font-medium">
+                                    <h4 className="font-medium text-gray-900 dark:text-white">
                                       {(task.type || "task").replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                                     </h4>
                                   </div>
@@ -646,12 +646,12 @@ export default function WorkerDashboardPage() {
                                   >
                                     {(task.status || "unknown").replace("_", " ").toUpperCase()}
                                   </span>
-                                  <span className="text-xs text-gray-500">
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
                                     Created: {new Date(task.created_at).toLocaleDateString()}
                                   </span>
                                 </div>
                                 {task.notes && (
-                                  <p className="text-xs text-gray-600 mt-2 ml-8">
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 ml-8">
                                     {task.notes}
                                   </p>
                                 )}
@@ -698,11 +698,11 @@ export default function WorkerDashboardPage() {
                                   </Button>
                                 )}
                                 {task.status === "completed" && (
-                                  <div className="flex items-center gap-2 text-green-600 text-sm">
+                                  <div className="flex items-center gap-2 text-green-600 dark:text-green-500 text-sm">
                                     <CheckCircle className="h-4 w-4" />
                                     <span>Completed</span>
                                     {task.completed_at && (
-                                      <span className="text-xs text-gray-500">
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">
                                         {new Date(task.completed_at).toLocaleDateString()}
                                       </span>
                                     )}

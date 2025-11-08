@@ -12,11 +12,11 @@ export default async function NewProductPage() {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-serif text-2xl">Add New Product</h1>
-          <p className="text-gray-600 text-sm">Add product details and categories</p>
+          <h1 className="font-serif text-2xl text-gray-900 dark:text-white">Add New Product</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">Add product details and categories</p>
         </div>
         <div className="space-x-2">
-          <Link href="/admin" className="text-sm text-gray-600 hover:text-[#D4AF37]">
+          <Link href="/admin" className="text-sm text-gray-600 dark:text-gray-400 hover:text-[#D4AF37]">
             Back to Dashboard
           </Link>
         </div>

@@ -168,26 +168,26 @@ export default function AdminDashboardPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "confirmed":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300";
       case "processing":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300";
       case "packing":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300";
       case "packed":
-        return "bg-indigo-100 text-indigo-800";
+        return "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300";
       case "shipped":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300";
       case "delivered":
-        return "bg-emerald-100 text-emerald-800";
+        return "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300";
     }
   };
 
   if (isLoading) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Loading dashboard...</p>
+        <p className="text-gray-500 dark:text-gray-400">Loading dashboard...</p>
       </div>
     );
   }
@@ -196,8 +196,8 @@ export default function AdminDashboardPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-serif text-3xl mb-2">Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {session?.name}</p>
+          <h1 className="font-serif text-3xl mb-2 text-gray-900 dark:text-white">Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400">Welcome back, {session?.name}</p>
         </div>
         {canCreateProduct() && (
           <Button asChild className="bg-[#D4AF37] hover:bg-[#C19B2E]">
@@ -212,48 +212,48 @@ export default function AdminDashboardPage() {
       {/* Stats Grid */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-700">Total Orders</h3>
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Total Orders</h3>
               <ShoppingBag className="h-8 w-8 text-[#D4AF37]" />
             </div>
-            <p className="text-3xl font-bold">{stats.total_orders}</p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total_orders}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               {stats.today_orders} today
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-700">Total Revenue</h3>
-              <DollarSign className="h-8 w-8 text-green-600" />
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Total Revenue</h3>
+              <DollarSign className="h-8 w-8 text-green-600 dark:text-green-500" />
             </div>
-            <p className="text-3xl font-bold">
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
               ₹{stats.total_revenue ? stats.total_revenue.toLocaleString() : "0"}
             </p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               ₹{stats.today_revenue ? stats.today_revenue.toLocaleString() : "0"} today
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-700">Pending Tasks</h3>
-              <Clock className="h-8 w-8 text-orange-600" />
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Pending Tasks</h3>
+              <Clock className="h-8 w-8 text-orange-600 dark:text-orange-500" />
             </div>
-            <p className="text-3xl font-bold">{stats.pending_tasks}</p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.pending_tasks}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               {stats.in_progress_tasks} in progress
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-700">Completed Today</h3>
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Completed Today</h3>
+              <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-500" />
             </div>
-            <p className="text-3xl font-bold">{stats.completed_tasks_today}</p>
-            <p className="text-sm text-gray-500 mt-2">Tasks completed</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.completed_tasks_today}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Tasks completed</p>
           </div>
         </div>
       )}
@@ -263,65 +263,65 @@ export default function AdminDashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Link
             href="/admin/orders?status=pending"
-            className="bg-white rounded-lg shadow-sm p-4 border hover:border-[#D4AF37] transition-colors"
+            className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 border dark:border-white/10 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
-              <AlertCircle className="h-5 w-5 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Pending</span>
+              <AlertCircle className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Pending</span>
             </div>
-            <p className="text-2xl font-bold">{stats.pending_orders}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pending_orders}</p>
           </Link>
 
           <Link
             href="/admin/orders?status=processing"
-            className="bg-white rounded-lg shadow-sm p-4 border hover:border-[#D4AF37] transition-colors"
+            className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 border dark:border-white/10 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
-              <Activity className="h-5 w-5 text-yellow-600" />
-              <span className="text-sm font-medium text-gray-700">Processing</span>
+              <Activity className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Processing</span>
             </div>
-            <p className="text-2xl font-bold">{stats.processing_orders}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.processing_orders}</p>
           </Link>
 
           <Link
             href="/admin/orders?status=packing"
-            className="bg-white rounded-lg shadow-sm p-4 border hover:border-[#D4AF37] transition-colors"
+            className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 border dark:border-white/10 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
-              <Package className="h-5 w-5 text-purple-600" />
-              <span className="text-sm font-medium text-gray-700">Packing</span>
+              <Package className="h-5 w-5 text-purple-600 dark:text-purple-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Packing</span>
             </div>
-            <p className="text-2xl font-bold">{stats.packed_orders}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.packed_orders}</p>
           </Link>
 
           <Link
             href="/admin/orders?status=shipped"
-            className="bg-white rounded-lg shadow-sm p-4 border hover:border-[#D4AF37] transition-colors"
+            className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 border dark:border-white/10 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
-              <Truck className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-medium text-gray-700">Shipped</span>
+              <Truck className="h-5 w-5 text-blue-600 dark:text-blue-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Shipped</span>
             </div>
-            <p className="text-2xl font-bold">{stats.shipped_orders}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.shipped_orders}</p>
           </Link>
 
           <Link
             href="/admin/orders?status=delivered"
-            className="bg-white rounded-lg shadow-sm p-4 border hover:border-[#D4AF37] transition-colors"
+            className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 border dark:border-white/10 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <span className="text-sm font-medium text-gray-700">Delivered</span>
+              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Delivered</span>
             </div>
-            <p className="text-2xl font-bold">{stats.delivered_orders}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.delivered_orders}</p>
           </Link>
         </div>
       )}
 
       {/* Worker Stats (Super User Only) */}
       {session?.role === "superuser" && stats && stats.worker_stats.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-6 border mb-8">
-          <h2 className="font-serif text-xl mb-4 flex items-center gap-2">
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10 mb-8">
+          <h2 className="font-serif text-xl mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
             <Users className="h-5 w-5" />
             Worker Performance
           </h2>
@@ -329,21 +329,21 @@ export default function AdminDashboardPage() {
             {stats.worker_stats.map((worker) => (
               <div
                 key={worker.username}
-                className="border rounded-lg p-4 hover:border-[#D4AF37] transition-colors"
+                className="border dark:border-white/10 rounded-lg p-4 hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors bg-white dark:bg-[#0a0a0a]"
               >
-                <h3 className="font-semibold mb-3">{worker.name}</h3>
+                <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">{worker.name}</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Pending:</span>
-                    <span className="font-medium">{worker.pending_tasks}</span>
+                    <span className="text-gray-600 dark:text-gray-400">Pending:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{worker.pending_tasks}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">In Progress:</span>
-                    <span className="font-medium">{worker.in_progress_tasks}</span>
+                    <span className="text-gray-600 dark:text-gray-400">In Progress:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{worker.in_progress_tasks}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Completed:</span>
-                    <span className="font-medium text-green-600">
+                    <span className="text-gray-600 dark:text-gray-400">Completed:</span>
+                    <span className="font-medium text-green-600 dark:text-green-500">
                       {worker.completed_tasks}
                     </span>
                   </div>
@@ -355,48 +355,48 @@ export default function AdminDashboardPage() {
       )}
 
       {/* Recent Orders */}
-      <div className="bg-white rounded-lg shadow-sm p-6 border">
+      <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-xl">Recent Orders</h2>
+          <h2 className="font-serif text-xl text-gray-900 dark:text-white">Recent Orders</h2>
           <Button asChild variant="outline">
             <Link href="/admin/orders">View All</Link>
           </Button>
         </div>
         {recentOrders.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No recent orders</p>
+          <p className="text-gray-500 dark:text-gray-400 text-center py-8">No recent orders</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-gray-50 dark:bg-[#0a0a0a] border-b dark:border-white/10">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Order Number
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Customer
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Amount
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Date
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-white/10">
                 {recentOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium">
+                  <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                       {order.order_number}
                     </td>
-                    <td className="px-4 py-3 text-sm">{order.customer.name}</td>
-                    <td className="px-4 py-3 text-sm font-medium">
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{order.customer.name}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                       ₹{order.total.toLocaleString()}
                     </td>
                     <td className="px-4 py-3">
@@ -408,7 +408,7 @@ export default function AdminDashboardPage() {
                         {order.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                       {new Date(order.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -428,37 +428,37 @@ export default function AdminDashboardPage() {
       <div className={`grid grid-cols-1 md:grid-cols-3 ${session?.role === "superuser" ? "lg:grid-cols-4" : ""} gap-6 mt-8`}>
         <Link
           href="/admin/orders"
-          className="p-6 border rounded-lg hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-colors"
+          className="p-6 border dark:border-white/10 rounded-lg hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 transition-colors bg-white dark:bg-[#0a0a0a]"
         >
-          <h3 className="font-semibold mb-2 flex items-center gap-2">
+          <h3 className="font-semibold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
             <ShoppingBag className="h-5 w-5" />
             Order Management
           </h3>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             View and manage all orders
           </p>
         </Link>
         <Link
           href="/admin/tasks"
-          className="p-6 border rounded-lg hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-colors"
+          className="p-6 border dark:border-white/10 rounded-lg hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 transition-colors bg-white dark:bg-[#0a0a0a]"
         >
-          <h3 className="font-semibold mb-2 flex items-center gap-2">
+          <h3 className="font-semibold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
             <Activity className="h-5 w-5" />
             Task Management
           </h3>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Assign and track tasks
           </p>
         </Link>
         <Link
           href="/admin/products"
-          className="p-6 border rounded-lg hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-colors"
+          className="p-6 border dark:border-white/10 rounded-lg hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 transition-colors bg-white dark:bg-[#0a0a0a]"
         >
-          <h3 className="font-semibold mb-2 flex items-center gap-2">
+          <h3 className="font-semibold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
             <Package className="h-5 w-5" />
             Products
           </h3>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Manage products and inventory
           </p>
         </Link>
@@ -466,69 +466,69 @@ export default function AdminDashboardPage() {
           <>
             <Link
               href="/admin/customers"
-              className="p-6 border rounded-lg hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-colors"
+              className="p-6 border dark:border-white/10 rounded-lg hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 transition-colors bg-white dark:bg-[#0a0a0a]"
             >
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
                 <Users className="h-5 w-5" />
                 Customers
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 View customer details and history
               </p>
             </Link>
             <Link
               href="/admin/offers"
-              className="p-6 border rounded-lg hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-colors"
+              className="p-6 border dark:border-white/10 rounded-lg hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 transition-colors bg-white dark:bg-[#0a0a0a]"
             >
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
                 <Tag className="h-5 w-5" />
                 Offers
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Create and manage promotional offers
               </p>
             </Link>
             <Link
               href="/admin/categories"
-              className="p-6 border rounded-lg hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-colors"
+              className="p-6 border dark:border-white/10 rounded-lg hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 transition-colors bg-white dark:bg-[#0a0a0a]"
             >
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
                 <Package className="h-5 w-5" />
                 Categories
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Manage product categories
               </p>
             </Link>
             <Link
               href="/admin/workers"
-              className="p-6 border rounded-lg hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-colors"
+              className="p-6 border dark:border-white/10 rounded-lg hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 transition-colors bg-white dark:bg-[#0a0a0a]"
             >
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
                 <Users className="h-5 w-5" />
                 Workers
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Manage workers and roles
               </p>
             </Link>
             <Link
               href="/admin/carousel"
-              className="p-6 border rounded-lg hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-colors"
+              className="p-6 border dark:border-white/10 rounded-lg hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 transition-colors bg-white dark:bg-[#0a0a0a]"
             >
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
                 <ImageIcon className="h-5 w-5" />
                 Carousel
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Manage homepage carousel slides
               </p>
             </Link>
             <Link
               href="/admin/messages"
-              className="p-6 border rounded-lg hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-colors relative"
+              className="p-6 border dark:border-white/10 rounded-lg hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 transition-colors bg-white dark:bg-[#0a0a0a] relative"
             >
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
                 <Mail className="h-5 w-5" />
                 Messages
                 {unreadMessagesCount > 0 && (
@@ -537,7 +537,7 @@ export default function AdminDashboardPage() {
                   </span>
                 )}
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 View and manage contact messages
               </p>
             </Link>

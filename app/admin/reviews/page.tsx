@@ -128,16 +128,16 @@ export default function ReviewsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gray-50 dark:bg-black p-6">
         <div className="max-w-7xl mx-auto">
-          <p className="text-gray-600">Loading reviews...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading reviews...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-black p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6 flex items-center gap-4">
           <Link href="/admin">
@@ -146,34 +146,34 @@ export default function ReviewsPage() {
               Back to Dashboard
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold">Customer Reviews</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Customer Reviews</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Reviews List */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold">All Reviews ({reviews.length})</h2>
+          <div className="lg:col-span-2 bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10">
+            <div className="p-4 border-b dark:border-white/10">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">All Reviews ({reviews.length})</h2>
             </div>
-            <div className="divide-y divide-gray-200 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="divide-y divide-gray-200 dark:divide-white/10 max-h-[calc(100vh-200px)] overflow-y-auto">
               {reviews.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <Star className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  <Star className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-700" />
                   <p>No reviews yet</p>
                 </div>
               ) : (
                 reviews.map((review) => (
                   <div
                     key={review.id}
-                    className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                      selectedReview?.id === review.id ? "bg-[#D4AF37]/5" : ""
+                    className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
+                      selectedReview?.id === review.id ? "bg-[#D4AF37]/5 dark:bg-[#D4AF37]/10" : ""
                     }`}
                     onClick={() => setSelectedReview(review)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <p className="font-semibold">{review.customer_name}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{review.customer_name}</p>
                           {review.is_featured && (
                             <span className="text-xs bg-[#D4AF37] text-white px-2 py-0.5 rounded-full">
                               Featured
@@ -187,15 +187,15 @@ export default function ReviewsPage() {
                               className={`h-4 w-4 ${
                                 i < review.rating
                                   ? "fill-[#D4AF37] text-[#D4AF37]"
-                                  : "text-gray-300"
+                                  : "text-gray-300 dark:text-gray-700"
                               }`}
                             />
                           ))}
                         </div>
-                        <p className="text-sm text-gray-600 line-clamp-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
                           {review.review_text}
                         </p>
-                        <p className="text-xs text-gray-400 mt-2">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                           {new Date(review.created_at).toLocaleDateString()}
                         </p>
                       </div>
@@ -203,7 +203,7 @@ export default function ReviewsPage() {
                         {review.is_featured ? (
                           <Eye className="h-4 w-4 text-[#D4AF37]" />
                         ) : (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
+                          <EyeOff className="h-4 w-4 text-gray-400 dark:text-gray-600" />
                         )}
                       </div>
                     </div>
@@ -214,24 +214,24 @@ export default function ReviewsPage() {
           </div>
 
           {/* Review Details */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10">
             {selectedReview ? (
               <div className="p-6">
                 <div className="mb-4">
-                  <h2 className="text-lg font-semibold mb-4">Review Details</h2>
+                  <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Review Details</h2>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm text-gray-500 mb-1">Customer Name</p>
-                      <p className="font-semibold">{selectedReview.customer_name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Customer Name</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{selectedReview.customer_name}</p>
                     </div>
                     {selectedReview.customer_email && (
                       <div>
-                        <p className="text-sm text-gray-500 mb-1">Email</p>
-                        <p className="text-sm">{selectedReview.customer_email}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Email</p>
+                        <p className="text-sm text-gray-900 dark:text-white">{selectedReview.customer_email}</p>
                       </div>
                     )}
                     <div>
-                      <p className="text-sm text-gray-500 mb-2">Rating</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Rating</p>
                       <div className="flex gap-1">
                         {[...Array(5)].map((_, i) => (
                           <Star
@@ -239,28 +239,28 @@ export default function ReviewsPage() {
                             className={`h-5 w-5 ${
                               i < selectedReview.rating
                                 ? "fill-[#D4AF37] text-[#D4AF37]"
-                                : "text-gray-300"
+                                : "text-gray-300 dark:text-gray-700"
                             }`}
                           />
                         ))}
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 mb-1">Review</p>
-                      <p className="text-gray-700 leading-relaxed">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Review</p>
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                         "{selectedReview.review_text}"
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 mb-1">Submitted</p>
-                      <p className="text-sm">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Submitted</p>
+                      <p className="text-sm text-gray-900 dark:text-white">
                         {new Date(selectedReview.created_at).toLocaleString()}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 pt-4 border-t border-gray-200">
+                <div className="flex flex-col gap-2 pt-4 border-t dark:border-white/10">
                   <Button
                     onClick={() => toggleFeatured(selectedReview.id, selectedReview.is_featured)}
                     className={`w-full ${
@@ -284,7 +284,7 @@ export default function ReviewsPage() {
                   <Button
                     onClick={() => handleDelete(selectedReview.id)}
                     variant="outline"
-                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="w-full text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Review
@@ -292,8 +292,8 @@ export default function ReviewsPage() {
                 </div>
               </div>
             ) : (
-              <div className="p-8 text-center text-gray-500">
-                <Star className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                <Star className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-700" />
                 <p>Select a review to view details</p>
               </div>
             )}
