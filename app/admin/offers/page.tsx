@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -32,7 +32,7 @@ import { useToast } from "@/components/ToastProvider";
 import type { Offer } from "@/lib/offers-types";
 import type { Customer } from "@/lib/offers-types";
 
-export default function OffersPage() {
+function OffersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, adminInfo } = useAuth();
@@ -910,6 +910,20 @@ export default function OffersPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function OffersPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FAF9F6]">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="text-center text-gray-500">Loading...</div>
+        </div>
+      </div>
+    }>
+      <OffersPageContent />
+    </Suspense>
   );
 }
 

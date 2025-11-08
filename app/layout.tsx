@@ -6,6 +6,7 @@ import { WishlistProvider } from "@/lib/wishlist-context";
 import { ToastProvider } from "@/components/ToastProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import RouteLoader from "@/components/RouteLoader";
+import { Suspense } from "react";
 
 const playfair = Playfair_Display({
   variable: "--font-serif",
@@ -50,7 +51,9 @@ export default function RootLayout({
           <ToastProvider>
             <WishlistProvider>
               <CartProvider>
-                <RouteLoader />
+                <Suspense fallback={null}>
+                  <RouteLoader />
+                </Suspense>
                 {children}
               </CartProvider>
             </WishlistProvider>
