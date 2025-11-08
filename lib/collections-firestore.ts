@@ -238,3 +238,63 @@ export async function generateCollectionId(): Promise<string> {
   return `coll-${String(nextId).padStart(3, "0")}`;
 }
 
+// Get collections containing a specific product ID
+export async function getCollectionsByProductId(productId: string): Promise<Collection[]> {
+  if (!adminFirestore) {
+    throw new Error("Firestore not initialized");
+  }
+
+  try {
+    // Firestore doesn't support array-contains queries efficiently for large arrays
+    // So we fetch active collections and filter in memory, but limit the fetch
+    const snapshot = await adminFirestore
+      .collection(COLLECTIONS_COLLECTION)
+      .where("is_active", "==", true)
+      .get();
+
+    const collections = snapshot.docs
+      .map(docToCollection)
+      .filter((c) => c.product_ids.includes(productId))
+      .sort((a, b) => {
+        if (a.display_order !== b.display_order) {
+          return (a.display_order || 0) - (b.display_order || 0);
+        }
+        return (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
+      });
+
+    return collections;
+  } catch (error) {
+    return [];
+  }
+}
+
+// Get featured collections (excluding those containing a product)
+export async function getFeaturedCollectionsExcluding(productId: string, limit: number = 4): Promise<Collection[]> {
+  if (!adminFirestore) {
+    throw new Error("Firestore not initialized");
+  }
+
+  try {
+    const snapshot = await adminFirestore
+      .collection(COLLECTIONS_COLLECTION)
+      .where("is_featured", "==", true)
+      .where("is_active", "==", true)
+      .get();
+
+    const collections = snapshot.docs
+      .map(docToCollection)
+      .filter((c) => !c.product_ids.includes(productId))
+      .sort((a, b) => {
+        if (a.display_order !== b.display_order) {
+          return (a.display_order || 0) - (b.display_order || 0);
+        }
+        return (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
+      })
+      .slice(0, limit);
+
+    return collections;
+  } catch (error) {
+    return [];
+  }
+}
+

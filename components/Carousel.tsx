@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { CarouselSlide } from "@/lib/carousel-types";
+import { CarouselSkeleton } from "./SkeletonLoader";
 
 interface CarouselProps {
   slides: CarouselSlide[];
@@ -12,9 +13,25 @@ interface CarouselProps {
   interval?: number;
 }
 
+// Helper to determine if image should be optimized
+const shouldOptimizeImage = (url: string): boolean => {
+  if (!url) return false;
+  // Optimize images from known domains that support it
+  const optimizeDomains = [
+    'firebasestorage.googleapis.com',
+    'googleusercontent.com',
+    'ibb.co',
+    'i.ibb.co',
+  ];
+  return optimizeDomains.some(domain => url.includes(domain));
+};
+
 export default function Carousel({ slides, autoPlay = true, interval = 5000 }: CarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
+  const imageRefs = useRef<Map<number, HTMLImageElement>>(new Map());
 
   useEffect(() => {
     if (!autoPlay || isPaused || slides.length <= 1) return;
@@ -33,6 +50,56 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
     }
   }, [slides.length, currentIndex]);
 
+  // Preload images - current, next, and previous
+  useEffect(() => {
+    if (slides.length === 0 || typeof window === 'undefined') return;
+
+    const preloadImages = () => {
+      const indicesToLoad = [
+        currentIndex,
+        (currentIndex + 1) % slides.length,
+        (currentIndex - 1 + slides.length) % slides.length,
+      ];
+
+      indicesToLoad.forEach((index) => {
+        if (!loadedImages.has(index) && slides[index]?.image_url) {
+          // Use HTMLImageElement constructor to avoid conflict with Next.js Image component
+          const img = document.createElement('img');
+          img.src = slides[index].image_url;
+          img.onload = () => {
+            setLoadedImages((prev) => new Set(prev).add(index));
+          };
+          img.onerror = () => {
+            // Mark as loaded even on error to hide skeleton
+            setLoadedImages((prev) => new Set(prev).add(index));
+          };
+          imageRefs.current.set(index, img);
+        }
+      });
+    };
+
+    preloadImages();
+
+    // Check if first image is loaded
+    if (slides[0]?.image_url && loadedImages.has(0)) {
+      setIsLoading(false);
+    } else if (slides.length > 0) {
+      // Set timeout to hide skeleton even if image takes time
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [slides, currentIndex, loadedImages]);
+
+  // Handle image load
+  const handleImageLoad = (index: number) => {
+    setLoadedImages((prev) => new Set(prev).add(index));
+    if (index === 0) {
+      setIsLoading(false);
+    }
+  };
+
   const goToSlide = (index: number) => {
     setCurrentIndex(index);
   };
@@ -46,10 +113,11 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
   };
 
   if (!slides || slides.length === 0) {
-    return null;
+    return <CarouselSkeleton />;
   }
 
   const currentSlide = slides[currentIndex];
+  const isCurrentImageLoaded = loadedImages.has(currentIndex) || !isLoading;
 
   return (
     <div
@@ -57,29 +125,48 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
+      {/* Loading Skeleton */}
+      {isLoading && !isCurrentImageLoaded && (
+        <div className="absolute inset-0 z-30">
+          <CarouselSkeleton />
+        </div>
+      )}
+
       {/* Slide Image with Transition */}
       <div className="relative w-full h-full">
-        {slides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={`absolute inset-0 transition-opacity duration-700 ${
-              index === currentIndex ? "opacity-100 z-0" : "opacity-0 z-[-1]"
-            }`}
-          >
-            <Image
-              src={slide.image_url}
-              alt={slide.title || "Carousel slide"}
-              fill
-              className="object-cover"
-              priority={index === 0}
-              sizes="100vw"
-              unoptimized={slide.image_url?.startsWith("http")}
-              onError={(e) => {
-                console.error("Carousel image failed to load:", slide.image_url);
-              }}
-            />
-          </div>
-        ))}
+        {slides.map((slide, index) => {
+          const isVisible = index === currentIndex;
+          const isPreloaded = loadedImages.has(index) || index === currentIndex;
+          
+          return (
+            <div
+              key={slide.id}
+              className={`absolute inset-0 transition-opacity duration-700 ${
+                isVisible ? "opacity-100 z-0" : "opacity-0 z-[-1]"
+              }`}
+            >
+              {(isPreloaded || isVisible) && (
+                <Image
+                  src={slide.image_url}
+                  alt={slide.title || "Carousel slide"}
+                  fill
+                  className="object-cover"
+                  priority={index === 0}
+                  sizes="100vw"
+                  loading={index === 0 ? "eager" : "lazy"}
+                  quality={85}
+                  // Optimize images from known domains, unoptimized for others
+                  unoptimized={!shouldOptimizeImage(slide.image_url)}
+                  onLoad={() => handleImageLoad(index)}
+                  onError={(e) => {
+                    console.error("Carousel image failed to load:", slide.image_url);
+                    handleImageLoad(index); // Mark as loaded to hide skeleton
+                  }}
+                />
+              )}
+            </div>
+          );
+        })}
         
         {/* Overlay Gradient - Left side for text readability */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent z-0"></div>

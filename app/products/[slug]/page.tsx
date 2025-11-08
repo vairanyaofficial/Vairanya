@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ImageGallery from "@/components/ImageGallery";
 import ProductDetailClient from "@/components/ProductDetailClient";
+import ProductSuggestions from "@/components/ProductSuggestions";
 import { getProductBySlug, getAllProducts } from "@/lib/products-server";
 import type { Metadata } from "next";
 
@@ -71,21 +72,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
     sku: product.sku,
   };
 
-  // Related products (same category, different product)
-  const allProducts = await getAllProducts();
-  const relatedProducts = allProducts
-    .filter((p) => p.category === product.category && p.product_id !== product.product_id)
-    .slice(0, 4);
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/30 to-white">
+    <div className="min-h-screen bg-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Header />
-      <main className="max-w-7xl mx-auto px-6 py-12 md:py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 mb-20">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12">
+        {/* Minimal Product Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-16">
           {/* Image Gallery */}
           <div>
             <ImageGallery images={product.images} productTitle={product.title} />
@@ -97,33 +93,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         </div>
 
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <section className="mt-20">
-            <h2 className="font-serif text-3xl md:text-4xl font-light mb-8 tracking-tight">You may also like</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-              {relatedProducts.map((relatedProduct) => (
-                <a
-                  key={relatedProduct.product_id}
-                  href={`/products/${relatedProduct.slug}`}
-                  className="group rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100"
-                >
-                  <div className="h-56 w-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden group-hover:bg-gradient-to-br group-hover:from-gray-100 group-hover:to-gray-50 transition-all duration-300">
-                    <img
-                      src={relatedProduct.images[0] || "/images/ring-1.jpg"}
-                      alt={relatedProduct.title}
-                      className="h-full w-full object-contain group-hover:scale-110 transition-transform duration-500"
-                    />
-                  </div>
-                  <div className="p-5">
-                    <h4 className="font-medium text-sm font-serif mb-2 group-hover:text-[#D4AF37] transition-colors">{relatedProduct.title}</h4>
-                    <p className="mt-2 font-semibold text-base text-gray-900">₹{relatedProduct.price}</p>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Suggestions Sections - Load asynchronously */}
+        <ProductSuggestions product={product} />
       </main>
       <Footer />
     </div>

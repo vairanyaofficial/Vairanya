@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
@@ -16,6 +16,26 @@ import type { CarouselSlide } from "@/lib/carousel-types";
 import type { Review } from "@/lib/reviews-types";
 import type { Collection } from "@/lib/collections-types";
 import ReviewForm from "@/components/ReviewForm";
+import {
+  CarouselSkeleton,
+  ProductSliderSkeleton,
+  CollectionBannerSkeleton,
+  OffersSkeleton,
+  ReviewCardSkeleton,
+} from "@/components/SkeletonLoader";
+
+// Helper to determine if image should be optimized
+const shouldOptimizeImage = (url: string): boolean => {
+  if (!url) return false;
+  // Optimize images from known domains that support it
+  const optimizeDomains = [
+    'firebasestorage.googleapis.com',
+    'googleusercontent.com',
+    'ibb.co',
+    'i.ibb.co',
+  ];
+  return optimizeDomains.some(domain => url.includes(domain));
+};
 
 export default function Page() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -25,23 +45,34 @@ export default function Page() {
   const [featuredCollections, setFeaturedCollections] = useState<Collection[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  
+  // Loading states
+  const [isLoadingCarousel, setIsLoadingCarousel] = useState(true);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingCollections, setIsLoadingCollections] = useState(true);
+  const [isLoadingOffers, setIsLoadingOffers] = useState(true);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true);
 
   // Function to fetch featured reviews
   const fetchReviews = () => {
+    setIsLoadingReviews(true);
     fetch("/api/reviews/featured")
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.reviews) {
           setReviews(data.reviews);
         }
+        setIsLoadingReviews(false);
       })
       .catch((err) => {
         console.error("Failed to load reviews:", err);
+        setIsLoadingReviews(false);
       });
   };
 
   useEffect(() => {
     // Fetch all products from public API endpoint
+    setIsLoadingProducts(true);
     fetch("/api/products")
       .then((res) => res.json())
       .then((data) => {
@@ -56,6 +87,7 @@ export default function Page() {
             setFeaturedProducts(data.products.slice(0, 4));
           }
         }
+        setIsLoadingProducts(false);
       })
       .catch(() => {
         // Fallback to static import
@@ -67,10 +99,12 @@ export default function Page() {
           } else {
             setFeaturedProducts(mod.products.slice(0, 4));
           }
+          setIsLoadingProducts(false);
         });
       });
 
     // Fetch featured collections
+    setIsLoadingCollections(true);
     fetch("/api/collections?featured=true")
       .then((res) => res.json())
       .then((data) => {
@@ -79,12 +113,15 @@ export default function Page() {
         } else {
           console.log("No featured collections found:", data);
         }
+        setIsLoadingCollections(false);
       })
       .catch((err) => {
         console.error("Failed to load collections:", err);
+        setIsLoadingCollections(false);
       });
 
     // Fetch active offers
+    setIsLoadingOffers(true);
     fetch("/api/offers")
       .then((res) => res.json())
       .then((data) => {
@@ -93,12 +130,15 @@ export default function Page() {
         } else {
           console.log("No offers found or API error:", data);
         }
+        setIsLoadingOffers(false);
       })
       .catch((err) => {
         console.error("Failed to load offers:", err);
+        setIsLoadingOffers(false);
       });
 
     // Fetch carousel slides
+    setIsLoadingCarousel(true);
     fetch("/api/carousel")
       .then((res) => res.json())
       .then((data) => {
@@ -107,14 +147,44 @@ export default function Page() {
         } else {
           console.log("No carousel slides found:", data);
         }
+        setIsLoadingCarousel(false);
       })
       .catch((err) => {
         console.error("Failed to load carousel:", err);
+        setIsLoadingCarousel(false);
       });
 
     // Fetch featured reviews
     fetchReviews();
   }, []);
+
+  // Create stable render functions using useCallback to avoid SSR serialization issues
+  const renderProductItem = useCallback((product: Product) => (
+    <div className="min-w-[260px] max-w-[260px]">
+      <ProductCard product={product} />
+    </div>
+  ), []);
+
+  const renderReviewItem = useCallback((review: Review) => (
+    <div className="bg-white rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 min-w-[240px] max-w-[240px]">
+      <div className="flex gap-0.5 mb-2.5">
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            className={`h-3 w-3 ${
+              i < review.rating
+                ? "fill-[#D4AF37] text-[#D4AF37]"
+                : "text-gray-300"
+            }`}
+          />
+        ))}
+      </div>
+      <p className="text-gray-700 mb-2.5 text-xs md:text-sm leading-relaxed line-clamp-3">
+        "{review.review_text}"
+      </p>
+      <p className="font-semibold text-xs md:text-sm text-gray-900">— {review.customer_name}</p>
+    </div>
+  ), []);
 
 
   return (
@@ -123,17 +193,17 @@ export default function Page() {
 
       {/* Carousel */}
       <section className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 pt-2 pb-3 md:pt-3 md:pb-4">
-        {carouselSlides.length > 0 ? (
+        {isLoadingCarousel ? (
+          <CarouselSkeleton />
+        ) : carouselSlides.length > 0 ? (
           <Carousel slides={carouselSlides} autoPlay={true} interval={5000} />
-        ) : (
-          <div className="text-center py-6 text-gray-400 text-sm">
-            {/* Carousel will appear here once slides are added via admin panel */}
-          </div>
-        )}
+        ) : null}
       </section>
 
       {/* Special Offers - Compact */}
-      {offers.length > 0 && (
+      {isLoadingOffers ? (
+        <OffersSkeleton />
+      ) : offers.length > 0 ? (
         <section className="bg-gradient-to-r from-[#D4AF37]/5 via-[#C19B2E]/5 to-[#D4AF37]/5 py-4 md:py-5 border-y border-[#D4AF37]/10">
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <div className="flex items-center justify-center gap-2 md:gap-3 flex-wrap">
@@ -161,10 +231,17 @@ export default function Page() {
             </div>
           </div>
         </section>
-      )}
+      ) : null}
 
       {/* Featured Collections */}
-      {featuredCollections.length > 0 && (
+      {isLoadingCollections ? (
+        <section className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 py-6 md:py-8">
+          <CollectionBannerSkeleton />
+          <div className="mt-4">
+            <ProductSliderSkeleton count={4} />
+          </div>
+        </section>
+      ) : featuredCollections.length > 0 ? (
         <>
           {featuredCollections.map((collection) => {
             const collectionProducts = collection.product_ids
@@ -178,10 +255,16 @@ export default function Page() {
                 {collection.image ? (
                   <div className="mb-4 md:mb-5 relative">
                     <div className="relative w-full h-32 md:h-40 rounded-lg shadow-sm overflow-hidden">
-                      <img
+                      <Image
                         src={collection.image}
                         alt={collection.name}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 1280px"
+                        quality={85}
+                        loading="lazy"
+                        // Optimize images from known domains
+                        unoptimized={!shouldOptimizeImage(collection.image)}
                       />
                       {/* Collection Name Overlay - Centered */}
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
@@ -214,11 +297,7 @@ export default function Page() {
                 {/* Products Slider */}
                 <HorizontalSlider
                   items={collectionProducts}
-                  renderItem={(product) => (
-                    <div className="min-w-[260px] max-w-[260px]">
-                      <ProductCard product={product} />
-                    </div>
-                  )}
+                  renderItem={renderProductItem}
                   cardWidth={276} // 260px card + 16px gap
                   gap={16}
                   infiniteScroll={false}
@@ -238,10 +317,18 @@ export default function Page() {
             );
           })}
         </>
-      )}
+      ) : null}
 
       {/* Featured Collection (Fallback - New Products) */}
-      {featuredProducts.length > 0 && featuredCollections.length === 0 && (
+      {isLoadingProducts ? (
+        <section id="collection" className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 py-6 md:py-8">
+          <div className="text-center mb-4 md:mb-5">
+            <div className="h-8 w-64 bg-gray-200 rounded mx-auto mb-2 animate-pulse"></div>
+            <div className="h-4 w-96 bg-gray-200 rounded mx-auto animate-pulse"></div>
+          </div>
+          <ProductSliderSkeleton count={4} />
+        </section>
+      ) : featuredProducts.length > 0 && featuredCollections.length === 0 ? (
         <section id="collection" className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 py-6 md:py-8">
           <div className="text-center mb-4 md:mb-5">
             <h2 className="font-serif text-2xl md:text-3xl font-light mb-1.5 tracking-tight">Featured Collection</h2>
@@ -249,11 +336,7 @@ export default function Page() {
           </div>
           <HorizontalSlider
             items={featuredProducts}
-            renderItem={(product) => (
-              <div className="min-w-[260px] max-w-[260px]">
-                <ProductCard product={product} />
-              </div>
-            )}
+            renderItem={renderProductItem}
             cardWidth={276} // 260px card + 16px gap
             gap={16}
             infiniteScroll={false}
@@ -266,7 +349,7 @@ export default function Page() {
             </Button>
           </div>
         </section>
-      )}
+      ) : null}
 
       {/* How It's Made */}
       <section className="bg-white py-6 md:py-8">
@@ -322,35 +405,26 @@ export default function Page() {
           </p>
         </div>
 
-        <HorizontalSlider
-          items={reviews}
-          renderItem={(review) => (
-            <div className="bg-white rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 min-w-[240px] max-w-[240px]">
-              <div className="flex gap-0.5 mb-2.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-3 w-3 ${
-                      i < review.rating
-                        ? "fill-[#D4AF37] text-[#D4AF37]"
-                        : "text-gray-300"
-                    }`}
-                  />
-                ))}
+        {isLoadingReviews ? (
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="min-w-[240px] max-w-[240px] shrink-0">
+                <ReviewCardSkeleton />
               </div>
-              <p className="text-gray-700 mb-2.5 text-xs md:text-sm leading-relaxed line-clamp-3">
-                "{review.review_text}"
-              </p>
-              <p className="font-semibold text-xs md:text-sm text-gray-900">— {review.customer_name}</p>
-            </div>
-          )}
-          cardWidth={256} // 240px card + 16px gap
-          gap={16}
-          infiniteScroll={true}
-          showNavigation={reviews.length > 1}
-          buttonSize="sm"
-          emptyMessage="No reviews yet. Be the first to review!"
-        />
+            ))}
+          </div>
+        ) : (
+          <HorizontalSlider
+            items={reviews}
+            renderItem={renderReviewItem}
+            cardWidth={256} // 240px card + 16px gap
+            gap={16}
+            infiniteScroll={true}
+            showNavigation={reviews.length > 1}
+            buttonSize="sm"
+            emptyMessage="No reviews yet. Be the first to review!"
+          />
+        )}
       </section>
 
       <ReviewForm open={showReviewForm} onOpenChange={setShowReviewForm} onReviewSubmitted={fetchReviews} />

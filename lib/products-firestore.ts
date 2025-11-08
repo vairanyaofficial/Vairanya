@@ -227,3 +227,55 @@ export async function generateSKU(category: string): Promise<string> {
   return `VA-${categoryPrefix}-${String(nextNum).padStart(3, "0")}`;
 }
 
+// Get products by category (optimized query)
+export async function getProductsByCategory(category: string, limit: number = 8, excludeProductId?: string): Promise<Product[]> {
+  if (!adminFirestore) {
+    throw new Error("Firestore not initialized");
+  }
+
+  try {
+    let query = adminFirestore
+      .collection(PRODUCTS_COLLECTION)
+      .where("category", "==", category)
+      .limit(limit + (excludeProductId ? 1 : 0));
+
+    const snapshot = await query.get();
+    let products = snapshot.docs.map(docToProduct);
+    
+    // Exclude the current product if specified
+    if (excludeProductId) {
+      products = products.filter(p => p.product_id !== excludeProductId);
+    }
+    
+    return products.slice(0, limit);
+  } catch (error) {
+    return [];
+  }
+}
+
+// Get products by metal finish (optimized query)
+export async function getProductsByMetalFinish(metalFinish: string, limit: number = 8, excludeProductId?: string): Promise<Product[]> {
+  if (!adminFirestore) {
+    throw new Error("Firestore not initialized");
+  }
+
+  try {
+    let query = adminFirestore
+      .collection(PRODUCTS_COLLECTION)
+      .where("metal_finish", "==", metalFinish)
+      .limit(limit + (excludeProductId ? 1 : 0));
+
+    const snapshot = await query.get();
+    let products = snapshot.docs.map(docToProduct);
+    
+    // Exclude the current product if specified
+    if (excludeProductId) {
+      products = products.filter(p => p.product_id !== excludeProductId);
+    }
+    
+    return products.slice(0, limit);
+  } catch (error) {
+    return [];
+  }
+}
+

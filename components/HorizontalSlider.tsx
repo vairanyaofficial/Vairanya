@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface HorizontalSliderProps<T> {
   items: T[];
-  renderItem: (item: T, index: number) => React.ReactNode;
+  renderItem?: (item: T, index: number) => React.ReactNode;
+  children?: React.ReactNode; // Pre-rendered children as alternative to renderItem
   cardWidth: number; // Width of each card including gap
   gap?: number; // Gap between cards (default 16px / gap-4)
   infiniteScroll?: boolean; // Enable infinite scroll (like reviews)
@@ -24,6 +25,7 @@ function getItemKey(item: any, index: number): string | number {
 export default function HorizontalSlider<T = any>({
   items,
   renderItem,
+  children,
   cardWidth,
   gap = 16,
   infiniteScroll = false,
@@ -35,7 +37,13 @@ export default function HorizontalSlider<T = any>({
 }: HorizontalSliderProps<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const scrollByAmount = scrollAmount || cardWidth;
+
+  // Only render on client to avoid SSR serialization issues
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Initialize scroll position for infinite scroll
   useEffect(() => {
@@ -97,6 +105,56 @@ export default function HorizontalSlider<T = any>({
     }
   };
 
+
+  // Render a single item with proper key
+  const renderItemNode = (item: T, index: number, prefix = '') => {
+    const itemKey = getItemKey(item, index);
+    const key = prefix ? `clone-${prefix}-${itemKey}` : itemKey;
+    
+    if (children) {
+      // If children are provided, use them (should be array of nodes matching items)
+      const childrenArray = React.Children.toArray(children);
+      return (
+        <div key={key} className="shrink-0">
+          {childrenArray[index] || null}
+        </div>
+      );
+    }
+    
+    // Only call renderItem after mounting to avoid SSR issues
+    if (isMounted && renderItem) {
+      try {
+        return (
+          <div key={key} className="shrink-0">
+            {renderItem(item, index)}
+          </div>
+        );
+      } catch (error) {
+        console.error('Error rendering item:', error);
+        return (
+          <div key={key} className="shrink-0" style={{ width: cardWidth }}>
+            <div className="animate-pulse bg-gray-200 rounded" style={{ width: cardWidth - gap, height: 300 }} />
+          </div>
+        );
+      }
+    }
+    
+    // Show placeholder during SSR
+    return (
+      <div key={key} className="shrink-0" style={{ width: cardWidth }}>
+        <div className="animate-pulse bg-gray-200 rounded" style={{ width: cardWidth - gap, height: 300 }} />
+      </div>
+    );
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-500">
+        <p>{emptyMessage}</p>
+      </div>
+    );
+  }
+
   return (
     <div className={`relative ${className}`}>
       <div
@@ -108,31 +166,15 @@ export default function HorizontalSlider<T = any>({
         <div className={`flex ${getGapClass()} min-w-max`}>
           {infiniteScroll && (
             // Clone items for infinite scroll (first set)
-            <>
-          {items.map((item, index) => (
-            <div key={`clone-start-${getItemKey(item, index)}`} className="shrink-0">
-              {renderItem(item, index)}
-            </div>
-          ))}
-            </>
+            items.map((item, index) => renderItemNode(item, index, 'start'))
           )}
           
           {/* Original items */}
-          {items.map((item, index) => (
-            <div key={getItemKey(item, index)} className="shrink-0">
-              {renderItem(item, index)}
-            </div>
-          ))}
+          {items.map((item, index) => renderItemNode(item, index))}
           
           {infiniteScroll && (
             // Clone items for infinite scroll (end set)
-            <>
-              {items.map((item, index) => (
-                <div key={`clone-end-${getItemKey(item, index)}`} className="shrink-0">
-                  {renderItem(item, index)}
-                </div>
-              ))}
-            </>
+            items.map((item, index) => renderItemNode(item, index, 'end'))
           )}
         </div>
       </div>
