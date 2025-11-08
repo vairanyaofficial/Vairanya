@@ -235,7 +235,6 @@ export default function WorkersPage() {
         role: formData.role, // Keep exact role value from dropdown
       };
 
-      console.log("Adding worker with data:", requestBody);
 
       const res = await fetch("/api/admin/workers", {
         method: "POST",
@@ -247,7 +246,6 @@ export default function WorkersPage() {
       });
 
       const data = await res.json();
-      console.log("Add worker response:", data);
 
       if (data.success) {
         setSuccess("Worker added successfully!");
@@ -299,8 +297,6 @@ export default function WorkersPage() {
         role: formData.role, // Ensure role is included
       };
 
-      // Debug: Log the request body
-      console.log("Updating worker with data:", requestBody);
 
       const res = await fetch(`/api/admin/workers/${editingWorker.uid}`, {
         method: "PATCH",
@@ -312,9 +308,6 @@ export default function WorkersPage() {
       });
 
       const data = await res.json();
-
-      // Debug: Log the response
-      console.log("Update response:", data);
 
       if (!res.ok) {
         const errorMsg = data.error || data.message || `HTTP error! status: ${res.status}`;
@@ -376,7 +369,6 @@ export default function WorkersPage() {
     setEditingWorker(worker);
     // Ensure we use the exact role from Firestore (superadmin, admin, or worker)
     const role = worker.role || "worker";
-    console.log("Opening edit modal for worker:", worker.uid, "with role:", role);
     setFormData({
       uid: worker.uid,
       name: worker.name,

@@ -109,9 +109,7 @@ export async function POST(request: NextRequest) {
       (order as any).offer_id = offer_id;
     }
 
-    console.log("Creating order with data:", JSON.stringify(order, null, 2));
     const savedOrder = await createOrder(order);
-    console.log("Order created successfully:", savedOrder.id);
 
     // Increment offer usage if offer was applied
     if (offer_id) {
@@ -146,8 +144,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error creating order:", error);
-    console.error("Error stack:", error.stack);
-    console.error("Error details:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
     
     // Check if it's a Firebase/Firestore initialization error
     if (error.message && error.message.includes("Firestore not initialized")) {

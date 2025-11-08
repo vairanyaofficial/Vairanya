@@ -14,9 +14,6 @@ export async function GET(request: NextRequest) {
 
     const offers = await getActiveOffers(customerEmail, customerId);
     
-    // Log for debugging (remove in production if needed)
-    console.log(`Fetched ${offers.length} active offers for customer:`, { customerEmail, customerId });
-    
     return NextResponse.json({
       success: true,
       offers,

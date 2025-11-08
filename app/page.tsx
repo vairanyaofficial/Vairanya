@@ -110,8 +110,6 @@ export default function Page() {
       .then((data) => {
         if (data.success && data.collections) {
           setFeaturedCollections(data.collections);
-        } else {
-          console.log("No featured collections found:", data);
         }
         setIsLoadingCollections(false);
       })
@@ -127,8 +125,6 @@ export default function Page() {
       .then((data) => {
         if (data.success && data.offers) {
           setOffers(data.offers.slice(0, 3)); // Show max 3 offers
-        } else {
-          console.log("No offers found or API error:", data);
         }
         setIsLoadingOffers(false);
       })
@@ -144,8 +140,6 @@ export default function Page() {
       .then((data) => {
         if (data.success && data.slides) {
           setCarouselSlides(data.slides);
-        } else {
-          console.log("No carousel slides found:", data);
         }
         setIsLoadingCarousel(false);
       })

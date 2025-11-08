@@ -254,8 +254,8 @@ export async function getCollectionsByProductId(productId: string): Promise<Coll
 
     const collections = snapshot.docs
       .map(docToCollection)
-      .filter((c) => c.product_ids.includes(productId))
-      .sort((a, b) => {
+      .filter((c: Collection) => c.product_ids.includes(productId))
+      .sort((a: Collection, b: Collection) => {
         if (a.display_order !== b.display_order) {
           return (a.display_order || 0) - (b.display_order || 0);
         }
@@ -283,8 +283,8 @@ export async function getFeaturedCollectionsExcluding(productId: string, limit: 
 
     const collections = snapshot.docs
       .map(docToCollection)
-      .filter((c) => !c.product_ids.includes(productId))
-      .sort((a, b) => {
+      .filter((c: Collection) => !c.product_ids.includes(productId))
+      .sort((a: Collection, b: Collection) => {
         if (a.display_order !== b.display_order) {
           return (a.display_order || 0) - (b.display_order || 0);
         }

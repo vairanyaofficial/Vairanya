@@ -181,7 +181,6 @@ export async function createOrder(
     // Remove undefined values before sending to Firestore
     const cleanedOrderData = removeUndefinedValues(orderData);
 
-    console.log("Adding order to Firestore:", orderNumber);
     const docRef = await adminFirestore.collection(ORDERS_COLLECTION).add(cleanedOrderData);
     const doc = await docRef.get();
     

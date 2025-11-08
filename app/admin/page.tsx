@@ -42,18 +42,6 @@ export default function AdminDashboardPage() {
     const sessionData = getAdminSession();
     const isAdminAuth = isAdminAuthenticated();
     
-    // Debug: Log session for troubleshooting
-    console.log("Admin page auth check:", {
-      isAdminAuth,
-      hasSession: !!sessionData,
-      role: sessionData?.role,
-      username: sessionData?.username,
-      adminInfo: !!adminInfo,
-      user: !!user,
-      userEmail: user?.email,
-      sessionStorage: typeof window !== "undefined" ? sessionStorage.getItem("admin_session") : null,
-      localStorage: typeof window !== "undefined" ? localStorage.getItem("va_admin_session_local") : null
-    });
     
     // FIRST PRIORITY: If admin session exists, check role
     if (isAdminAuth && sessionData) {

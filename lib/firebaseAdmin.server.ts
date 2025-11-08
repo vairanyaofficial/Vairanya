@@ -124,7 +124,6 @@ try {
   if (adminApp) {
     try {
       adminAuth = getAuth(adminApp);
-      console.log("✅ Firebase Admin Auth initialized successfully");
     } catch (err: any) {
       console.error("❌ Failed to initialize Firebase Admin Auth:", err?.message);
       adminAuth = null;
@@ -132,7 +131,6 @@ try {
 
     try {
       adminFirestore = getFirestore(adminApp);
-      console.log("✅ Firebase Admin Firestore initialized successfully");
     } catch (err: any) {
       console.error("❌ Failed to initialize Firebase Admin Firestore:", err?.message);
       adminFirestore = null;
@@ -157,7 +155,6 @@ try {
     if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
       try {
         JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-        console.log("✓ FIREBASE_SERVICE_ACCOUNT_JSON exists and is valid JSON");
       } catch (parseErr) {
         console.error("✗ FIREBASE_SERVICE_ACCOUNT_JSON exists but is NOT valid JSON!");
         console.error("  Please check that the entire JSON is properly escaped in Vercel environment variables");

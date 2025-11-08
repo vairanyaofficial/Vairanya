@@ -49,7 +49,6 @@ export async function syncCustomerToFirestore(
       }
       
       await customerRef.update(updateData);
-      console.log(`Updated customer in Firestore: ${email}`);
     } else {
       // Create new customer document
       const customerData: CustomerData = {
@@ -79,7 +78,6 @@ export async function syncCustomerToFirestore(
       }
       
       await customerRef.set(cleanData);
-      console.log(`Created new customer in Firestore: ${email}`);
     }
   } catch (error: any) {
     console.error("Error syncing customer to Firestore:", error);

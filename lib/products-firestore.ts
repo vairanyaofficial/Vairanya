@@ -244,7 +244,7 @@ export async function getProductsByCategory(category: string, limit: number = 8,
     
     // Exclude the current product if specified
     if (excludeProductId) {
-      products = products.filter(p => p.product_id !== excludeProductId);
+      products = products.filter((p: Product) => p.product_id !== excludeProductId);
     }
     
     return products.slice(0, limit);
@@ -270,7 +270,7 @@ export async function getProductsByMetalFinish(metalFinish: string, limit: numbe
     
     // Exclude the current product if specified
     if (excludeProductId) {
-      products = products.filter(p => p.product_id !== excludeProductId);
+      products = products.filter((p: Product) => p.product_id !== excludeProductId);
     }
     
     return products.slice(0, limit);
