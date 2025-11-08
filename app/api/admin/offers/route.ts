@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
       customer_id,
       customer_ids,
       usage_limit,
+      one_time_per_user,
     } = body;
 
     if (!title || !discount_type || discount_value === undefined) {
@@ -130,6 +131,9 @@ export async function POST(request: NextRequest) {
     }
     if (usage_limit && usage_limit !== "" && !isNaN(Number(usage_limit))) {
       offerData.usage_limit = Number(usage_limit);
+    }
+    if (one_time_per_user !== undefined) {
+      offerData.one_time_per_user = Boolean(one_time_per_user);
     }
     if (auth.uid || auth.name) {
       offerData.created_by = auth.uid || auth.name;

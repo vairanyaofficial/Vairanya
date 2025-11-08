@@ -18,6 +18,7 @@ export interface Offer {
   customer_ids?: string[]; // array of customer IDs for multi-customer offers
   usage_limit?: number; // maximum number of times offer can be used
   used_count: number; // number of times offer has been used
+  one_time_per_user?: boolean; // if true, each user can use this offer only once
   created_at: string;
   updated_at: string;
   created_by?: string; // admin username who created the offer

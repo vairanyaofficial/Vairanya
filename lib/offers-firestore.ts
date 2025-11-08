@@ -4,6 +4,7 @@ import { adminFirestore } from "@/lib/firebaseAdmin.server";
 import type { Offer } from "./offers-types";
 
 const OFFERS_COLLECTION = "offers";
+const OFFER_USAGES_COLLECTION = "offer_usages";
 
 // Convert Firestore document to Offer
 function docToOffer(doc: any): Offer {
@@ -30,6 +31,7 @@ function docToOffer(doc: any): Offer {
     customer_ids: data.customer_ids || undefined,
     usage_limit: data.usage_limit || undefined,
     used_count: data.used_count || 0,
+    one_time_per_user: data.one_time_per_user !== undefined ? data.one_time_per_user : false,
     created_at: data.created_at 
       ? (typeof data.created_at === 'string' ? data.created_at : data.created_at.toDate?.()?.toISOString() || new Date().toISOString())
       : (data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()),
@@ -88,49 +90,63 @@ export async function getActiveOffers(customerEmail?: string, customerId?: strin
     const nowISO = now.toISOString();
     const allOffers = await getAllOffers();
     
-    return allOffers.filter(offer => {
-      // Check if offer is active
-      if (!offer.is_active) {
-        return false;
-      }
-      
-      // Check validity dates - convert to Date objects for proper comparison
-      try {
-        const validFrom = new Date(offer.valid_from);
-        const validUntil = new Date(offer.valid_until);
+    // Filter offers and check user usage for one_time_per_user offers
+    const filteredOffers = await Promise.all(
+      allOffers.map(async (offer) => {
+        // Check if offer is active
+        if (!offer.is_active) {
+          return null;
+        }
         
-        // Check if current date is within validity range
-        if (now < validFrom || now > validUntil) {
-          return false;
+        // Check validity dates - convert to Date objects for proper comparison
+        try {
+          const validFrom = new Date(offer.valid_from);
+          const validUntil = new Date(offer.valid_until);
+          
+          // Check if current date is within validity range
+          if (now < validFrom || now > validUntil) {
+            return null;
+          }
+        } catch (dateError) {
+          console.error("Error parsing offer dates:", dateError, offer);
+          return null;
         }
-      } catch (dateError) {
-        console.error("Error parsing offer dates:", dateError, offer);
-        return false;
-      }
-      
-      // Check usage limit
-      if (offer.usage_limit && offer.used_count >= offer.usage_limit) {
-        return false;
-      }
-      
-      // Check if offer is for specific customer
-      if (offer.customer_email || offer.customer_emails || offer.customer_id || offer.customer_ids) {
-        // If offer is for a specific customer, check if it matches
-        if (customerEmail) {
-          if (offer.customer_email === customerEmail) return true;
-          if (offer.customer_emails && offer.customer_emails.includes(customerEmail)) return true;
+        
+        // Check usage limit
+        if (offer.usage_limit && offer.used_count >= offer.usage_limit) {
+          return null;
         }
-        if (customerId) {
-          if (offer.customer_id === customerId) return true;
-          if (offer.customer_ids && offer.customer_ids.includes(customerId)) return true;
+        
+        // Check if user has already used this offer (one_time_per_user)
+        if (offer.one_time_per_user && (customerEmail || customerId)) {
+          const hasUsed = await hasUserUsedOffer(offer.id, customerEmail, customerId);
+          if (hasUsed) {
+            return null; // User has already used this offer
+          }
         }
-        // Offer is for specific customer(s) but doesn't match current customer
-        return false;
-      }
-      
-      // Offer is for all customers
-      return true;
-    });
+        
+        // Check if offer is for specific customer
+        if (offer.customer_email || offer.customer_emails || offer.customer_id || offer.customer_ids) {
+          // If offer is for a specific customer, check if it matches
+          if (customerEmail) {
+            if (offer.customer_email === customerEmail) return offer;
+            if (offer.customer_emails && offer.customer_emails.includes(customerEmail)) return offer;
+          }
+          if (customerId) {
+            if (offer.customer_id === customerId) return offer;
+            if (offer.customer_ids && offer.customer_ids.includes(customerId)) return offer;
+          }
+          // Offer is for specific customer(s) but doesn't match current customer
+          return null;
+        }
+        
+        // Offer is for all customers
+        return offer;
+      })
+    );
+
+    // Filter out null values
+    return filteredOffers.filter((offer): offer is Offer => offer !== null);
   } catch (error) {
     console.error("Error fetching active offers:", error);
     return [];
@@ -224,6 +240,9 @@ export async function createOffer(
     if (offer.usage_limit !== undefined && offer.usage_limit !== null) {
       offerData.usage_limit = offer.usage_limit;
     }
+    if (offer.one_time_per_user !== undefined) {
+      offerData.one_time_per_user = offer.one_time_per_user;
+    }
     if (offer.created_by) {
       offerData.created_by = offer.created_by;
     }
@@ -294,8 +313,80 @@ export async function deleteOffer(offerId: string): Promise<void> {
   }
 }
 
+// Check if user has already used an offer
+export async function hasUserUsedOffer(
+  offerId: string,
+  customerEmail?: string,
+  customerId?: string
+): Promise<boolean> {
+  if (!adminFirestore) {
+    return false;
+  }
+
+  try {
+    const usagesRef = adminFirestore.collection(OFFER_USAGES_COLLECTION);
+    let query = usagesRef.where("offer_id", "==", offerId);
+
+    // Check by customer_id first (more reliable)
+    if (customerId) {
+      const snapshotById = await query.where("customer_id", "==", customerId).limit(1).get();
+      if (!snapshotById.empty) {
+        return true;
+      }
+    }
+
+    // Check by customer_email as fallback
+    if (customerEmail) {
+      const snapshotByEmail = await query.where("customer_email", "==", customerEmail).limit(1).get();
+      if (!snapshotByEmail.empty) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch (error) {
+    // If query fails (e.g., missing index), return false to allow usage
+    console.error("Error checking offer usage:", error);
+    return false;
+  }
+}
+
+// Record offer usage by user
+export async function recordOfferUsage(
+  offerId: string,
+  customerEmail?: string,
+  customerId?: string
+): Promise<void> {
+  if (!adminFirestore) {
+    return;
+  }
+
+  try {
+    const usageData: any = {
+      offer_id: offerId,
+      used_at: new Date().toISOString(),
+    };
+
+    if (customerId) {
+      usageData.customer_id = customerId;
+    }
+    if (customerEmail) {
+      usageData.customer_email = customerEmail;
+    }
+
+    await adminFirestore.collection(OFFER_USAGES_COLLECTION).add(usageData);
+  } catch (error) {
+    // Silently fail - don't block order creation
+    console.error("Error recording offer usage:", error);
+  }
+}
+
 // Increment offer usage count
-export async function incrementOfferUsage(offerId: string): Promise<void> {
+export async function incrementOfferUsage(
+  offerId: string,
+  customerEmail?: string,
+  customerId?: string
+): Promise<void> {
   if (!adminFirestore) {
     throw new Error("Firestore not initialized");
   }
@@ -308,13 +399,22 @@ export async function incrementOfferUsage(offerId: string): Promise<void> {
       return;
     }
 
-    const currentCount = doc.data()?.used_count || 0;
+    const offerData = doc.data();
+    const currentCount = offerData?.used_count || 0;
+    
+    // Update offer usage count
     await offerRef.update({
       used_count: currentCount + 1,
       updated_at: new Date().toISOString(),
     });
+
+    // If one_time_per_user is enabled, record user usage
+    if (offerData?.one_time_per_user && (customerEmail || customerId)) {
+      await recordOfferUsage(offerId, customerEmail, customerId);
+    }
   } catch (error: any) {
     // Silently fail - don't block order creation
+    console.error("Error incrementing offer usage:", error);
   }
 }
 

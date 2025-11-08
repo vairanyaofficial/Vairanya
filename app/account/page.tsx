@@ -318,47 +318,6 @@ function AccountPageContent() {
     }
   };
 
-  const saveAddressFromOrder = async (orderAddress: Order["shipping_address"], orderCustomer: Order["customer"]) => {
-    if (!user) return;
-    try {
-      setAddressLoading(true);
-      const token = await getAuthToken();
-      if (!token) return;
-
-      const addressData = {
-        name: orderAddress.name,
-        address_line1: orderAddress.address_line1,
-        address_line2: orderAddress.address_line2 || "",
-        city: orderAddress.city,
-        state: orderAddress.state,
-        pincode: orderAddress.pincode,
-        country: orderAddress.country,
-        phone: orderCustomer.phone || "",
-        is_default: false,
-      };
-
-      const response = await fetch("/api/addresses", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(addressData),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        await fetchAddresses();
-        showSuccess("Address saved successfully");
-      } else {
-        showError(data.error || "Failed to save address");
-      }
-    } catch (error) {
-      showError("Failed to save address");
-    } finally {
-      setAddressLoading(false);
-    }
-  };
 
   const copyOfferCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -921,37 +880,23 @@ function AccountPageContent() {
                       </div>
                     )}
 
-                    {/* Save Address from Order */}
+                    {/* Shipping Address */}
                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            Shipping Address
-                          </h4>
-                          <div className="text-sm text-gray-600 space-y-1">
-                            <p className="font-medium text-gray-900">{order.shipping_address.name}</p>
-                            <p>{order.shipping_address.address_line1}</p>
-                            {order.shipping_address.address_line2 && (
-                              <p>{order.shipping_address.address_line2}</p>
-                            )}
-                            <p>
-                              {order.shipping_address.city}, {order.shipping_address.state}{" "}
-                              {order.shipping_address.pincode}
-                            </p>
-                            <p>{order.shipping_address.country}</p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => saveAddressFromOrder(order.shipping_address, order.customer)}
-                          disabled={addressLoading}
-                          className="border-2 border-[#D4AF37] hover:bg-[#D4AF37] hover:text-white rounded-xl transition-all duration-300"
-                        >
-                          <MapPin className="h-4 w-4 mr-1" />
-                          {addressLoading ? "Saving..." : "Save Address"}
-                        </Button>
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Shipping Address
+                      </h4>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p className="font-medium text-gray-900">{order.shipping_address.name}</p>
+                        <p>{order.shipping_address.address_line1}</p>
+                        {order.shipping_address.address_line2 && (
+                          <p>{order.shipping_address.address_line2}</p>
+                        )}
+                        <p>
+                          {order.shipping_address.city}, {order.shipping_address.state}{" "}
+                          {order.shipping_address.pincode}
+                        </p>
+                        <p>{order.shipping_address.country}</p>
                       </div>
                     </div>
 

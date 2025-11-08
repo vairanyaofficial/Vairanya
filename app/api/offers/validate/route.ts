@@ -66,6 +66,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if user has already used this offer (one_time_per_user)
+    if (offer.one_time_per_user) {
+      const { hasUserUsedOffer } = await import("@/lib/offers-firestore");
+      const hasUsed = await hasUserUsedOffer(offer.id, customer_email, customer_id);
+      if (hasUsed) {
+        return NextResponse.json(
+          { success: false, error: "You have already used this offer" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Check if offer is for specific customer
     if (offer.customer_email || offer.customer_emails || offer.customer_id || offer.customer_ids) {
       let isEligible = false;

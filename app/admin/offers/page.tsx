@@ -60,6 +60,7 @@ function OffersPageContent() {
     customer_email: "",
     customer_id: "",
     usage_limit: "",
+    one_time_per_user: false,
   });
 
   useEffect(() => {
@@ -214,6 +215,9 @@ function OffersPageContent() {
       if (formData.usage_limit && formData.usage_limit.trim() !== "") {
         offerData.usage_limit = Number(formData.usage_limit);
       }
+      if (formData.one_time_per_user !== undefined) {
+        offerData.one_time_per_user = formData.one_time_per_user;
+      }
 
       let response;
       if (editingOffer) {
@@ -270,6 +274,7 @@ function OffersPageContent() {
       customer_email: offer.customer_email || "",
       customer_id: offer.customer_id || "",
       usage_limit: offer.usage_limit?.toString() || "",
+      one_time_per_user: offer.one_time_per_user || false,
     });
     // Set selected customers from offer
     if (offer.customer_emails && offer.customer_emails.length > 0) {
@@ -325,6 +330,7 @@ function OffersPageContent() {
       customer_email: "",
       customer_id: "",
       usage_limit: "",
+      one_time_per_user: false,
     });
     setSelectedCustomers([]);
   };
@@ -614,6 +620,19 @@ function OffersPageContent() {
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
                   placeholder="Maximum number of times offer can be used"
                 />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="one_time_per_user"
+                  checked={formData.one_time_per_user}
+                  onChange={(e) => setFormData({ ...formData, one_time_per_user: e.target.checked })}
+                  className="h-4 w-4 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300 rounded"
+                />
+                <label htmlFor="one_time_per_user" className="text-sm font-medium text-gray-700">
+                  One time per user (Each user can use this offer only once)
+                </label>
               </div>
 
               <div className="flex items-center gap-2">

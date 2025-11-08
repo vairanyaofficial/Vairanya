@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     // Increment offer usage if offer was applied
     if (offerId) {
       try {
-        await incrementOfferUsage(offerId);
+        await incrementOfferUsage(offerId, orderData.customer?.email, userId || undefined);
       } catch (offerError) {
         // Continue even if offer usage increment fails
         console.error("Failed to increment offer usage:", offerError);

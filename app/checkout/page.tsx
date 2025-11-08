@@ -424,29 +424,46 @@ export default function CheckoutPage() {
               const verifyData = await verifyResponse.json();
 
               if (verifyData.success) {
-                // Save address if checkbox is checked and user is logged in
-                if (saveAddress && user) {
+                // Save address only if:
+                // 1. Checkbox is checked
+                // 2. User is logged in
+                // 3. It's a NEW address (not a saved address that's already selected)
+                const isUsingSavedAddress = savedAddresses.length > 0 && selectedAddressId && !useNewAddress;
+                if (saveAddress && user && !isUsingSavedAddress) {
                   try {
                     const token = await user.getIdToken();
                     if (token) {
-                      await fetch("/api/addresses", {
-                        method: "POST",
-                        headers: {
-                          Authorization: `Bearer ${token}`,
-                          "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                          name: formData.name,
-                          address_line1: formData.address_line1,
-                          address_line2: formData.address_line2 || "",
-                          city: formData.city,
-                          state: formData.state,
-                          pincode: formData.pincode,
-                          country: formData.country,
-                          phone: formData.phone,
-                          is_default: false,
-                        }),
+                      // Check if address already exists before saving
+                      const addressExists = savedAddresses.some((addr) => {
+                        return (
+                          addr.address_line1.toLowerCase().trim() === formData.address_line1.toLowerCase().trim() &&
+                          addr.city.toLowerCase().trim() === formData.city.toLowerCase().trim() &&
+                          addr.state.toLowerCase().trim() === formData.state.toLowerCase().trim() &&
+                          addr.pincode.trim() === formData.pincode.trim() &&
+                          addr.name.toLowerCase().trim() === formData.name.toLowerCase().trim()
+                        );
                       });
+
+                      if (!addressExists) {
+                        await fetch("/api/addresses", {
+                          method: "POST",
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            name: formData.name,
+                            address_line1: formData.address_line1,
+                            address_line2: formData.address_line2 || "",
+                            city: formData.city,
+                            state: formData.state,
+                            pincode: formData.pincode,
+                            country: formData.country,
+                            phone: formData.phone,
+                            is_default: false,
+                          }),
+                        });
+                      }
                     }
                   } catch (error) {
                     // Don't block order completion if address save fails
@@ -544,29 +561,46 @@ export default function CheckoutPage() {
             return;
           }
 
-          // Save address if checkbox is checked and user is logged in
-          if (saveAddress && user) {
+          // Save address only if:
+          // 1. Checkbox is checked
+          // 2. User is logged in
+          // 3. It's a NEW address (not a saved address that's already selected)
+          const isUsingSavedAddress = savedAddresses.length > 0 && selectedAddressId && !useNewAddress;
+          if (saveAddress && user && !isUsingSavedAddress) {
             try {
               const token = await user.getIdToken();
               if (token) {
-                await fetch("/api/addresses", {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    name: formData.name,
-                    address_line1: formData.address_line1,
-                    address_line2: formData.address_line2 || "",
-                    city: formData.city,
-                    state: formData.state,
-                    pincode: formData.pincode,
-                    country: formData.country,
-                    phone: formData.phone,
-                    is_default: false,
-                  }),
+                // Check if address already exists before saving
+                const addressExists = savedAddresses.some((addr) => {
+                  return (
+                    addr.address_line1.toLowerCase().trim() === formData.address_line1.toLowerCase().trim() &&
+                    addr.city.toLowerCase().trim() === formData.city.toLowerCase().trim() &&
+                    addr.state.toLowerCase().trim() === formData.state.toLowerCase().trim() &&
+                    addr.pincode.trim() === formData.pincode.trim() &&
+                    addr.name.toLowerCase().trim() === formData.name.toLowerCase().trim()
+                  );
                 });
+
+                if (!addressExists) {
+                  await fetch("/api/addresses", {
+                    method: "POST",
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      name: formData.name,
+                      address_line1: formData.address_line1,
+                      address_line2: formData.address_line2 || "",
+                      city: formData.city,
+                      state: formData.state,
+                      pincode: formData.pincode,
+                      country: formData.country,
+                      phone: formData.phone,
+                      is_default: false,
+                    }),
+                  });
+                }
               }
             } catch (error) {
               // Don't block order completion if address save fails

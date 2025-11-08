@@ -18,7 +18,26 @@ export default function OrderDetailPage() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [addresses, setAddresses] = useState<any[]>([]);
   const { showToast } = useToast();
+
+  const fetchAddresses = async () => {
+    if (!user) return;
+    try {
+      const token = await user.getIdToken();
+      if (!token) return;
+
+      const response = await fetch("/api/addresses", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.success && data.addresses) {
+        setAddresses(data.addresses || []);
+      }
+    } catch (error) {
+      // Silently fail - addresses are optional for this page
+    }
+  };
 
   const fetchOrder = async () => {
     if (!user) return;
@@ -52,6 +71,8 @@ export default function OrderDetailPage() {
     }
 
     fetchOrder();
+    fetchAddresses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router, params.id]);
 
   const handleCancelOrder = async () => {
@@ -93,13 +114,41 @@ export default function OrderDetailPage() {
     return cancellableStatuses.includes(order.status);
   };
 
-  const saveAddressFromOrder = async () => {
+  const saveAddressFromOrder = async (event?: React.MouseEvent<HTMLButtonElement>) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
     if (!order || !user) return;
+
+    // Prevent multiple clicks
+    if (isSavingAddress) {
+      return;
+    }
+
+    // Check if address already exists
+    const addressExists = addresses.some((addr) => {
+      return (
+        addr.address_line1.toLowerCase().trim() === order.shipping_address.address_line1.toLowerCase().trim() &&
+        addr.city.toLowerCase().trim() === order.shipping_address.city.toLowerCase().trim() &&
+        addr.state.toLowerCase().trim() === order.shipping_address.state.toLowerCase().trim() &&
+        addr.pincode.trim() === order.shipping_address.pincode.trim() &&
+        addr.name.toLowerCase().trim() === order.shipping_address.name.toLowerCase().trim()
+      );
+    });
+
+    if (addressExists) {
+      showToast("This address is already saved");
+      return;
+    }
+
     try {
       setIsSavingAddress(true);
       const token = await user.getIdToken();
       if (!token) {
         showToast("Authentication required");
+        setIsSavingAddress(false);
         return;
       }
 
@@ -126,6 +175,7 @@ export default function OrderDetailPage() {
 
       const data = await response.json();
       if (data.success) {
+        await fetchAddresses(); // Refresh addresses list
         showToast("Address saved successfully!");
       } else {
         showToast(data.error || "Failed to save address");
@@ -461,9 +511,9 @@ export default function OrderDetailPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={saveAddressFromOrder}
+                  onClick={(e) => saveAddressFromOrder(e)}
                   disabled={isSavingAddress}
-                  className="border-2 border-[#D4AF37] hover:bg-[#D4AF37] hover:text-white rounded-lg transition-all duration-300"
+                  className="border-2 border-[#D4AF37] hover:bg-[#D4AF37] hover:text-white rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save className="h-4 w-4 mr-1" />
                   {isSavingAddress ? "Saving..." : "Save Address"}

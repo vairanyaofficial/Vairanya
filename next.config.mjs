@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Production optimizations
+  compress: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  
   // Image configuration for external domains
   images: {
     remotePatterns: [
@@ -56,21 +61,52 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // ✅ Add headers for popup (Fixes Firebase window.close warning)
+  // ✅ Add security headers and popup headers (Fixes Firebase window.close warning)
   async headers() {
+    const isProduction = process.env.NODE_ENV === "production";
+    const baseHeaders = [
+      {
+        key: "Cross-Origin-Opener-Policy",
+        value: "same-origin-allow-popups", // allows Firebase popups to close safely
+      },
+      {
+        key: "Cross-Origin-Embedder-Policy",
+        value: "unsafe-none", // prevents isolation that breaks popup
+      },
+      {
+        key: "X-Content-Type-Options",
+        value: "nosniff",
+      },
+      {
+        key: "X-Frame-Options",
+        value: "DENY",
+      },
+      {
+        key: "X-XSS-Protection",
+        value: "1; mode=block",
+      },
+      {
+        key: "Referrer-Policy",
+        value: "strict-origin-when-cross-origin",
+      },
+      {
+        key: "Permissions-Policy",
+        value: "camera=(), microphone=(), geolocation=()",
+      },
+    ];
+
+    // Add HSTS only in production
+    if (isProduction) {
+      baseHeaders.push({
+        key: "Strict-Transport-Security",
+        value: "max-age=31536000; includeSubDomains; preload",
+      });
+    }
+
     return [
       {
         source: "/(.*)",
-        headers: [
-          {
-            key: "Cross-Origin-Opener-Policy",
-            value: "same-origin-allow-popups", // allows Firebase popups to close safely
-          },
-          {
-            key: "Cross-Origin-Embedder-Policy",
-            value: "unsafe-none", // prevents isolation that breaks popup
-          },
-        ],
+        headers: baseHeaders,
       },
     ];
   },
