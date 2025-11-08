@@ -67,8 +67,14 @@ export async function POST(req: Request) {
 
     // SECURITY: User must be manually added by superadmin - no auto-creation
     if (!adminDocSnap.exists) {
-      // Log failed login attempt for security monitoring (without sensitive data)
-      console.warn(`[SECURITY] Unauthorized login attempt - UID: ${uid.substring(0, 8)}..., Email: ${decoded.email || 'N/A'}`);
+      // Only log as security warning if this is an actual login attempt (not just a check)
+      // Check if this is a customer login check (has X-Check-Only header)
+      const isCheckOnly = req.headers.get("X-Check-Only") === "true";
+      
+      if (!isCheckOnly) {
+        // Log failed login attempt for security monitoring (without sensitive data)
+        console.warn(`[SECURITY] Unauthorized login attempt - UID: ${uid.substring(0, 8)}..., Email: ${decoded.email || 'N/A'}`);
+      }
       
       return NextResponse.json({ 
         error: "Access denied. Your account is not registered as an admin. Please contact a superadmin to grant you access." 
