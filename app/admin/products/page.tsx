@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2, Eye, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Package, CheckSquare, Square } from "lucide-react";
 import type { Product } from "@/lib/products-types";
 import {
   canCreateProduct,
@@ -15,7 +15,9 @@ import { useToast } from "@/components/ToastProvider";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
   const { showError, showSuccess } = useToast();
 
@@ -59,6 +61,29 @@ export default function AdminProductsPage() {
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
+  // Handle single product selection
+  const handleSelectProduct = (productId: string) => {
+    setSelectedProducts((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+
+  // Handle select all
+  const handleSelectAll = () => {
+    if (selectedProducts.size === products.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(products.map((p) => p.product_id)));
+    }
+  };
+
+  // Handle single product delete
   const handleDelete = async (productId: string, title: string) => {
     if (!confirm(`Are you sure you want to delete "${title}"?`)) {
       return;
@@ -80,6 +105,11 @@ export default function AdminProductsPage() {
       });
       const data = await response.json();
       if (data.success) {
+        setSelectedProducts((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(productId);
+          return newSet;
+        });
         loadProducts();
         showSuccess("Product deleted successfully");
       } else {
@@ -90,18 +120,83 @@ export default function AdminProductsPage() {
     }
   };
 
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedProducts.size === 0) {
+      showError("Please select at least one product to delete");
+      return;
+    }
+
+    const productTitles = products
+      .filter((p) => selectedProducts.has(p.product_id))
+      .map((p) => p.title)
+      .join(", ");
+
+    if (!confirm(`Are you sure you want to delete ${selectedProducts.size} product(s)?\n\n${productTitles}`)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      const session = getAdminSession();
+      if (!session) {
+        showError("Not authenticated");
+        return;
+      }
+
+      // Delete products one by one
+      const deletePromises = Array.from(selectedProducts).map(async (productId) => {
+        const response = await fetch(`/api/admin/products/${productId}`, {
+          method: "DELETE",
+          headers: {
+            "x-admin-username": session.username,
+            "x-admin-role": session.role,
+          },
+        });
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.error || `Failed to delete product ${productId}`);
+        }
+        return productId;
+      });
+
+      await Promise.all(deletePromises);
+      
+      const deletedCount = selectedProducts.size;
+      setSelectedProducts(new Set());
+      loadProducts();
+      showSuccess(`${deletedCount} product(s) deleted successfully`);
+    } catch (err: any) {
+      showError(err.message || "Failed to delete products");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div>
         <div className="flex items-center justify-between mb-8">
           <h1 className="font-serif text-3xl">Products</h1>
-          {canCreateProduct() && (
-            <Button asChild className="bg-[#D4AF37] hover:bg-[#C19B2E]">
-              <Link href="/admin/products/new">
-                <Plus className="h-4 w-4 mr-2" />
-                Add New Product
-              </Link>
-            </Button>
-          )}
+          <div className="flex items-center gap-3">
+            {selectedProducts.size > 0 && canDeleteProduct() && (
+              <Button
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Selected ({selectedProducts.size})
+              </Button>
+            )}
+            {canCreateProduct() && (
+              <Button asChild className="bg-[#D4AF37] hover:bg-[#C19B2E]">
+                <Link href="/admin/products/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New Product
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -130,6 +225,21 @@ export default function AdminProductsPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
+                    {canDeleteProduct() && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                        <button
+                          onClick={handleSelectAll}
+                          className="flex items-center justify-center w-5 h-5 border border-gray-300 rounded hover:border-[#D4AF37] transition-colors"
+                          title={selectedProducts.size === products.length ? "Deselect all" : "Select all"}
+                        >
+                          {selectedProducts.size === products.length && products.length > 0 ? (
+                            <CheckSquare className="h-4 w-4 text-[#D4AF37]" />
+                          ) : (
+                            <Square className="h-4 w-4 text-gray-400" />
+                          )}
+                        </button>
+                      </th>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Product
                     </th>
@@ -152,7 +262,25 @@ export default function AdminProductsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {products.map((product) => (
-                    <tr key={product.product_id} className="hover:bg-gray-50">
+                    <tr 
+                      key={product.product_id} 
+                      className={`hover:bg-gray-50 ${selectedProducts.has(product.product_id) ? 'bg-blue-50' : ''}`}
+                    >
+                      {canDeleteProduct() && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => handleSelectProduct(product.product_id)}
+                            className="flex items-center justify-center w-5 h-5 border border-gray-300 rounded hover:border-[#D4AF37] transition-colors"
+                            title={selectedProducts.has(product.product_id) ? "Deselect" : "Select"}
+                          >
+                            {selectedProducts.has(product.product_id) ? (
+                              <CheckSquare className="h-4 w-4 text-[#D4AF37]" />
+                            ) : (
+                              <Square className="h-4 w-4 text-gray-400" />
+                            )}
+                          </button>
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-12 w-12 bg-gray-100 rounded overflow-hidden">

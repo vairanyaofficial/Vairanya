@@ -18,6 +18,12 @@ function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentOffset, setCurrentOffset] = useState(0);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const PRODUCTS_PER_PAGE = 20; // Load 20 products at a time
+  
   const [selectedCategory, setSelectedCategory] = useState<Category | "all">("all");
   const [selectedMetalFinish, setSelectedMetalFinish] = useState<MetalFinish | "all">("all");
   const [selectedSize, setSelectedSize] = useState<string | "all">("all");
@@ -30,7 +36,7 @@ function ProductsContent() {
   // Debounce timer for URL updates
   const urlUpdateTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize data on mount only
+  // Load initial products and max price
   useEffect(() => {
     let isMounted = true;
 
@@ -38,10 +44,10 @@ function ProductsContent() {
       try {
         setIsLoading(true);
 
-        // Fetch collections and products in parallel
-        const [collectionsRes, productsRes] = await Promise.all([
+        // Fetch collections and max price in parallel
+        const [collectionsRes, maxPriceRes] = await Promise.all([
           fetch("/api/collections").catch(() => null),
-          fetch("/api/products").catch(() => null),
+          fetch("/api/products?all=true").catch(() => null), // Get all products for max price calculation
         ]);
 
         if (!isMounted) return;
@@ -58,57 +64,24 @@ function ProductsContent() {
           }
         }
 
-        // Set products
-        if (productsRes) {
+        // Calculate max price from all products
+        if (maxPriceRes) {
           try {
-            const productsData = await productsRes.json();
-            if (productsData.success && productsData.products) {
-              const productsList = productsData.products;
-              setProducts(productsList);
-
-              // Calculate max price from products to set default range
-              if (productsList && productsList.length > 0) {
-                const max = Math.max(...productsList.map((p: Product) => p.price || 0));
-                const calculatedMax = Math.ceil(max * 1.1);
-                setMaxPrice(calculatedMax);
-                setPriceRange([0, calculatedMax]);
-              }
+            const maxPriceData = await maxPriceRes.json();
+            if (maxPriceData.success && maxPriceData.products && maxPriceData.products.length > 0) {
+              const max = Math.max(...maxPriceData.products.map((p: Product) => p.price || 0));
+              const calculatedMax = Math.ceil(max * 1.1);
+              setMaxPrice(calculatedMax);
+              setPriceRange([0, calculatedMax]);
+              setTotalProducts(maxPriceData.total || maxPriceData.products.length);
             }
           } catch (err) {
-            console.error("Error parsing products:", err);
-            // Fallback to static import if API fails
-            try {
-              const mod = await import("@/lib/products");
-              if (isMounted) {
-                setProducts(mod.products);
-                if (mod.products && mod.products.length > 0) {
-                  const max = Math.max(...mod.products.map((p: Product) => p.price || 0));
-                  const calculatedMax = Math.ceil(max * 1.1);
-                  setMaxPrice(calculatedMax);
-                  setPriceRange([0, calculatedMax]);
-                }
-              }
-            } catch (fallbackErr) {
-              console.error("Error loading fallback products:", fallbackErr);
-            }
-          }
-        } else {
-          // Fallback if API fails
-          try {
-            const mod = await import("@/lib/products");
-            if (isMounted) {
-              setProducts(mod.products);
-              if (mod.products && mod.products.length > 0) {
-                const max = Math.max(...mod.products.map((p: Product) => p.price || 0));
-                const calculatedMax = Math.ceil(max * 1.1);
-                setMaxPrice(calculatedMax);
-                setPriceRange([0, calculatedMax]);
-              }
-            }
-          } catch (fallbackErr) {
-            console.error("Error loading fallback products:", fallbackErr);
+            console.error("Error calculating max price:", err);
           }
         }
+
+        // Load initial batch of products
+        await loadProducts(0, true);
       } catch (err) {
         console.error("Error initializing data:", err);
       } finally {
@@ -124,6 +97,76 @@ function ProductsContent() {
       isMounted = false;
     };
   }, []); // Only run on mount
+
+  // Function to load products with pagination
+  const loadProducts = useCallback(async (offset: number, isInitial: boolean = false) => {
+    try {
+      if (isInitial) {
+        setIsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const response = await fetch(`/api/products?limit=${PRODUCTS_PER_PAGE}&offset=${offset}`);
+      const data = await response.json();
+
+      if (data.success && data.products) {
+        if (isInitial) {
+          setProducts(data.products);
+          setCurrentOffset(data.products.length);
+        } else {
+          setProducts(prev => [...prev, ...data.products]);
+          setCurrentOffset(prev => prev + data.products.length);
+        }
+        setHasMore(data.hasMore || false);
+        setTotalProducts(data.total || 0);
+      }
+    } catch (error) {
+      console.error("Error loading products:", error);
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, [PRODUCTS_PER_PAGE]);
+
+  // Infinite scroll handler
+  useEffect(() => {
+    const handleScroll = () => {
+      // Check if user is near bottom of page (within 300px)
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // Load more when user is 300px from bottom
+      if (
+        scrollTop + windowHeight >= documentHeight - 300 &&
+        !isLoadingMore &&
+        hasMore &&
+        !isLoading
+      ) {
+        loadProducts(currentOffset);
+      }
+    };
+
+    // Throttle scroll event for better performance
+    let timeoutId: NodeJS.Timeout | null = null;
+    const throttledHandleScroll = () => {
+      if (timeoutId) return;
+      timeoutId = setTimeout(() => {
+        handleScroll();
+        timeoutId = null;
+      }, 100);
+    };
+
+    window.addEventListener("scroll", throttledHandleScroll, { passive: true });
+    // Also check on mount in case page is already scrolled
+    handleScroll();
+    
+    return () => {
+      window.removeEventListener("scroll", throttledHandleScroll);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [currentOffset, hasMore, isLoadingMore, isLoading, loadProducts]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -319,6 +362,26 @@ function ProductsContent() {
     });
   }, [products, selectedCategory, selectedMetalFinish, selectedSize, selectedCollection, priceRange, maxPrice, searchQuery, collections]);
 
+  // Auto-load more products when filtered results are low (smart loading for filters)
+  useEffect(() => {
+    // If we have filters active and filtered results are less than 8, auto-load more
+    const hasActiveFilter = selectedCategory !== "all" || 
+                           selectedMetalFinish !== "all" || 
+                           selectedSize !== "all" || 
+                           selectedCollection !== "all" || 
+                           searchQuery.trim() !== "" ||
+                           (priceRange[0] !== 0 || priceRange[1] < maxPrice);
+    
+    if (hasActiveFilter && filteredProducts.length < 8 && hasMore && !isLoadingMore && !isLoading && products.length > 0) {
+      // Auto-load more products to ensure we have enough filtered results
+      const timer = setTimeout(() => {
+        loadProducts(currentOffset);
+      }, 500); // Small delay to avoid rapid requests
+      
+      return () => clearTimeout(timer);
+    }
+  }, [filteredProducts.length, hasMore, isLoadingMore, isLoading, selectedCategory, selectedMetalFinish, selectedSize, selectedCollection, searchQuery, priceRange, maxPrice, currentOffset, loadProducts, products.length]);
+
   const handleReset = () => {
     setSelectedCategory("all");
     setSelectedMetalFinish("all");
@@ -326,6 +389,10 @@ function ProductsContent() {
     setSelectedCollection("all");
     setPriceRange([0, maxPrice]);
     setSearchQuery("");
+    // Reset pagination
+    setCurrentOffset(0);
+    setHasMore(true);
+    loadProducts(0, true);
     router.replace("/products", { scroll: false });
   };
 
@@ -436,19 +503,20 @@ function ProductsContent() {
           {/* Products Grid */}
           <div className="flex-1 min-w-0">
             {/* Compact filter info */}
-            {(selectedCategory !== "all" || selectedMetalFinish !== "all" || selectedSize !== "all" || selectedCollection !== "all" || searchQuery.trim()) && (
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-[11px] text-gray-500">
-                  {filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"}
-                </p>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[11px] text-gray-500">
+                {filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"}
+                {totalProducts > 0 && ` of ${totalProducts}`}
+              </p>
+              {(selectedCategory !== "all" || selectedMetalFinish !== "all" || selectedSize !== "all" || selectedCollection !== "all" || searchQuery.trim()) && (
                 <button
                   onClick={handleReset}
                   className="text-[11px] text-gray-600 hover:text-gray-900 font-medium transition-colors flex items-center gap-1 underline"
                 >
                   Clear filters
                 </button>
-              </div>
-            )}
+              )}
+            </div>
 
             {isLoading && products.length === 0 ? (
               <div className="rounded-lg border border-gray-100 bg-white p-12 text-center">
@@ -479,6 +547,23 @@ function ProductsContent() {
                     <ProductCard key={product.product_id} product={product} />
                   ))}
                 </div>
+                
+                {/* Loading more indicator */}
+                {isLoadingMore && (
+                  <div className="mt-6 flex justify-center">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <div className="h-4 w-4 border-2 border-gray-300 border-t-[#D4AF37] rounded-full animate-spin"></div>
+                      <span className="text-sm">Loading more products...</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* End of results message */}
+                {!hasMore && filteredProducts.length > 0 && (
+                  <div className="mt-6 text-center text-sm text-gray-500">
+                    No more products to load
+                  </div>
+                )}
               </>
             )}
           </div>
