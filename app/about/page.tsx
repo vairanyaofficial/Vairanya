@@ -4,6 +4,22 @@ import Footer from "@/components/Footer";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "About Us - Our Story",
+  description: "Learn about Vairanya's journey. We create handcrafted, anti-tarnish jewellery that combines tradition with minimal design. Where elegance meets soul.",
+  keywords: ["about vairanya", "jewellery brand", "handcrafted jewellery", "anti-tarnish", "jewellery story"],
+  openGraph: {
+    title: "About Us - Vairanya",
+    description: "Learn about Vairanya's journey. We create handcrafted, anti-tarnish jewellery that combines tradition with minimal design.",
+    type: "website",
+    url: "https://vairanya.in/about",
+  },
+  alternates: {
+    canonical: "https://vairanya.in/about",
+  },
+};
 
 export default function AboutPage() {
   return (

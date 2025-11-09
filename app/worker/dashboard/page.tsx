@@ -28,10 +28,10 @@ export default function WorkerDashboardPage() {
   useEffect(() => {
     loadAssignedOrders();
     
-    // Auto-refresh every 30 seconds
+    // Auto-refresh every 60 seconds (increased from 30 seconds for better performance)
     const interval = setInterval(() => {
       loadAssignedOrders();
-    }, 30000);
+    }, 60000);
     
     return () => clearInterval(interval);
   }, []);

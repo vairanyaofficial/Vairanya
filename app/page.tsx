@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Script from "next/script";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
@@ -22,6 +23,52 @@ import {
   OffersSkeleton,
   ReviewCardSkeleton,
 } from "@/components/SkeletonLoader";
+
+const baseUrl = "https://vairanya.in";
+
+// JSON-LD Structured Data for Organization and WebSite
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Vairanya",
+  url: baseUrl,
+  logo: `${baseUrl}/images/logo-ivory.png`,
+  description: "Handcrafted, anti-tarnish jewellery designed for everyday elegance. Where elegance meets soul.",
+  contactPoint: {
+    "@type": "ContactPoint",
+    telephone: "+91-9691998370",
+    contactType: "customer service",
+    email: "hello@vairanya.in",
+    areaServed: "IN",
+    availableLanguage: "en",
+  },
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Betul",
+    addressRegion: "Madhya Pradesh",
+    addressCountry: "IN",
+  },
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Vairanya",
+  url: baseUrl,
+  description: "Handcrafted, anti-tarnish jewellery designed for everyday elegance",
+  publisher: {
+    "@type": "Organization",
+    name: "Vairanya",
+  },
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: `${baseUrl}/products?search={search_term_string}`,
+    },
+    "query-input": "required name=search_term_string",
+  },
+};
 
 export default function Page() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -191,8 +238,19 @@ export default function Page() {
 
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white via-gray-50/50 to-white dark:from-black dark:via-black dark:to-black text-gray-900 dark:text-white">
-      <Header />
+    <>
+      <Script
+        id="organization-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <Script
+        id="website-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+      <main className="min-h-screen bg-gradient-to-b from-white via-gray-50/50 to-white dark:from-black dark:via-black dark:to-black text-gray-900 dark:text-white">
+        <Header />
 
       {/* Carousel - Mobile Optimized */}
       <section className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-12 pt-2 pb-2 md:pt-3 md:pb-4">
@@ -448,7 +506,8 @@ export default function Page() {
         </div>
       </section>
 
-      <Footer />
-    </main>
+        <Footer />
+      </main>
+    </>
   );
 }

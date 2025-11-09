@@ -6,6 +6,8 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Mail, Phone, MessageCircle, MapPin } from "lucide-react";
 
+// Note: Metadata should be in a layout file for client components
+// This is handled by the root layout for now
 export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: "",

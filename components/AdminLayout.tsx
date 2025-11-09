@@ -14,7 +14,7 @@ import {
 } from "@/lib/admin-auth";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ThemeProvider";
-import { Package, Home, LogOut, Shield, User, Users, Tag, Star, Menu, Moon, Sun, X } from "lucide-react";
+import { Package, Home, LogOut, Shield, User, Users, Tag, Star, Menu, Moon, Sun, X, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -228,6 +228,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 >
                   Reviews
                 </Link>
+                <Link
+                  href="/admin/messages"
+                  className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap relative ${
+                    pathname?.startsWith("/admin/messages") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400"
+                  }`}
+                >
+                  Messages
+                </Link>
                 {/* Show these links to both superuser and admin */}
                 {(isSuperUser() || currentSession?.role === "admin") && (
                   <>
@@ -360,6 +368,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <Link href="/admin/orders" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/orders") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Orders</Link>
                       <Link href="/admin/products" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/products") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Products</Link>
                       <Link href="/admin/reviews" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/reviews") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Reviews</Link>
+                      <Link href="/admin/messages" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/messages") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Messages</Link>
                       {(isSuperUser() || currentSession?.role === "admin") && (
                         <>
                           <Link href="/admin/customers" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/customers") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Customers</Link>
@@ -380,8 +389,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </header>
 
-      {/* Admin Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8 text-gray-900 dark:text-white">{children}</main>
+      {/* Admin Content - Mobile Optimized */}
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6 lg:py-8 text-gray-900 dark:text-white">{children}</main>
     </div>
   );
 }

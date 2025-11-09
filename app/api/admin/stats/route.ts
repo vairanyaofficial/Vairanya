@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllOrders, getAllTasks } from "@/lib/orders-firestore";
+import { getAllOrders } from "@/lib/orders-firestore";
 import { requireAdmin } from "@/lib/admin-auth-server";
-import type { DashboardStats, Task } from "@/lib/orders-types";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import type { DashboardStats } from "@/lib/orders-types";
+
+// Simple in-memory cache for stats (30 second TTL)
+let statsCache: { data: DashboardStats; timestamp: number } | null = null;
+const CACHE_TTL = 30 * 1000; // 30 seconds
 
 // GET - Get dashboard statistics
 export async function GET(request: NextRequest) {
@@ -15,17 +18,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    
-    // Load orders from Firestore
-    const orders = await getAllOrders();
-    
-    // Load tasks from Firestore
-    let tasks: Task[] = [];
-    try {
-      tasks = await getAllTasks();
-    } catch (taskError: any) {
-      tasks = [];
+    // Check cache first
+    const now = Date.now();
+    if (statsCache && (now - statsCache.timestamp) < CACHE_TTL) {
+      const response = NextResponse.json({ success: true, stats: statsCache.data });
+      response.headers.set('Cache-Control', 'private, s-maxage=30, stale-while-revalidate=60');
+      response.headers.set('X-Cache', 'HIT');
+      return response;
     }
+
+    // Load orders
+    const orders = await getAllOrders();
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -84,59 +87,25 @@ export async function GET(request: NextRequest) {
         return sum + orderTotal;
       }, 0),
       today_orders: todayOrders.length,
-      pending_tasks: tasks.filter((t) => t.status === "pending").length,
-      in_progress_tasks: tasks.filter((t) => t.status === "in_progress").length,
-      completed_tasks_today: tasks.filter(
-        (t) =>
-          t.status === "completed" &&
-          t.completed_at &&
-          new Date(t.completed_at) >= today
-      ).length,
-      worker_stats: await (async () => {
-        try {
-          // Fetch workers from Firestore
-          let firestoreWorkers: Array<{ uid: string; name: string; role: string }> = [];
-          if (adminFirestore) {
-            const workersSnapshot = await adminFirestore.collection("admins").get();
-            firestoreWorkers = workersSnapshot.docs
-              .map((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
-                const data = doc.data();
-                return {
-                  uid: doc.id,
-                  name: data.name || "",
-                  role: data.role || "worker",
-                };
-              })
-              .filter((w: { uid: string; name: string; role: string }) => w.role === "worker");
-          }
-          
-          // If no Firestore workers, fallback to empty array
-          if (firestoreWorkers.length === 0) {
-            return [];
-          }
-
-          return firestoreWorkers.map((worker) => {
-            // Match tasks by worker UID (assigned_to field contains worker UID)
-            const workerTasks = tasks.filter((t) => t.assigned_to === worker.uid);
-            return {
-              username: worker.uid,
-              name: worker.name,
-              pending_tasks: workerTasks.filter((t) => t.status === "pending").length,
-              in_progress_tasks: workerTasks.filter(
-                (t) => t.status === "in_progress"
-              ).length,
-              completed_tasks: workerTasks.filter(
-                (t) => t.status === "completed"
-              ).length,
-            };
-          });
-        } catch (workerError: any) {
-          return [];
-        }
-      })(),
+      pending_tasks: 0,
+      in_progress_tasks: 0,
+      completed_tasks_today: 0,
+      worker_stats: [],
     };
 
-    return NextResponse.json({ success: true, stats });
+    // Update cache
+    statsCache = {
+      data: stats,
+      timestamp: Date.now(),
+    };
+
+    const response = NextResponse.json({ success: true, stats });
+    
+    // Add cache headers for better performance (cache for 30 seconds)
+    response.headers.set('Cache-Control', 'private, s-maxage=30, stale-while-revalidate=60');
+    response.headers.set('X-Cache', 'MISS');
+    
+    return response;
   } catch (error: any) {
     return NextResponse.json(
       { 

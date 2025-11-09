@@ -20,20 +20,79 @@ const inter = Inter({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+const baseUrl = "https://vairanya.in";
+
 export const metadata: Metadata = {
-  title: "Vairanya — Handcrafted Anti-Tarnish Jewellery | Where Elegance Meets Soul",
-  description: "Vairanya offers handcrafted, anti-tarnish jewellery designed for everyday elegance. Shop rings, earrings, pendants — timeless pieces made to last.",
-  keywords: ["jewellery", "anti-tarnish", "handcrafted", "gold plated", "hypoallergenic", "rings", "earrings", "pendants"],
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: "Vairanya — Handcrafted Anti-Tarnish Jewellery | Where Elegance Meets Soul",
+    template: "%s | Vairanya",
+  },
+  description: "Vairanya offers handcrafted, anti-tarnish jewellery designed for everyday elegance. Shop rings, earrings, pendants, bracelets — timeless pieces made to last. Hypoallergenic, gold plated, and beautifully crafted.",
+  keywords: [
+    "jewellery",
+    "anti-tarnish jewellery",
+    "handcrafted jewellery",
+    "gold plated jewellery",
+    "hypoallergenic jewellery",
+    "rings",
+    "earrings",
+    "pendants",
+    "bracelets",
+    "necklaces",
+    "jewelry India",
+    "online jewellery store",
+    "affordable jewellery",
+    "everyday jewellery",
+    "minimalist jewellery",
+  ],
+  authors: [{ name: "Vairanya" }],
+  creator: "Vairanya",
+  publisher: "Vairanya",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   icons: {
     icon: "/images/logo-ivory.png",
     shortcut: "/images/logo-ivory.png",
     apple: "/images/logo-ivory.png",
   },
   openGraph: {
-    title: "Vairanya — Handcrafted Anti-Tarnish Jewellery",
-    description: "Where Elegance Meets Soul. Shop timeless jewellery pieces designed for everyday grace.",
     type: "website",
     locale: "en_IN",
+    url: baseUrl,
+    siteName: "Vairanya",
+    title: "Vairanya — Handcrafted Anti-Tarnish Jewellery",
+    description: "Where Elegance Meets Soul. Shop timeless, handcrafted jewellery pieces designed for everyday grace. Anti-tarnish, hypoallergenic, and beautifully crafted.",
+    images: [
+      {
+        url: `${baseUrl}/images/hero-jewelry.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "Vairanya Handcrafted Jewellery",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vairanya — Handcrafted Anti-Tarnish Jewellery",
+    description: "Where Elegance Meets Soul. Shop timeless, handcrafted jewellery pieces.",
+    images: [`${baseUrl}/images/hero-jewelry.jpg`],
+  },
+  alternates: {
+    canonical: baseUrl,
+  },
+  verification: {
+    // Add Google Search Console verification when available
+    // google: "your-google-verification-code",
   },
 };
 

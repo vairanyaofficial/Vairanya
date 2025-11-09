@@ -19,6 +19,8 @@ export async function generateStaticParams() {
   }));
 }
 
+const baseUrl = "https://vairanya.in";
+
 export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
@@ -31,13 +33,67 @@ export async function generateMetadata({
     };
   }
 
+  // Truncate description for meta tags (keep under 160 characters)
+  const metaDescription = product.description.length > 160
+    ? product.description.substring(0, 157).trim() + "..."
+    : product.description;
+
+  // Get primary image URL
+  const primaryImage = product.images && product.images.length > 0
+    ? product.images[0].startsWith("http")
+      ? product.images[0]
+      : `${baseUrl}${product.images[0]}`
+    : `${baseUrl}/images/hero-jewelry.jpg`;
+
+  // Get all image URLs for OpenGraph
+  const ogImages = product.images && product.images.length > 0
+    ? product.images.map((img) =>
+        img.startsWith("http") ? img : `${baseUrl}${img}`
+      )
+    : [`${baseUrl}/images/hero-jewelry.jpg`];
+
+  const productUrl = `${baseUrl}/products/${product.slug}`;
+
   return {
-    title: `${product.title} | Vairanya`,
-    description: product.description,
+    title: product.title,
+    description: metaDescription,
+    keywords: [
+      product.title,
+      product.category,
+      ...(product.tags || []),
+      "jewellery",
+      "anti-tarnish",
+      "handcrafted",
+      "gold plated",
+    ],
     openGraph: {
       title: product.title,
-      description: product.description,
-      images: product.images,
+      description: metaDescription,
+      url: productUrl,
+      siteName: "Vairanya",
+      images: ogImages.map((url) => ({
+        url,
+        width: 1200,
+        height: 630,
+        alt: product.title,
+      })),
+      type: "website",
+      locale: "en_IN",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.title,
+      description: metaDescription,
+      images: [primaryImage],
+    },
+    alternates: {
+      canonical: productUrl,
+    },
+    other: {
+      "product:price:amount": product.price.toString(),
+      "product:price:currency": "INR",
+      "product:availability": product.stock_qty > 0 ? "in stock" : "out of stock",
+      "product:condition": "new",
     },
   };
 }
@@ -51,32 +107,119 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   // JSON-LD structured data
-  const jsonLd = {
+  const baseUrl = "https://vairanya.in";
+  const productUrl = `${baseUrl}/products/${product.slug}`;
+  const productImages = product.images.map((img) =>
+    img.startsWith("http") ? img : `${baseUrl}${img}`
+  );
+
+  // Capitalize category for breadcrumb
+  const categoryName = product.category.charAt(0).toUpperCase() + product.category.slice(1);
+
+  // Product structured data
+  const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.title,
     description: product.description,
-    image: product.images.map((img) => `https://vairanya.in${img}`),
+    image: productImages,
+    sku: product.sku,
+    mpn: product.sku,
     brand: {
       "@type": "Brand",
       name: "Vairanya",
     },
+    category: categoryName,
     offers: {
       "@type": "Offer",
-      url: `https://vairanya.in/products/${product.slug}`,
+      url: productUrl,
       priceCurrency: "INR",
-      price: product.price,
-      availability: product.stock_qty > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      price: product.price.toString(),
       priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      availability: product.stock_qty > 0
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+      seller: {
+        "@type": "Organization",
+        name: "Vairanya",
+      },
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingRate: {
+          "@type": "MonetaryAmount",
+          value: "0",
+          currency: "INR",
+        },
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "IN",
+        },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          businessDays: {
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          },
+          cutoffTime: "14:00",
+          handlingTime: {
+            "@type": "QuantitativeValue",
+            minValue: 1,
+            maxValue: 3,
+            unitCode: "DAY",
+          },
+          transitTime: {
+            "@type": "QuantitativeValue",
+            minValue: 3,
+            maxValue: 7,
+            unitCode: "DAY",
+          },
+        },
+      },
     },
-    sku: product.sku,
+  };
+
+  // BreadcrumbList structured data
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: baseUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Products",
+        item: `${baseUrl}/products`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: categoryName,
+        item: `${baseUrl}/products?category=${product.category}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 4,
+        name: product.title,
+        item: productUrl,
+      },
+    ],
   };
 
   return (
     <div className="min-h-screen bg-white dark:bg-black">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <Header />
       <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 md:py-8 lg:py-12">
