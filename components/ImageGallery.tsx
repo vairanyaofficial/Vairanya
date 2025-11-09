@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import Image from "next/image";
+import { Image } from "@imagekit/next";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ZoomIn, ZoomOut, X, Maximize2 } from "lucide-react";
 
@@ -134,7 +134,8 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
             className="object-cover cursor-zoom-in"
             onClick={() => setZoomOpen(true)}
             priority
-            unoptimized={displayImages[selectedImage]?.startsWith("http")}
+            quality={90}
+            sizes="(max-width: 768px) 100vw, 50vw"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               if (target.src !== "/images/ring-1.jpg") {
@@ -169,7 +170,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
                   alt={`${productTitle} thumbnail ${index + 1}`}
                   fill
                   className="object-cover"
-                  unoptimized={img?.startsWith("http")}
+                  quality={75}
+                  loading="lazy"
+                  sizes="(max-width: 768px) 25vw, 12.5vw"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     if (target.src !== "/images/ring-1.jpg") {

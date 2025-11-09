@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { getAdminSession, isAdminAuthenticated } from "@/lib/admin-auth";
 import { Image as ImageIcon, Plus, Edit, Trash2, ArrowUp, ArrowDown, X, Save } from "lucide-react";
 import type { CarouselSlide } from "@/lib/carousel-types";
+import { uploadToImageKit } from "@/lib/imagekit";
 
 export default function AdminCarouselPage() {
   const router = useRouter();
@@ -56,23 +57,16 @@ export default function AdminCarouselPage() {
   const handleFileUpload = async (file: File) => {
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("files", file);
-
       const session = getAdminSession();
-      const response = await fetch("/api/admin/upload", {
-        method: "POST",
-        headers: {
-          "x-admin-username": session?.username || "",
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (data.success && data.urls && data.urls.length > 0) {
-        return data.urls[0];
+      if (!session) {
+        throw new Error("Admin session required");
       }
-      throw new Error("Upload failed");
+
+      // Use the new SDK upload function with admin session
+      // Upload to "carousel" folder for carousel images
+      // The utility will handle admin authentication headers automatically
+      const url = await uploadToImageKit(file, file.name, undefined, undefined, session, "carousel");
+      return url;
     } catch (error) {
       console.error("Upload error:", error);
       throw error;
@@ -248,46 +242,47 @@ export default function AdminCarouselPage() {
   if (isLoading) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Loading carousel slides...</p>
+        <p className="text-gray-500 dark:text-gray-400">Loading carousel slides...</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="font-serif text-3xl mb-2">Carousel Management</h1>
-          <p className="text-gray-600">Manage homepage carousel slides</p>
-        </div>
-        {!showForm && (
-          <Button
-            onClick={() => setShowForm(true)}
-            className="bg-[#D4AF37] hover:bg-[#C19B2E]"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Slide
-          </Button>
-        )}
-      </div>
-
-      {showForm && (
-        <div className="bg-white rounded-lg border p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-serif text-xl">
-              {editingSlide ? "Edit Slide" : "Add New Slide"}
-            </h2>
-            <button
-              onClick={resetForm}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X className="h-5 w-5" />
-            </button>
+    <div className="min-h-screen bg-gray-50 dark:bg-black p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="font-serif text-3xl mb-2 text-gray-900 dark:text-white">Carousel Management</h1>
+            <p className="text-gray-600 dark:text-gray-400">Manage homepage carousel slides</p>
           </div>
+          {!showForm && (
+            <Button
+              onClick={() => setShowForm(true)}
+              className="bg-[#D4AF37] hover:bg-[#C19B2E] text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Slide
+            </Button>
+          )}
+        </div>
+
+        {showForm && (
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg border dark:border-white/10 p-6 mb-8 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-serif text-xl text-gray-900 dark:text-white">
+                {editingSlide ? "Edit Slide" : "Add New Slide"}
+              </h2>
+              <button
+                onClick={resetForm}
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">
                 Image <span className="text-red-500">*</span>
               </label>
               {formData.image_url ? (
@@ -295,19 +290,19 @@ export default function AdminCarouselPage() {
                   <img
                     src={formData.image_url}
                     alt="Preview"
-                    className="w-full h-64 object-cover rounded-lg mb-2"
+                    className="w-full h-64 object-cover rounded-lg mb-2 border border-gray-200 dark:border-white/10"
                   />
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, image_url: "" })}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2"
+                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition-colors"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                <div className="border-2 border-dashed border-gray-300 dark:border-white/20 rounded-lg p-8 text-center bg-gray-50 dark:bg-[#0a0a0a]">
+                  <ImageIcon className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
                   <input
                     type="file"
                     accept="image/*"
@@ -318,7 +313,7 @@ export default function AdminCarouselPage() {
                   />
                   <label
                     htmlFor="image-upload"
-                    className="cursor-pointer inline-block bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded"
+                    className="cursor-pointer inline-block bg-gray-100 dark:bg-[#1a1a1a] hover:bg-gray-200 dark:hover:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 px-4 py-2 rounded transition-colors"
                   >
                     {uploading ? "Uploading..." : "Choose Image"}
                   </label>
@@ -328,54 +323,54 @@ export default function AdminCarouselPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Title</label>
+                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Title</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full rounded border border-gray-300 px-3 py-2"
+                  className="w-full rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] dark:focus:ring-[#D4AF37]"
                   placeholder="e.g., New Collection"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Subtitle</label>
+                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Subtitle</label>
                 <input
                   type="text"
                   value={formData.subtitle}
                   onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                  className="w-full rounded border border-gray-300 px-3 py-2"
+                  className="w-full rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] dark:focus:ring-[#D4AF37]"
                   placeholder="e.g., Discover our latest designs"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Link URL</label>
+                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Link URL</label>
                 <input
                   type="text"
                   value={formData.link_url}
                   onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
-                  className="w-full rounded border border-gray-300 px-3 py-2"
+                  className="w-full rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] dark:focus:ring-[#D4AF37]"
                   placeholder="e.g., /products"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Link Text</label>
+                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Link Text</label>
                 <input
                   type="text"
                   value={formData.link_text}
                   onChange={(e) => setFormData({ ...formData, link_text: e.target.value })}
-                  className="w-full rounded border border-gray-300 px-3 py-2"
+                  className="w-full rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] dark:focus:ring-[#D4AF37]"
                   placeholder="e.g., Shop Now"
                 />
               </div>
             </div>
 
             <div>
-              <label className="flex items-center gap-2">
+              <label className="flex items-center gap-2 text-gray-900 dark:text-white">
                 <input
                   type="checkbox"
                   checked={formData.is_active}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="h-4 w-4 text-[#D4AF37]"
+                  className="h-4 w-4 text-[#D4AF37] rounded border-gray-300 dark:border-white/20 focus:ring-[#D4AF37]"
                 />
                 <span className="text-sm">Active (show on homepage)</span>
               </label>
@@ -385,12 +380,12 @@ export default function AdminCarouselPage() {
               <Button
                 type="submit"
                 disabled={isSaving}
-                className="bg-[#D4AF37] hover:bg-[#C19B2E]"
+                className="bg-[#D4AF37] hover:bg-[#C19B2E] text-white"
               >
                 <Save className="h-4 w-4 mr-2" />
                 {isSaving ? "Saving..." : editingSlide ? "Update Slide" : "Add Slide"}
               </Button>
-              <Button type="button" variant="outline" onClick={resetForm}>
+              <Button type="button" variant="outline" onClick={resetForm} className="border-gray-300 dark:border-white/20 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1a1a1a]">
                 Cancel
               </Button>
             </div>
@@ -398,49 +393,49 @@ export default function AdminCarouselPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg border">
-        <div className="p-6 border-b">
-          <h2 className="font-serif text-xl">Carousel Slides</h2>
+      <div className="bg-white dark:bg-[#0a0a0a] rounded-lg border dark:border-white/10 shadow-sm">
+        <div className="p-6 border-b dark:border-white/10">
+          <h2 className="font-serif text-xl text-gray-900 dark:text-white">Carousel Slides</h2>
         </div>
         {slides.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">
-            <ImageIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <div className="p-12 text-center text-gray-500 dark:text-gray-400">
+            <ImageIcon className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
             <p>No carousel slides yet. Add your first slide to get started.</p>
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y divide-gray-200 dark:divide-white/10">
             {slides.map((slide, index) => (
               <div
                 key={slide.id}
-                className="p-6 flex items-center gap-6 hover:bg-gray-50"
+                className="p-6 flex items-center gap-6 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors"
               >
                 <div className="flex-1 flex items-center gap-4">
-                  <div className="relative w-32 h-20 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                  <div className="relative w-32 h-20 flex-shrink-0 rounded overflow-hidden bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10">
                     <img
                       src={slide.image_url}
                       alt={slide.title || "Slide"}
                       className="w-full h-full object-cover"
                     />
                     {!slide.is_active && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center">
                         <span className="text-white text-xs font-medium">Inactive</span>
                       </div>
                     )}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold">{slide.title || "Untitled Slide"}</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{slide.title || "Untitled Slide"}</h3>
                       {slide.is_active && (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                        <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded">
                           Active
                         </span>
                       )}
                     </div>
                     {slide.subtitle && (
-                      <p className="text-sm text-gray-600 mb-1">{slide.subtitle}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{slide.subtitle}</p>
                     )}
                     {slide.link_url && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-500">
                         Link: {slide.link_url} {slide.link_text && `(${slide.link_text})`}
                       </p>
                     )}
@@ -450,7 +445,7 @@ export default function AdminCarouselPage() {
                   <button
                     onClick={() => handleReorder(slide.id, "up")}
                     disabled={index === 0}
-                    className="p-2 text-gray-600 hover:text-[#D4AF37] disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     title="Move up"
                   >
                     <ArrowUp className="h-4 w-4" />
@@ -458,21 +453,21 @@ export default function AdminCarouselPage() {
                   <button
                     onClick={() => handleReorder(slide.id, "down")}
                     disabled={index === slides.length - 1}
-                    className="p-2 text-gray-600 hover:text-[#D4AF37] disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     title="Move down"
                   >
                     <ArrowDown className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleEdit(slide)}
-                    className="p-2 text-gray-600 hover:text-[#D4AF37]"
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-colors"
                     title="Edit"
                   >
                     <Edit className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(slide.id)}
-                    className="p-2 text-red-600 hover:text-red-700"
+                    className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
                     title="Delete"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -482,6 +477,7 @@ export default function AdminCarouselPage() {
             ))}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

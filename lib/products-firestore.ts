@@ -254,6 +254,24 @@ export async function deleteProduct(productId: string): Promise<void> {
       throw new Error("Product not found");
     }
 
+    // Get product data before deletion to delete images
+    const productData = doc.data();
+    const productSlug = productData?.slug;
+    const productImages = productData?.images || [];
+
+    // Delete images from ImageKit before deleting the product
+    if (productSlug) {
+      try {
+        // Dynamic import to avoid SSR issues
+        const { deleteProductImages } = await import("@/lib/imagekit-server");
+        await deleteProductImages(productSlug, productImages);
+      } catch (imageError: any) {
+        // Silently fail - continue with product deletion even if image deletion fails
+        // Image deletion errors should not block product deletion
+      }
+    }
+
+    // Delete the product from Firestore
     await productRef.delete();
   } catch (error: any) {
     throw new Error(error.message || "Failed to delete product");

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { Image } from "@imagekit/next";
 import Link from "next/link";
 import React from "react";
 import type { Product } from "@/lib/products-types";
@@ -12,9 +12,10 @@ import { Heart, Bell, ShoppingBag } from "lucide-react";
 
 type Props = {
   product: Product;
+  priority?: boolean; // For above-the-fold images
 };
 
-const ProductCard: React.FC<Props> = ({ product }) => {
+const ProductCard: React.FC<Props> = ({ product, priority = false }) => {
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { user } = useAuth();
@@ -75,7 +76,9 @@ const ProductCard: React.FC<Props> = ({ product }) => {
             fill
             className="object-contain p-1.5 sm:p-2 md:p-3 group-active:scale-105 md:group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            unoptimized={product.images[0]?.startsWith("http")}
+            quality={85}
+            priority={priority}
+            loading={priority ? undefined : "lazy"}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               if (target.src !== "/images/ring-1.jpg") {

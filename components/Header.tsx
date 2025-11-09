@@ -1,5 +1,6 @@
 "use client";
 
+import { Image as ImageKitImage } from "@imagekit/next";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -129,7 +130,7 @@ const Header: React.FC = () => {
                           <div className="mb-3 pb-3 border-b border-gray-200 dark:border-[#1a1a1a]">
                             <div className="flex items-center gap-2 mb-2 p-1.5 rounded-md bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10">
                               {user.photoURL ? (
-                                <Image
+                                <ImageKitImage
                                   src={user.photoURL}
                                   alt={user.displayName || "User"}
                                   width={28}
@@ -281,7 +282,15 @@ const Header: React.FC = () => {
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2 flex-shrink-0 group min-w-0" aria-label="Go to home">
                 <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 overflow-hidden group-active:scale-95 transition-transform duration-200">
-                  <Image src="/images/logo-ivory.png" alt="Vairanya logo" width={40} height={40} priority className="w-8 h-8 md:w-9 md:h-9" />
+                  <Image 
+                    src="/images/logo-ivory.png" 
+                    alt="Vairanya logo" 
+                    width={40} 
+                    height={40} 
+                    priority 
+                    className="w-8 h-8 md:w-9 md:h-9 object-contain" 
+                    unoptimized
+                  />
                 </div>
                 <div className="hidden xs:flex flex-col leading-tight min-w-0">
                   <h1 className="text-base md:text-lg font-serif tracking-wider font-semibold truncate text-gray-900 dark:text-white">VAIRANYA</h1>
@@ -378,7 +387,7 @@ const Header: React.FC = () => {
                       aria-label="Account menu"
                     >
                       {user.photoURL ? (
-                        <Image
+                        <ImageKitImage
                           src={user.photoURL}
                           alt={user.displayName || "User"}
                           width={28}

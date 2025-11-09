@@ -209,9 +209,9 @@ export default function Page() {
   }, []);
 
   // Create stable render functions using useCallback to avoid SSR serialization issues
-  const renderProductItem = useCallback((product: Product) => (
+  const renderProductItem = useCallback((product: Product, index?: number) => (
     <div className="min-w-[160px] max-w-[160px] sm:min-w-[200px] sm:max-w-[200px] md:min-w-[240px] md:max-w-[240px] lg:min-w-[260px] lg:max-w-[260px]">
-      <ProductCard product={product} />
+      <ProductCard product={product} priority={index !== undefined && index < 4} />
     </div>
   ), []);
 

@@ -104,7 +104,7 @@ CMD ["npm", "start"]
 1. **Cart Persistence**: Cart is stored in localStorage, so it persists across page refreshes
 2. **API Routes**: All API routes are server-rendered (dynamic)
 3. **Static Pages**: Most pages are static for better performance
-4. **Image Optimization**: Configured for external domains (Firebase, ImgBB, etc.)
+4. **Image Optimization**: Configured for external domains (ImageKit.io, Firebase, etc.)
 5. **Rate Limiting**: Admin login and order creation are rate-limited
 6. **Health Check**: Monitor `/api/health` for service status
 7. **NODE_ENV Warning**: If you see "NODE_ENV was incorrectly set to 'development'" warning in Vercel:

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Image from "next/image";
+import { Image } from "@imagekit/next";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { CarouselSlide } from "@/lib/carousel-types";
@@ -12,18 +12,6 @@ interface CarouselProps {
   autoPlay?: boolean;
   interval?: number;
 }
-
-// Helper to determine if image should be optimized
-const shouldOptimizeImage = (url: string): boolean => {
-  if (!url) return false;
-  const optimizeDomains = [
-    'firebasestorage.googleapis.com',
-    'googleusercontent.com',
-    'ibb.co',
-    'i.ibb.co',
-  ];
-  return optimizeDomains.some(domain => url.includes(domain));
-};
 
 export default function Carousel({ slides, autoPlay = true, interval = 5000 }: CarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -203,7 +191,7 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
                     priority={index === 0 || index === 1}
                     sizes="100vw"
                     quality={90}
-                    unoptimized={!shouldOptimizeImage(slide.image_url)}
+                    loading={index <= 1 ? undefined : "lazy"}
                     onLoad={() => handleImageLoad(index)}
                     onError={(e) => {
                       console.error("Carousel image failed to load:", slide.image_url, index);

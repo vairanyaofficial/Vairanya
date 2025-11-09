@@ -10,6 +10,17 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "*.imagekit.io",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "ik.imagekit.io",
+        pathname: "/**",
+      },
+      // imgBB domains (for backward compatibility with existing products)
+      {
+        protocol: "https",
         hostname: "i.ibb.co",
         pathname: "/**",
       },
@@ -38,23 +49,25 @@ const nextConfig = {
         hostname: "*.firebasestorage.googleapis.com",
         pathname: "/**",
       },
+      // Pixabay domains (temporary - for backward compatibility during migration)
       {
         protocol: "https",
         hostname: "cdn.pixabay.com",
         pathname: "/**",
       },
-      // Allow local uploads if served from same domain
       {
         protocol: "https",
-        hostname: "**",
-        pathname: "/uploads/**",
+        hostname: "*.pixabay.com",
+        pathname: "/**",
       },
     ],
     // Optimize images for better performance
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60,
+    minimumCacheTTL: 31536000, // 1 year cache for optimized images
+    // Enable image optimization loader
+    loader: 'default',
     // Enable image optimization for remote images
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
@@ -126,6 +139,22 @@ const nextConfig = {
       };
     }
     return config;
+  },
+  
+  // Exclude test files and directories from output file tracing (prevents test files from being included in serverless bundles)
+  experimental: {
+    outputFileTracingExcludes: {
+      '*': [
+        'tests/**/*',
+        '**/*.spec.ts',
+        '**/*.test.ts',
+        '**/*.spec.tsx',
+        '**/*.test.tsx',
+        'playwright.config.ts',
+        'playwright-report/**/*',
+        'test-results/**/*',
+      ],
+    },
   },
 };
 

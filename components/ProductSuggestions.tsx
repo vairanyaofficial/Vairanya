@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { Image } from "@imagekit/next";
 import ProductCard from "./ProductCard";
 import HorizontalSlider from "./HorizontalSlider";
 import type { Product } from "@/lib/products-types";

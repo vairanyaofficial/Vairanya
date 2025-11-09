@@ -1,7 +1,7 @@
 import React from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import Image from "next/image";
+import { Image } from "@imagekit/next";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type { Metadata } from "next";

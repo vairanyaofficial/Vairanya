@@ -9,7 +9,7 @@ import { useWishlist } from "@/lib/wishlist-context";
 import { Button } from "@/components/ui/button";
 import { Heart, ShoppingBag, Trash2 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import { Image } from "@imagekit/next";
 import { useCart } from "@/lib/cart-context";
 import type { Product } from "@/lib/products-types";
 import { ProductGridSkeleton } from "@/components/SkeletonLoader";

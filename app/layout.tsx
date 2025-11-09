@@ -7,6 +7,7 @@ import { ToastProvider } from "@/components/ToastProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ImageKitProviderWrapper } from "@/components/ImageKitProviderWrapper";
 
 const playfair = Playfair_Display({
   variable: "--font-serif",
@@ -125,15 +126,19 @@ export default function RootLayout({
         />
         <ThemeProvider>
           <ErrorBoundary>
-            <AuthProvider>
-              <ToastProvider>
-                <WishlistProvider>
-                  <CartProvider>
-                    {children}
-                  </CartProvider>
-                </WishlistProvider>
-              </ToastProvider>
-            </AuthProvider>
+            <ImageKitProviderWrapper 
+              urlEndpoint={process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/zjax0fbrm"}
+            >
+              <AuthProvider>
+                <ToastProvider>
+                  <WishlistProvider>
+                    <CartProvider>
+                      {children}
+                    </CartProvider>
+                  </WishlistProvider>
+                </ToastProvider>
+              </AuthProvider>
+            </ImageKitProviderWrapper>
           </ErrorBoundary>
         </ThemeProvider>
       </body>

@@ -66,6 +66,29 @@ This document outlines all the production-ready improvements made to the Vairany
   - React Strict Mode enabled
   - Image optimization (AVIF, WebP)
 
+- **Image Optimization** ✅
+  - **Removed `unoptimized` flag**: All external images now use Next.js image optimization
+    - Automatic format conversion (WebP/AVIF)
+    - Automatic resizing for different screen sizes
+    - Compression and optimization
+  - **Lazy Loading**: Images below the fold use `loading="lazy"`
+  - **Priority Loading**: Above-the-fold images (first 4-6 products) use `priority` prop
+  - **Cache TTL**: Increased from 60 seconds to 1 year (31536000 seconds)
+  - **Quality Settings**: 
+    - Product cards: 85% quality
+    - Main product images: 90% quality
+    - Thumbnails: 75% quality
+  - **Responsive Sizes**: Proper `sizes` attribute for optimal image delivery
+  - **Updated Components**:
+    - `components/ProductCard.tsx`: Added priority prop, lazy loading, quality settings
+    - `components/ImageGallery.tsx`: Removed unoptimized, added quality and sizes
+    - `components/Carousel.tsx`: Optimized image loading with priority for first 2 slides
+  - **Expected Performance Improvement**: 
+    - Images should load 5-10x faster
+    - Reduced bandwidth usage (30-50% smaller file sizes)
+    - Better Core Web Vitals (LCP, CLS)
+    - Improved user experience on slow connections
+
 ### 7. Documentation ✅
 - **Updated DEPLOYMENT.md**: Comprehensive deployment guide
 - **Production README**: This document

@@ -4,6 +4,12 @@ import { useAuth } from "@/components/AuthProvider";
 import { getAdminSession } from "@/lib/admin-auth";
 import { useRouter } from "next/navigation";
 import type { Product } from "@/lib/products-types";
+import {
+  ImageKitAbortError,
+  ImageKitInvalidRequestError,
+  ImageKitServerError,
+  ImageKitUploadNetworkError,
+} from "@imagekit/next";
 
 type Props = {
   initialCategories?: string[];
@@ -41,7 +47,17 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
   );
 
   // image + UX - multiple images support
-  const [existingImages, setExistingImages] = useState<string[]>(product?.images || []);
+  // Filter images: Only keep ImageKit URLs and local static assets on load
+  const initialImages =
+    product?.images?.filter((img) => {
+      // Keep ImageKit URLs
+      if (img.includes("imagekit.io")) return true;
+      // Keep local static assets
+      if (img.startsWith("/images/")) return true;
+      // Remove everything else (imgBB, Pixabay, /uploads/, etc.)
+      return false;
+    }) || [];
+  const [existingImages, setExistingImages] = useState<string[]>(initialImages);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const previewUrlsRef = useRef<string[]>([]);
@@ -135,56 +151,76 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
   const isPriceValid = (p: string) => /^[0-9]+(\.[0-9]{1,2})?$/.test(p.trim());
   const isStockValid = (s: string) => /^[0-9]+$/.test(s.trim()) || s.trim() === "";
 
-  // ImgBB upload with progress via XHR
-  const uploadToImgBB = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const key = process.env.NEXT_PUBLIC_IMGBB_KEY;
-      if (!key) {
-        return reject(new Error("ImgBB API key missing. Please add NEXT_PUBLIC_IMGBB_KEY to your .env.local file. Get your free API key from https://api.imgbb.com/"));
-      }
+  // Helper function to generate slug from title
+  const generateSlug = (titleText: string): string => {
+    return titleText
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  };
 
-      if (key.length < 20) {
-        return reject(new Error("Invalid ImgBB API key format. Please check your NEXT_PUBLIC_IMGBB_KEY in .env.local"));
-      }
+  // Get product slug for folder organization
+  const getProductSlug = (): string => {
+    // If editing existing product, use its slug
+    if (isEditMode && product?.slug) {
+      return product.slug;
+    }
+    // For new products, generate slug from current title
+    if (title.trim()) {
+      return generateSlug(title);
+    }
+    // Fallback to a temporary slug if title is empty
+    return "temp-product";
+  };
 
-      const form = new FormData();
-      form.append("image", file);
+  // ImageKit upload using the new SDK
+  const uploadToImageKit = async (file: File, productSlug?: string): Promise<string> => {
+    const session = getAdminSession();
+    if (!session) {
+      throw new Error("Admin session required for image upload");
+    }
 
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", `https://api.imgbb.com/1/upload?key=${key}`);
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100);
+    try {
+      // Import the utility function
+      const { uploadToImageKit: uploadUtil } = await import("@/lib/imagekit");
+      
+      // Determine the folder path: products/{product-slug}/
+      // Use provided slug or get from current product/title
+      const slug = productSlug || getProductSlug();
+      const folderPath = `products/${slug}`;
+      
+      // Use the utility function with progress tracking
+      // Upload to products/{product-slug} folder for organized storage
+      // The utility will handle admin authentication headers automatically
+      return await uploadUtil(
+        file,
+        file.name,
+        (percent) => {
           setUploadProgress(percent);
-        }
-      };
-
-      xhr.onload = () => {
-        try {
-          const res = JSON.parse(xhr.responseText);
-          if (xhr.status >= 200 && xhr.status < 300 && res?.data?.url) {
-            setUploadProgress(100);
-            resolve(res.data.url);
-          } else {
-            let errorMsg = "ImgBB upload failed";
-            if (res?.error) {
-              if (res.error.message?.includes("Invalid API") || res.error.message?.includes("API key")) {
-                errorMsg = "Invalid ImgBB API key. Please check your NEXT_PUBLIC_IMGBB_KEY in .env.local. Get a free key at https://api.imgbb.com/";
-              } else {
-                errorMsg = res.error.message || errorMsg;
-              }
-            }
-            reject(new Error(errorMsg));
-          }
-        } catch (err) {
-          reject(new Error("ImgBB upload: invalid response from server"));
-        }
-      };
-
-      xhr.onerror = () => reject(new Error("ImgBB upload network error. Please check your internet connection."));
-      xhr.send(form);
-    });
+        },
+        undefined,
+        session,
+        folderPath // Upload to products/{product-slug} folder
+      );
+    } catch (error) {
+      // Handle specific error types provided by the ImageKit SDK
+      if (error instanceof ImageKitAbortError) {
+        throw new Error(`Upload aborted: ${error.reason}`);
+      } else if (error instanceof ImageKitInvalidRequestError) {
+        throw new Error(`Invalid request: ${error.message}`);
+      } else if (error instanceof ImageKitUploadNetworkError) {
+        throw new Error(`Network error: ${error.message}`);
+      } else if (error instanceof ImageKitServerError) {
+        throw new Error(`Server error: ${error.message}`);
+      } else {
+        // Handle any other errors
+        const errorMessage = error instanceof Error ? error.message : "Unknown upload error";
+        throw new Error(`Upload failed: ${errorMessage}`);
+      }
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMsg(null);
@@ -242,20 +278,33 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
     if (isEditMode && onSubmit) {
       setLoading(true);
       try {
+        // Generate or get product slug for folder organization
+        const productSlug = product?.slug || generateSlug(title);
+        
         // Upload all new files
         const uploadedUrls: string[] = [];
         if (newFiles.length > 0) {
           setMsg({ type: "info", text: `Uploading ${newFiles.length} image(s)...` });
           for (let i = 0; i < newFiles.length; i++) {
             setUploadProgress(Math.round(((i + 1) / newFiles.length) * 100));
-            const url = await uploadToImgBB(newFiles[i]);
+            // Upload to products/{product-slug} folder
+            const url = await uploadToImageKit(newFiles[i], productSlug);
             uploadedUrls.push(url);
           }
           setUploadProgress(100);
         }
 
-        // Combine existing images (that weren't removed) with newly uploaded images
-        const allImages = [...existingImages, ...uploadedUrls];
+        // Filter images: Only keep ImageKit URLs and local static assets
+        // Remove imgBB, Pixabay, /uploads/, and other external URLs
+        const validExistingImages = existingImages.filter((img) => {
+          // Keep ImageKit URLs
+          if (img.includes("imagekit.io")) return true;
+          // Keep local static assets
+          if (img.startsWith("/images/")) return true;
+          // Remove everything else (imgBB, Pixabay, /uploads/, etc.)
+          return false;
+        });
+        const allImages = [...validExistingImages, ...uploadedUrls];
 
         const productData: Partial<Product> = {
           title: title.trim(),
@@ -275,12 +324,7 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
             .map((s) => s.trim())
             .filter(Boolean),
           images: allImages,
-          slug: product?.slug || title
-            .toLowerCase()
-            .trim()
-            .replace(/[^\w\s-]/g, "")
-            .replace(/[\s_-]+/g, "-")
-            .replace(/^-+|-+$/g, ""),
+          slug: productSlug,
           metal_finish: selectedMetalFinish,
           is_new: product?.is_new ?? true,
         };
@@ -302,25 +346,21 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
     setUploadProgress(0);
 
     try {
-      // Upload all new files
+      // Generate slug from title first (needed for folder organization)
+      const slug = generateSlug(title);
+      
+      // Upload all new files to products/{slug} folder
       const uploadedUrls: string[] = [];
       if (newFiles.length > 0) {
         setMsg({ type: "info", text: `Uploading ${newFiles.length} image(s)...` });
         for (let i = 0; i < newFiles.length; i++) {
           setUploadProgress(Math.round(((i + 1) / newFiles.length) * 100));
-          const url = await uploadToImgBB(newFiles[i]);
+          // Upload to products/{slug} folder for organized storage
+          const url = await uploadToImageKit(newFiles[i], slug);
           uploadedUrls.push(url);
         }
         setUploadProgress(100);
       }
-
-      // Generate slug from title
-      const slug = title
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/[\s_-]+/g, "-")
-        .replace(/^-+|-+$/g, "");
 
       // Prepare product data
       const productData = {

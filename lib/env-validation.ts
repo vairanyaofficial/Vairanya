@@ -17,6 +17,11 @@ interface EnvConfig {
   RAZORPAY_KEY_SECRET?: string;
   NEXT_PUBLIC_RAZORPAY_KEY_ID?: string;
 
+  // ImageKit.io
+  IMAGEKIT_PRIVATE_KEY?: string;
+  NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY?: string;
+  NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT?: string;
+
   // NextAuth
   NEXTAUTH_SECRET?: string;
   NEXTAUTH_URL?: string;
@@ -66,6 +71,17 @@ export function validateEnv(): ValidationResult {
     }
     if (!process.env.RAZORPAY_KEY_SECRET) {
       warnings.push("RAZORPAY_KEY_SECRET (payment gateway will not work)");
+    }
+
+    // ImageKit.io - required for image uploads
+    if (!process.env.IMAGEKIT_PRIVATE_KEY) {
+      warnings.push("IMAGEKIT_PRIVATE_KEY (image uploads will not work)");
+    }
+    if (!process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY) {
+      warnings.push("NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY (image uploads will not work)");
+    }
+    if (!process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT) {
+      warnings.push("NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT (image uploads will not work)");
     }
 
     // NextAuth - recommended
