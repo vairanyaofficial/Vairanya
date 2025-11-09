@@ -4,6 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
 import React, { useState, useEffect } from "react";
 import Cart from "./Cart";
 import { useCart } from "@/lib/cart-context";
@@ -18,7 +26,7 @@ const Header: React.FC = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAccountMenu, setShowAccountMenu] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isWorker, setIsWorker] = useState(false);
@@ -51,38 +59,236 @@ const Header: React.FC = () => {
     if (searchQuery.trim()) {
       router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery("");
-      setShowMobileMenu(false);
+      setMobileMenuOpen(false);
     }
   };
 
-  // Prevent body scroll when mobile menu is open
-  useEffect(() => {
-    if (showMobileMenu) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [showMobileMenu]);
 
   return (
     <>
-      <header className="sticky top-0 z-50 glass-strong safe-top border-b border-gray-200/50 dark:border-white/10 shadow-lg dark:shadow-none">
+      <header className="sticky top-0 z-40 glass-strong safe-top border-b border-gray-200/50 dark:border-white/10 shadow-lg dark:shadow-none">
         {/* Main Header - Mobile Optimized */}
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-18 gap-2 sm:gap-3">
-            {/* Logo - Always visible on mobile */}
-            <Link href="/" className="flex items-center gap-2 flex-shrink-0 group min-w-0" aria-label="Go to home" onClick={() => setShowMobileMenu(false)}>
-              <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 overflow-hidden group-active:scale-95 transition-transform duration-200">
-                <Image src="/images/logo-ivory.png" alt="Vairanya logo" width={40} height={40} priority className="w-8 h-8 md:w-9 md:h-9" />
-              </div>
-              <div className="hidden xs:flex flex-col leading-tight min-w-0">
-                <h1 className="text-base md:text-lg font-serif tracking-wider font-semibold truncate text-gray-900 dark:text-white">VAIRANYA</h1>
-                <div className="text-[9px] md:text-[10px] text-gray-500 dark:text-gray-500 leading-none truncate">Where Elegance Meets Soul</div>
-              </div>
-            </Link>
+            {/* Left Side - Mobile Menu Button + Logo */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              {/* Mobile Menu Button - Left Side */}
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <button
+                    className="md:hidden p-2.5 text-gray-700 dark:text-gray-400 active:text-[#D4AF37] dark:active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-[#1a1a1a] transition-colors rounded-lg touch-manipulation"
+                    aria-label="Menu"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[80vw] sm:w-[320px] p-0">
+                  <div className="flex flex-col h-full">
+                    {/* Mobile Menu Header */}
+                    <SheetHeader className="px-2 py-2 border-b border-gray-200 dark:border-white/10">
+                      <div className="flex items-center justify-between">
+                        <SheetClose asChild>
+                          <button
+                            className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-colors"
+                            aria-label="Close menu"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </SheetClose>
+                        <SheetTitle className="text-sm font-serif font-semibold text-gray-900 dark:text-white ml-auto">Menu</SheetTitle>
+                      </div>
+                    </SheetHeader>
+
+                    {/* Mobile Menu Content */}
+                    <div className="flex-1 overflow-y-auto px-2 pt-2 pb-2 flex flex-col">
+                      <div className="flex-1">
+                        {/* Mobile Search Bar */}
+                        <form onSubmit={handleSearch} className="mb-3">
+                          <div className="flex gap-1.5">
+                            <input
+                              type="text"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              placeholder="Search..."
+                              className="flex-1 px-2.5 py-1.5 text-xs border border-[#D4AF37]/50 dark:border-[#D4AF37]/50 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                              autoComplete="off"
+                            />
+                            <button
+                              type="submit"
+                              className="px-2.5 py-1.5 bg-[#D4AF37] active:bg-[#C19B2E] text-white rounded-md transition-all shadow-sm touch-manipulation min-w-[36px] flex items-center justify-center"
+                              aria-label="Search"
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <Search className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </form>
+
+                        {/* Mobile Account Section */}
+                        {user ? (
+                          <div className="mb-3 pb-3 border-b border-gray-200 dark:border-[#1a1a1a]">
+                            <div className="flex items-center gap-2 mb-2 p-1.5 rounded-md bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10">
+                              {user.photoURL ? (
+                                <Image
+                                  src={user.photoURL}
+                                  alt={user.displayName || "User"}
+                                  width={28}
+                                  height={28}
+                                  className="rounded-full border border-white dark:border-[#1a1a1a] shadow-sm"
+                                />
+                              ) : (
+                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C19B2E] flex items-center justify-center text-white font-semibold text-xs shadow-sm">
+                                  {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                                  {user.displayName || "User"}
+                                </p>
+                                <p className="text-[10px] text-gray-500 dark:text-gray-500 truncate">{user.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              <SheetClose asChild>
+                                <Link
+                                  href="/account"
+                                  className="px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-md transition-colors touch-manipulation flex items-center gap-2"
+                                >
+                                  <User className="h-3.5 w-3.5" />
+                                  My Account
+                                </Link>
+                              </SheetClose>
+                              <SheetClose asChild>
+                                <Link
+                                  href="/account?tab=orders"
+                                  className="px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-md transition-colors touch-manipulation flex items-center gap-2"
+                                >
+                                  <ShoppingBag className="h-3.5 w-3.5" />
+                                  Orders
+                                </Link>
+                              </SheetClose>
+                              <SheetClose asChild>
+                                <Link
+                                  href="/wishlist"
+                                  className="px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-md transition-colors touch-manipulation flex items-center gap-2"
+                                >
+                                  <Heart className="h-3.5 w-3.5" />
+                                  Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
+                                </Link>
+                              </SheetClose>
+                              {mounted && (isAdmin || isWorker) && (
+                                <SheetClose asChild>
+                                  <Link
+                                    href={isWorker ? "/worker/dashboard" : adminDashboardPath}
+                                    className="px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-md transition-colors touch-manipulation flex items-center gap-2"
+                                  >
+                                    {isWorker ? <Briefcase className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
+                                    {isWorker ? "Worker Dashboard" : "Admin Panel"}
+                                  </Link>
+                                </SheetClose>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mb-3 pb-3 border-b border-gray-200 dark:border-[#1a1a1a]">
+                            <SheetClose asChild>
+                              <Link
+                                href="/login"
+                                className="flex items-center justify-center gap-1.5 w-full px-2.5 py-2 text-xs font-medium text-white bg-[#D4AF37] active:bg-[#C19B2E] rounded-md transition-colors touch-manipulation shadow-sm"
+                              >
+                                <LogIn className="h-3.5 w-3.5" />
+                                Sign In
+                              </Link>
+                            </SheetClose>
+                          </div>
+                        )}
+
+                        {/* Mobile Navigation Links */}
+                        <nav className="flex flex-col gap-0.5">
+                          <p className="px-2 py-1 text-[10px] font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider">Shop</p>
+                          <SheetClose asChild>
+                            <Link
+                              href="/products"
+                              className="px-2 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-md transition-colors touch-manipulation"
+                            >
+                              All Products
+                            </Link>
+                          </SheetClose>
+                          <SheetClose asChild>
+                            <Link
+                              href="/products?category=rings"
+                              className="px-2 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-md transition-colors touch-manipulation"
+                            >
+                              Rings
+                            </Link>
+                          </SheetClose>
+                          <SheetClose asChild>
+                            <Link
+                              href="/products?category=earrings"
+                              className="px-2 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-md transition-colors touch-manipulation"
+                            >
+                              Earrings
+                            </Link>
+                          </SheetClose>
+                          <SheetClose asChild>
+                            <Link
+                              href="/products?category=pendants"
+                              className="px-2 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-md transition-colors touch-manipulation"
+                            >
+                              Pendants
+                            </Link>
+                          </SheetClose>
+                          <SheetClose asChild>
+                            <Link
+                              href="/products?category=bracelets"
+                              className="px-2 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-md transition-colors touch-manipulation"
+                            >
+                              Bracelets
+                            </Link>
+                          </SheetClose>
+                          <SheetClose asChild>
+                            <Link
+                              href="/products?category=necklaces"
+                              className="px-2 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-md transition-colors touch-manipulation"
+                            >
+                              Necklaces
+                            </Link>
+                          </SheetClose>
+                        </nav>
+                      </div>
+
+                      {/* Sign Out Button - At the bottom */}
+                      {user && (
+                        <div className="pt-2 mt-2 border-t border-gray-200 dark:border-[#1a1a1a]">
+                          <SheetClose asChild>
+                            <button
+                              onClick={() => {
+                                signout();
+                              }}
+                              className="w-full text-left px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-red-500 dark:active:text-red-400 rounded-md transition-colors touch-manipulation flex items-center gap-2"
+                            >
+                              <LogOut className="h-3.5 w-3.5" />
+                              Sign Out
+                            </button>
+                          </SheetClose>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              {/* Logo */}
+              <Link href="/" className="flex items-center gap-2 flex-shrink-0 group min-w-0" aria-label="Go to home">
+                <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 overflow-hidden group-active:scale-95 transition-transform duration-200">
+                  <Image src="/images/logo-ivory.png" alt="Vairanya logo" width={40} height={40} priority className="w-8 h-8 md:w-9 md:h-9" />
+                </div>
+                <div className="hidden xs:flex flex-col leading-tight min-w-0">
+                  <h1 className="text-base md:text-lg font-serif tracking-wider font-semibold truncate text-gray-900 dark:text-white">VAIRANYA</h1>
+                  <div className="text-[9px] md:text-[10px] text-gray-500 dark:text-gray-500 leading-none truncate">Where Elegance Meets Soul</div>
+                </div>
+              </Link>
+            </div>
 
             {/* Search Bar - Desktop */}
             <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-lg mx-6">
@@ -122,7 +328,6 @@ const Header: React.FC = () => {
               {/* Mobile Search Button - Better touch target */}
               <button
                 onClick={() => {
-                  setShowMobileMenu(false);
                   router.push("/products");
                 }}
                 className="lg:hidden p-2.5 -mr-1 text-gray-700 dark:text-gray-400 active:text-[#D4AF37] dark:active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-[#1a1a1a] transition-colors rounded-lg touch-manipulation"
@@ -135,7 +340,6 @@ const Header: React.FC = () => {
               {user && (
                 <Link
                   href="/wishlist"
-                  onClick={() => setShowMobileMenu(false)}
                   className="flex items-center justify-center p-2.5 text-gray-700 dark:text-gray-400 active:text-[#D4AF37] dark:active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-[#1a1a1a] transition-colors relative rounded-lg touch-manipulation"
                   aria-label={`Wishlist with ${wishlistCount} items`}
                 >
@@ -152,7 +356,6 @@ const Header: React.FC = () => {
               <button
                 onClick={() => {
                   setCartOpen(true);
-                  setShowMobileMenu(false);
                 }}
                 className="flex items-center justify-center p-2.5 text-gray-700 dark:text-gray-300 active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-gray-800 transition-colors relative rounded-lg touch-manipulation"
                 aria-label={`Cart with ${totalItems} items`}
@@ -255,200 +458,9 @@ const Header: React.FC = () => {
                 )}
               </div>
 
-              {/* Mobile Menu Button - Better touch target */}
-              <button
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="md:hidden p-2.5 -mr-1 text-gray-700 dark:text-gray-400 active:text-[#D4AF37] dark:active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-[#1a1a1a] transition-colors rounded-lg touch-manipulation"
-                aria-label="Menu"
-                aria-expanded={showMobileMenu}
-              >
-                <Menu className="h-5 w-5" />
-              </button>
             </div>
           </div>
         </div>
-
-        {/* Mobile Menu - Full Screen Slide-in */}
-        {showMobileMenu && (
-          <>
-            {/* Backdrop */}
-            <div 
-              className="fixed inset-0 glass-overlay z-40 md:hidden animate-in fade-in duration-200 backdrop-blur-md"
-              onClick={() => setShowMobileMenu(false)}
-            />
-            {/* Slide-in Menu */}
-            <div className="fixed inset-y-0 right-0 w-full max-w-sm glass-strong z-50 md:hidden shadow-2xl border-l border-gray-200/50 dark:border-white/10 transform transition-transform duration-300 ease-out animate-in slide-in-from-right backdrop-blur-xl">
-              <div className="flex flex-col h-full overflow-y-auto safe-area-inset">
-                {/* Mobile Menu Header */}
-                <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200/50 dark:border-white/10 sticky top-0 glass z-10 backdrop-blur-xl">
-                  <h2 className="text-lg font-serif font-semibold text-gray-900 dark:text-white">Menu</h2>
-                  <button
-                    onClick={() => setShowMobileMenu(false)}
-                    className="p-2 text-gray-400 dark:text-gray-500 active:text-gray-600 dark:active:text-gray-300 rounded-lg active:bg-gray-100 dark:active:bg-[#1a1a1a] transition-colors touch-manipulation"
-                    aria-label="Close menu"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-
-                <div className="flex-1 px-4 pt-4 pb-6">
-                  {/* Mobile Search Bar */}
-                  <form onSubmit={handleSearch} className="mb-6">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search products..."
-                        className="flex-1 px-4 py-3 border-2 border-[#D4AF37]/50 dark:border-[#D4AF37]/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] glass-card backdrop-blur-md text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-white/70"
-                        autoComplete="off"
-                      />
-                      <button
-                        type="submit"
-                        className="px-5 py-3 bg-[#D4AF37] active:bg-[#C19B2E] text-white rounded-xl transition-all shadow-sm touch-manipulation min-w-[52px] flex items-center justify-center"
-                        aria-label="Search"
-                      >
-                        <Search className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </form>
-
-                  {/* Mobile Account Section - Top */}
-                  {user ? (
-                    <div className="mb-6 pb-6 border-b border-gray-200 dark:border-[#1a1a1a]">
-                      <div className="flex items-center gap-3 mb-4 p-3 rounded-xl glass-card backdrop-blur-md">
-                        {user.photoURL ? (
-                          <Image
-                            src={user.photoURL}
-                            alt={user.displayName || "User"}
-                            width={48}
-                            height={48}
-                            className="rounded-full border-2 border-white dark:border-[#1a1a1a] shadow-sm"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C19B2E] flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                            {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-base font-semibold text-gray-900 dark:text-white truncate">
-                            {user.displayName || "User"}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-500 truncate">{user.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <Link
-                          href="/account"
-                          className="px-4 py-3 text-base text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-xl transition-colors touch-manipulation flex items-center gap-3"
-                          onClick={() => setShowMobileMenu(false)}
-                        >
-                          <User className="h-5 w-5" />
-                          My Account
-                        </Link>
-                        <Link
-                          href="/account?tab=orders"
-                          className="px-4 py-3 text-base text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-xl transition-colors touch-manipulation flex items-center gap-3"
-                          onClick={() => setShowMobileMenu(false)}
-                        >
-                          <ShoppingBag className="h-5 w-5" />
-                          Orders
-                        </Link>
-                        <Link
-                          href="/wishlist"
-                          className="px-4 py-3 text-base text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-xl transition-colors touch-manipulation flex items-center gap-3"
-                          onClick={() => setShowMobileMenu(false)}
-                        >
-                          <Heart className="h-5 w-5" />
-                          Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
-                        </Link>
-                        {mounted && (isAdmin || isWorker) && (
-                          <Link
-                            href={isWorker ? "/worker/dashboard" : adminDashboardPath}
-                            className="px-4 py-3 text-base text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-xl transition-colors touch-manipulation flex items-center gap-3"
-                            onClick={() => setShowMobileMenu(false)}
-                          >
-                            {isWorker ? <Briefcase className="h-5 w-5" /> : <Shield className="h-5 w-5" />}
-                            {isWorker ? "Worker Dashboard" : "Admin Panel"}
-                          </Link>
-                        )}
-                        <div className="border-t border-gray-200 dark:border-[#1a1a1a] my-2" />
-                        <button
-                          onClick={() => {
-                            setShowMobileMenu(false);
-                            signout();
-                          }}
-                          className="w-full text-left px-4 py-3 text-base text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-red-500 dark:active:text-red-400 rounded-xl transition-colors touch-manipulation flex items-center gap-3"
-                        >
-                          <LogOut className="h-5 w-5" />
-                          Sign Out
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mb-6 pb-6 border-b border-gray-200 dark:border-[#1a1a1a]">
-                      <Link
-                        href="/login"
-                        onClick={() => setShowMobileMenu(false)}
-                        className="flex items-center justify-center gap-2 w-full px-4 py-3.5 text-base font-medium text-white bg-[#D4AF37] active:bg-[#C19B2E] rounded-xl transition-colors touch-manipulation shadow-sm"
-                      >
-                        <LogIn className="h-5 w-5" />
-                        Sign In
-                      </Link>
-                    </div>
-                  )}
-
-                  {/* Mobile Navigation Links - Bottom */}
-                  <nav className="flex flex-col gap-1.5">
-                    <p className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider">Shop</p>
-                    <Link
-                      href="/products"
-                      className="px-4 py-3.5 text-base font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-xl transition-colors touch-manipulation"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      All Products
-                    </Link>
-                    <Link
-                      href="/products?category=rings"
-                      className="px-4 py-3.5 text-base font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-xl transition-colors touch-manipulation"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      Rings
-                    </Link>
-                    <Link
-                      href="/products?category=earrings"
-                      className="px-4 py-3.5 text-base font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-xl transition-colors touch-manipulation"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      Earrings
-                    </Link>
-                    <Link
-                      href="/products?category=pendants"
-                      className="px-4 py-3.5 text-base font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-xl transition-colors touch-manipulation"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      Pendants
-                    </Link>
-                    <Link
-                      href="/products?category=bracelets"
-                      className="px-4 py-3.5 text-base font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-xl transition-colors touch-manipulation"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      Bracelets
-                    </Link>
-                    <Link
-                      href="/products?category=necklaces"
-                      className="px-4 py-3.5 text-base font-medium text-gray-700 dark:text-gray-300 active:bg-gray-100 dark:active:bg-[#1a1a1a] active:text-[#D4AF37] rounded-xl transition-colors touch-manipulation"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      Necklaces
-                    </Link>
-                  </nav>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
 
         {/* Navigation Bar - Compact */}
         <div className="hidden md:block border-t border-gray-200/50 dark:border-white/10 glass backdrop-blur-xl">

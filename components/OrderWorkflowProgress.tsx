@@ -1,76 +1,78 @@
 "use client";
 
 import React from "react";
-import { CheckCircle, Circle, Clock, Package, CheckSquare, Truck } from "lucide-react";
-import { WORKFLOW_STEPS, isStepCompleted, getCurrentStep, getWorkflowProgress } from "@/lib/workflow";
-import type { Task } from "@/lib/orders-types";
+import { CheckCircle, Circle, Clock, Package, Truck } from "lucide-react";
 
 interface OrderWorkflowProgressProps {
-  tasks: Task[];
   orderStatus?: string;
 }
 
-export default function OrderWorkflowProgress({ tasks, orderStatus }: OrderWorkflowProgressProps) {
-  const progress = getWorkflowProgress(tasks);
-  const currentStep = getCurrentStep(tasks);
+// Simple order status steps
+const ORDER_STEPS = [
+  { status: "pending", label: "Pending", icon: Clock, description: "Order is pending confirmation" },
+  { status: "confirmed", label: "Confirmed", icon: CheckCircle, description: "Order has been confirmed" },
+  { status: "processing", label: "Processing", icon: Package, description: "Order is being processed and packed" },
+  { status: "packed", label: "Packed", icon: Package, description: "Order has been packed and ready for shipping" },
+  { status: "shipped", label: "Shipped", icon: Truck, description: "Order has been shipped" },
+  { status: "delivered", label: "Delivered", icon: CheckCircle, description: "Order has been delivered" },
+];
 
-  const getStepIcon = (stepType: string) => {
-    switch (stepType) {
-      case "packing":
-        return <Package className="h-5 w-5" />;
-      case "quality_check":
-        return <CheckSquare className="h-5 w-5" />;
-      case "shipping_prep":
-        return <Truck className="h-5 w-5" />;
-      default:
-        return <Circle className="h-5 w-5" />;
-    }
+export default function OrderWorkflowProgress({ orderStatus = "pending" }: OrderWorkflowProgressProps) {
+  const getCurrentStepIndex = () => {
+    const index = ORDER_STEPS.findIndex(step => step.status === orderStatus);
+    return index >= 0 ? index : 0;
   };
 
-  const getStepTask = (stepType: string) => {
-    return tasks.find((t) => t.type === stepType);
+  const currentStepIndex = getCurrentStepIndex();
+  const progress = Math.round(((currentStepIndex + 1) / ORDER_STEPS.length) * 100);
+
+  const getStepStatus = (index: number) => {
+    if (index < currentStepIndex) return "completed";
+    if (index === currentStepIndex) return "current";
+    return "pending";
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 border">
+    <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
       <div className="mb-4">
-        <h3 className="font-serif text-xl mb-2">Order Processing Progress</h3>
+        <h3 className="font-serif text-xl mb-2 text-gray-900 dark:text-white">Order Processing Progress</h3>
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-gray-200 rounded-full h-2">
+          <div className="flex-1 bg-gray-200 dark:bg-white/10 rounded-full h-2">
             <div
               className="bg-[#D4AF37] h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className="text-sm font-medium text-gray-700">{progress}%</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{progress}%</span>
         </div>
       </div>
 
       <div className="space-y-4">
-        {WORKFLOW_STEPS.map((step, index) => {
-          const stepTask = getStepTask(step.type);
-          const isCompleted = isStepCompleted(step.type, tasks);
-          const isCurrent = currentStep?.type === step.type;
-          const isPending = !isCompleted && !isCurrent;
+        {ORDER_STEPS.map((step, index) => {
+          const stepStatus = getStepStatus(index);
+          const isCompleted = stepStatus === "completed";
+          const isCurrent = stepStatus === "current";
+          const isPending = stepStatus === "pending";
+          const IconComponent = step.icon;
 
           return (
             <div
-              key={step.type}
+              key={step.status}
               className={`flex items-start gap-4 p-4 rounded-lg border-2 transition-all ${
                 isCompleted
-                  ? "bg-green-50 border-green-200"
+                  ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/50"
                   : isCurrent
-                  ? "bg-yellow-50 border-[#D4AF37]"
-                  : "bg-gray-50 border-gray-200"
+                  ? "bg-yellow-50 dark:bg-yellow-900/20 border-[#D4AF37] dark:border-[#D4AF37]"
+                  : "bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10"
               }`}
             >
               <div
                 className={`flex-shrink-0 mt-0.5 ${
                   isCompleted
-                    ? "text-green-600"
+                    ? "text-green-600 dark:text-green-400"
                     : isCurrent
                     ? "text-[#D4AF37]"
-                    : "text-gray-400"
+                    : "text-gray-400 dark:text-gray-500"
                 }`}
               >
                 {isCompleted ? (
@@ -78,33 +80,22 @@ export default function OrderWorkflowProgress({ tasks, orderStatus }: OrderWorkf
                 ) : isCurrent ? (
                   <Clock className="h-6 w-6" />
                 ) : (
-                  <Circle className="h-6 w-6" />
+                  <IconComponent className="h-6 w-6" />
                 )}
               </div>
 
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <div
-                    className={`${
-                      isCompleted
-                        ? "text-green-600"
-                        : isCurrent
-                        ? "text-[#D4AF37]"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    {getStepIcon(step.type)}
-                  </div>
                   <h4
                     className={`font-semibold ${
                       isCompleted
-                        ? "text-green-800"
+                        ? "text-green-800 dark:text-green-300"
                         : isCurrent
-                        ? "text-[#C19B2E]"
-                        : "text-gray-500"
+                        ? "text-[#C19B2E] dark:text-[#D4AF37]"
+                        : "text-gray-500 dark:text-gray-400"
                     }`}
                   >
-                    {step.name}
+                    {step.label}
                   </h4>
                   {isCurrent && (
                     <span className="px-2 py-0.5 text-xs bg-[#D4AF37] text-white rounded-full">
@@ -112,38 +103,12 @@ export default function OrderWorkflowProgress({ tasks, orderStatus }: OrderWorkf
                     </span>
                   )}
                   {isCompleted && (
-                    <span className="px-2 py-0.5 text-xs bg-green-600 text-white rounded-full">
+                    <span className="px-2 py-0.5 text-xs bg-green-600 dark:bg-green-700 text-white rounded-full">
                       Completed
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-600 mb-2">{step.description}</p>
-
-                {stepTask && (
-                  <div className="text-xs text-gray-500 space-y-1">
-                    <p>
-                      Status:{" "}
-                      <span className="font-medium capitalize">
-                        {stepTask.status.replace("_", " ")}
-                      </span>
-                    </p>
-                    {stepTask.assigned_to && (
-                      <p>
-                        Assigned to: <span className="font-medium">{stepTask.assigned_to}</span>
-                      </p>
-                    )}
-                    {stepTask.completed_at && (
-                      <p>
-                        Completed:{" "}
-                        {new Date(stepTask.completed_at).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {isPending && !stepTask && (
-                  <p className="text-xs text-gray-400 italic">Waiting for previous step...</p>
-                )}
+                <p className="text-sm text-gray-600 dark:text-gray-400">{step.description}</p>
               </div>
             </div>
           );
@@ -151,14 +116,13 @@ export default function OrderWorkflowProgress({ tasks, orderStatus }: OrderWorkf
       </div>
 
       {orderStatus && (
-        <div className="mt-4 pt-4 border-t">
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">Order Status:</span>{" "}
-            <span className="capitalize">{orderStatus}</span>
+        <div className="mt-4 pt-4 border-t dark:border-white/10">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="font-medium text-gray-900 dark:text-white">Order Status:</span>{" "}
+            <span className="capitalize text-gray-900 dark:text-white">{orderStatus}</span>
           </p>
         </div>
       )}
     </div>
   );
 }
-

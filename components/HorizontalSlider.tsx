@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useMemo } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface HorizontalSliderProps<T> {
@@ -15,6 +15,8 @@ interface HorizontalSliderProps<T> {
   emptyMessage?: string;
   scrollAmount?: number; // Amount to scroll on button click (defaults to cardWidth)
   buttonSize?: 'sm' | 'md' | 'lg'; // Button size (defaults to 'sm')
+  autoSlide?: boolean; // Enable auto-slide on mobile (defaults to false)
+  autoSlideInterval?: number; // Auto-slide interval in ms (defaults to 3000)
 }
 
 // Helper function to get item identifier
@@ -34,15 +36,29 @@ export default function HorizontalSlider<T = any>({
   emptyMessage = "No items to display",
   scrollAmount,
   buttonSize = 'sm',
+  autoSlide = false,
+  autoSlideInterval = 3000,
 }: HorizontalSliderProps<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isScrolling, setIsScrolling] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const autoSlideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const resumeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const scrollByAmount = scrollAmount || cardWidth;
 
   // Only render on client to avoid SSR serialization issues
   useEffect(() => {
     setIsMounted(true);
+    
+    // Detect if mobile
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Initialize scroll position for infinite scroll
@@ -53,8 +69,68 @@ export default function HorizontalSlider<T = any>({
     }
   }, [items.length, cardWidth, infiniteScroll]);
 
+  // Auto-slide on mobile
+  useEffect(() => {
+    if (!autoSlide || !isMobile || items.length <= 1 || isPaused || !scrollRef.current) return;
+
+    autoSlideTimerRef.current = setInterval(() => {
+      if (!scrollRef.current || isPaused) return;
+      
+      const container = scrollRef.current;
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      const currentScroll = container.scrollLeft;
+      
+      // Check if we've reached the end
+      if (currentScroll >= maxScroll - 10) {
+        // Reset to start
+        container.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        // Scroll to next card
+        container.scrollBy({ left: scrollByAmount, behavior: 'smooth' });
+      }
+    }, autoSlideInterval);
+
+    return () => {
+      if (autoSlideTimerRef.current) {
+        clearInterval(autoSlideTimerRef.current);
+      }
+    };
+  }, [autoSlide, isMobile, items.length, isPaused, scrollByAmount, autoSlideInterval]);
+
+  // Handle manual scroll - pause auto-slide
+  const handleManualScroll = () => {
+    if (autoSlide && isMobile) {
+      setIsPaused(true);
+      
+      // Clear existing resume timer
+      if (resumeTimerRef.current) {
+        clearTimeout(resumeTimerRef.current);
+      }
+      
+      // Resume after 5 seconds of no scrolling
+      resumeTimerRef.current = setTimeout(() => {
+        setIsPaused(false);
+        resumeTimerRef.current = null;
+      }, 5000);
+    }
+  };
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSlideTimerRef.current) {
+        clearInterval(autoSlideTimerRef.current);
+      }
+      if (resumeTimerRef.current) {
+        clearTimeout(resumeTimerRef.current);
+      }
+    };
+  }, []);
+
   // Handle infinite scroll
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    handleManualScroll(); // Pause auto-slide on manual scroll
+    
     if (!infiniteScroll || isScrolling) return;
     
     const container = e.currentTarget;
@@ -78,12 +154,14 @@ export default function HorizontalSlider<T = any>({
 
   const scrollLeft = () => {
     if (scrollRef.current && (!infiniteScroll || !isScrolling)) {
+      handleManualScroll(); // Pause auto-slide on manual navigation
       scrollRef.current.scrollBy({ left: -scrollByAmount, behavior: 'smooth' });
     }
   };
 
   const scrollRight = () => {
     if (scrollRef.current && (!infiniteScroll || !isScrolling)) {
+      handleManualScroll(); // Pause auto-slide on manual navigation
       scrollRef.current.scrollBy({ left: scrollByAmount, behavior: 'smooth' });
     }
   };
@@ -161,7 +239,9 @@ export default function HorizontalSlider<T = any>({
         ref={scrollRef}
         className="overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
         style={{ WebkitOverflowScrolling: 'touch' }}
-        onScroll={infiniteScroll ? handleScroll : undefined}
+        onScroll={infiniteScroll ? handleScroll : autoSlide ? handleManualScroll : undefined}
+        onTouchStart={autoSlide ? handleManualScroll : undefined}
+        onMouseDown={autoSlide ? handleManualScroll : undefined}
       >
         <div className={`flex ${getGapClass()} min-w-max`}>
           {infiniteScroll && (
@@ -179,23 +259,23 @@ export default function HorizontalSlider<T = any>({
         </div>
       </div>
 
-      {/* Navigation Buttons */}
+      {/* Navigation Buttons - Hidden on mobile, shown on desktop */}
       {showNavigation && items.length > 1 && (
         <>
           <button
             onClick={scrollLeft}
-            className={`absolute ${
-              buttonSize === 'lg' ? '-left-4 md:-left-6 p-3' : '-left-2 md:-left-4 p-2'
-            } top-1/2 -translate-y-1/2 bg-black/80 dark:bg-black/80 hover:bg-black dark:hover:bg-black backdrop-blur-md rounded-full text-white hover:text-[#D4AF37] transition-all duration-300 z-10 shadow-lg border border-white/20 dark:border-white/20 hover:border-[#D4AF37]/50`}
+            className={`hidden md:flex absolute ${
+              buttonSize === 'lg' ? '-left-6 p-3' : '-left-4 p-2'
+            } top-1/2 -translate-y-1/2 bg-black/80 dark:bg-black/80 hover:bg-black dark:hover:bg-black backdrop-blur-md rounded-full text-white hover:text-[#D4AF37] transition-all duration-300 z-10 shadow-lg border border-white/20 dark:border-white/20 hover:border-[#D4AF37]/50 items-center justify-center`}
             aria-label="Previous"
           >
             <ChevronLeft className={buttonSize === 'lg' ? "h-6 w-6" : "h-5 w-5"} />
           </button>
           <button
             onClick={scrollRight}
-            className={`absolute ${
-              buttonSize === 'lg' ? '-right-4 md:-right-6 p-3' : '-right-2 md:-right-4 p-2'
-            } top-1/2 -translate-y-1/2 bg-black/80 dark:bg-black/80 hover:bg-black dark:hover:bg-black backdrop-blur-md rounded-full text-white hover:text-[#D4AF37] transition-all duration-300 z-10 shadow-lg border border-white/20 dark:border-white/20 hover:border-[#D4AF37]/50`}
+            className={`hidden md:flex absolute ${
+              buttonSize === 'lg' ? '-right-6 p-3' : '-right-4 p-2'
+            } top-1/2 -translate-y-1/2 bg-black/80 dark:bg-black/80 hover:bg-black dark:hover:bg-black backdrop-blur-md rounded-full text-white hover:text-[#D4AF37] transition-all duration-300 z-10 shadow-lg border border-white/20 dark:border-white/20 hover:border-[#D4AF37]/50 items-center justify-center`}
             aria-label="Next"
           >
             <ChevronRight className={buttonSize === 'lg' ? "h-6 w-6" : "h-5 w-5"} />

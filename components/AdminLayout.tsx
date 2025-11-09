@@ -14,7 +14,7 @@ import {
 } from "@/lib/admin-auth";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ThemeProvider";
-import { Package, Home, LogOut, Shield, User, Users, Tag, Star, Menu, Moon, Sun } from "lucide-react";
+import { Package, Home, LogOut, Shield, User, Users, Tag, Star, Menu, Moon, Sun, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -27,6 +27,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { theme, toggleTheme } = useTheme();
   const [hasRedirected, setHasRedirected] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (showMobileMenu) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showMobileMenu]);
 
   useEffect(() => {
     setMounted(true);
@@ -201,14 +213,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   Orders
                 </Link>
                 <Link
-                  href="/admin/tasks"
-                  className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
-                    pathname?.startsWith("/admin/tasks") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400"
-                  }`}
-                >
-                  Tasks
-                </Link>
-                <Link
                   href="/admin/products"
                   className={`text-xs px-2 py-1 rounded hover:bg-gray-700 transition-colors whitespace-nowrap ${
                     pathname?.startsWith("/admin/products") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400"
@@ -326,28 +330,52 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </Button>
             </div>
           </div>
-          {/* Mobile Navigation */}
+          {/* Mobile Navigation - Slide-in Menu */}
           {showMobileMenu && (
-            <nav className="lg:hidden border-t border-gray-700 dark:border-white/10 py-2 px-4">
-            <div className="flex flex-col gap-1">
-              <Link href="/admin" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname === "/admin" ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Dashboard</Link>
-              <Link href="/admin/orders" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/orders") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Orders</Link>
-              <Link href="/admin/tasks" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/tasks") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Tasks</Link>
-              <Link href="/admin/products" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/products") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Products</Link>
-              <Link href="/admin/reviews" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/reviews") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Reviews</Link>
-              {(isSuperUser() || currentSession?.role === "admin") && (
-                <>
-                  <Link href="/admin/customers" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/customers") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Customers</Link>
-                  <Link href="/admin/offers" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/offers") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Offers</Link>
-                  <Link href="/admin/categories" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/categories") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Categories</Link>
-                  <Link href="/admin/collections" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/collections") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Collections</Link>
-                </>
-              )}
-              {canManageWorkers() && (
-                <Link href="/admin/workers" onClick={() => setShowMobileMenu(false)} className={`text-xs px-2 py-1.5 rounded ${pathname?.startsWith("/admin/workers") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Workers</Link>
-              )}
-            </div>
-            </nav>
+            <>
+              {/* Backdrop */}
+              <div 
+                className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[60] lg:hidden"
+                onClick={() => setShowMobileMenu(false)}
+              />
+              {/* Slide-in Menu */}
+              <div className="fixed inset-y-0 right-0 w-full max-w-xs bg-[#2E2E2E] dark:bg-[#0a0a0a] z-[70] lg:hidden shadow-2xl border-l border-gray-700 dark:border-white/10">
+                <div className="flex flex-col h-full">
+                  {/* Mobile Menu Header */}
+                  <div className="flex items-center justify-between px-4 py-4 border-b border-gray-700 dark:border-white/10">
+                    <h2 className="text-lg font-serif font-semibold text-[#D4AF37]">Menu</h2>
+                    <button
+                      onClick={() => setShowMobileMenu(false)}
+                      className="p-2 text-gray-300 dark:text-gray-400 hover:text-white rounded-lg"
+                      aria-label="Close menu"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
+                  
+                  {/* Mobile Navigation Links */}
+                  <nav className="flex-1 overflow-y-auto px-4 py-4">
+                    <div className="flex flex-col gap-1">
+                      <Link href="/admin" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname === "/admin" ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Dashboard</Link>
+                      <Link href="/admin/orders" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/orders") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Orders</Link>
+                      <Link href="/admin/products" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/products") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Products</Link>
+                      <Link href="/admin/reviews" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/reviews") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Reviews</Link>
+                      {(isSuperUser() || currentSession?.role === "admin") && (
+                        <>
+                          <Link href="/admin/customers" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/customers") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Customers</Link>
+                          <Link href="/admin/offers" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/offers") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Offers</Link>
+                          <Link href="/admin/categories" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/categories") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Categories</Link>
+                          <Link href="/admin/collections" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/collections") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Collections</Link>
+                        </>
+                      )}
+                      {canManageWorkers() && (
+                        <Link href="/admin/workers" onClick={() => setShowMobileMenu(false)} className={`text-sm px-3 py-2.5 rounded ${pathname?.startsWith("/admin/workers") ? "text-[#D4AF37] bg-gray-700 dark:bg-white/10" : "text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10"}`}>Workers</Link>
+                      )}
+                    </div>
+                  </nav>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </header>

@@ -84,9 +84,9 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   const hasActiveFilters = selectedCategory !== "all" || selectedMetalFinish !== "all" || selectedSize !== "all" || (priceRange[0] !== 0 || priceRange[1] < 999999);
 
   return (
-    <div className="space-y-4 rounded-lg border border-gray-200/50 dark:border-white/10 bg-white dark:bg-[#0a0a0a] p-4 shadow-sm dark:shadow-none">
+    <div className="space-y-4 rounded-lg border border-[#D4AF37]/50 dark:border-[#D4AF37]/40 bg-white dark:bg-[#0a0a0a] p-4 shadow-sm dark:shadow-none">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Filters</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white hover:text-[#D4AF37] transition-colors duration-200 cursor-default">Filters</h3>
         {hasActiveFilters && (
           <button
             onClick={onReset}
@@ -100,12 +100,12 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
 
       {/* Category Filter - Compact */}
       <div>
-        <h4 className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">Category</h4>
+        <h4 className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-[#D4AF37] uppercase tracking-wide transition-colors cursor-default">Category</h4>
         <div className="space-y-1.5">
-          <label className={`flex items-center gap-2 text-xs cursor-pointer transition-colors ${
+          <label className={`flex items-center gap-2 text-xs cursor-pointer transition-colors duration-200 group ${
             selectedCategory === "all" 
               ? "text-[#D4AF37] font-medium" 
-              : "text-gray-900 dark:text-gray-300 hover:text-[#D4AF37]"
+              : "text-gray-900 dark:text-gray-300 group-hover:text-[#D4AF37]"
           }`}>
             <input
               type="radio"
@@ -114,13 +114,13 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
               onChange={() => onCategoryChange("all")}
               className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37] dark:bg-black dark:border-white/20 accent-[#D4AF37]"
             />
-            <span>All</span>
+            <span className="group-hover:text-[#D4AF37] transition-colors duration-200">All</span>
           </label>
           {categories.map((category) => (
-            <label key={category} className={`flex items-center gap-2 text-xs capitalize cursor-pointer transition-colors ${
+            <label key={category} className={`flex items-center gap-2 text-xs capitalize cursor-pointer transition-colors duration-200 group ${
               selectedCategory === category 
                 ? "text-[#D4AF37] font-medium" 
-                : "text-gray-900 dark:text-gray-300 hover:text-[#D4AF37]"
+                : "text-gray-900 dark:text-gray-300"
             }`}>
               <input
                 type="radio"
@@ -129,7 +129,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 onChange={() => onCategoryChange(category as any)}
                 className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37] dark:bg-black dark:border-white/20 accent-[#D4AF37]"
               />
-              <span>{category}</span>
+              <span className="group-hover:text-[#D4AF37] transition-colors duration-200">{category}</span>
             </label>
           ))}
         </div>
@@ -137,12 +137,12 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
 
       {/* Metal Finish Filter - Compact & Fixed */}
       <div>
-        <h4 className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">Metal Finish</h4>
+        <h4 className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-[#D4AF37] uppercase tracking-wide transition-colors cursor-default">Metal Finish</h4>
         <div className="space-y-1.5">
-          <label className={`flex items-center gap-2 text-xs cursor-pointer transition-colors ${
+          <label className={`flex items-center gap-2 text-xs cursor-pointer transition-colors duration-200 group ${
             selectedMetalFinish === "all" 
               ? "text-[#D4AF37] font-medium" 
-              : "text-gray-900 dark:text-gray-300 hover:text-[#D4AF37]"
+              : "text-gray-900 dark:text-gray-300"
           }`}>
             <input
               type="radio"
@@ -151,13 +151,13 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
               onChange={() => onMetalFinishChange("all")}
               className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37] dark:bg-black dark:border-white/20 accent-[#D4AF37]"
             />
-            <span>All</span>
+            <span className="group-hover:text-[#D4AF37] transition-colors duration-200">All</span>
           </label>
           {metalFinishes.map((finish) => (
-            <label key={finish} className={`flex items-center gap-2 text-xs capitalize cursor-pointer transition-colors ${
+            <label key={finish} className={`flex items-center gap-2 text-xs capitalize cursor-pointer transition-colors duration-200 group ${
               selectedMetalFinish === finish 
                 ? "text-[#D4AF37] font-medium" 
-                : "text-gray-900 dark:text-gray-300 hover:text-[#D4AF37]"
+                : "text-gray-900 dark:text-gray-300"
             }`}>
               <input
                 type="radio"
@@ -166,7 +166,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 onChange={() => onMetalFinishChange(finish)}
                 className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37] dark:bg-black dark:border-white/20 accent-[#D4AF37]"
               />
-              <span>{finish.replace(/-/g, " ")}</span>
+              <span className="group-hover:text-[#D4AF37] transition-colors duration-200">{finish.replace(/-/g, " ")}</span>
             </label>
           ))}
         </div>
@@ -175,12 +175,12 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
       {/* Size Filter - Compact */}
       {availableSizes.length > 0 && (
         <div>
-          <h4 className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">Size</h4>
+          <h4 className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-[#D4AF37] uppercase tracking-wide transition-colors cursor-default">Size</h4>
           <div className="space-y-1.5 max-h-32 overflow-y-auto">
-            <label className={`flex items-center gap-2 text-xs cursor-pointer transition-colors ${
+            <label className={`flex items-center gap-2 text-xs cursor-pointer transition-colors duration-200 group ${
               selectedSize === "all" 
                 ? "text-[#D4AF37] font-medium" 
-                : "text-gray-900 dark:text-gray-300 hover:text-[#D4AF37]"
+                : "text-gray-900 dark:text-gray-300"
             }`}>
               <input
                 type="radio"
@@ -189,13 +189,13 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 onChange={() => onSizeChange("all")}
                 className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37] dark:bg-black dark:border-white/20 accent-[#D4AF37]"
               />
-              <span>All</span>
+              <span className="group-hover:text-[#D4AF37] transition-colors duration-200">All</span>
             </label>
             {availableSizes.map((size) => (
-              <label key={size} className={`flex items-center gap-2 text-xs cursor-pointer transition-colors ${
+              <label key={size} className={`flex items-center gap-2 text-xs cursor-pointer transition-colors duration-200 group ${
                 selectedSize === size 
                   ? "text-[#D4AF37] font-medium" 
-                  : "text-gray-900 dark:text-gray-300 hover:text-[#D4AF37]"
+                  : "text-gray-900 dark:text-gray-300"
               }`}>
                 <input
                   type="radio"
@@ -204,7 +204,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                   onChange={() => onSizeChange(size)}
                   className="h-3 w-3 text-[#D4AF37] focus:ring-[#D4AF37] dark:bg-black dark:border-white/20 accent-[#D4AF37]"
                 />
-                <span>{size}</span>
+                <span className="group-hover:text-[#D4AF37] transition-colors duration-200">{size}</span>
               </label>
             ))}
           </div>
@@ -213,7 +213,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
 
       {/* Price Range Filter - Compact */}
       <div>
-        <h4 className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">Price Range</h4>
+        <h4 className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-[#D4AF37] uppercase tracking-wide transition-colors cursor-default">Price Range</h4>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <input

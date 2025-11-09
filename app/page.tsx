@@ -163,29 +163,29 @@ export default function Page() {
 
   // Create stable render functions using useCallback to avoid SSR serialization issues
   const renderProductItem = useCallback((product: Product) => (
-    <div className="min-w-[260px] max-w-[260px]">
+    <div className="min-w-[160px] max-w-[160px] sm:min-w-[200px] sm:max-w-[200px] md:min-w-[240px] md:max-w-[240px] lg:min-w-[260px] lg:max-w-[260px]">
       <ProductCard product={product} />
     </div>
   ), []);
 
   const renderReviewItem = useCallback((review: Review) => (
-    <div className="bg-black dark:bg-[#0a0a0a] rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-white/20 dark:border-white/20 min-w-[240px] max-w-[240px]">
-      <div className="flex gap-0.5 mb-2.5">
+    <div className="bg-white dark:bg-[#0a0a0a] rounded-lg p-2.5 md:p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-white/20 min-w-[200px] max-w-[200px] md:min-w-[240px] md:max-w-[240px]">
+      <div className="flex gap-0.5 mb-2">
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`h-3 w-3 ${
+            className={`h-2.5 w-2.5 md:h-3 md:w-3 ${
               i < review.rating
                 ? "fill-[#D4AF37] text-[#D4AF37]"
-                : "text-gray-600 dark:text-gray-600"
+                : "text-gray-300 dark:text-gray-600"
             }`}
           />
         ))}
       </div>
-      <p className="text-white dark:text-white mb-2.5 text-xs md:text-sm leading-relaxed line-clamp-3">
+      <p className="text-gray-900 dark:text-white mb-2 text-[10px] md:text-sm leading-relaxed line-clamp-3">
         "{review.review_text}"
       </p>
-      <p className="font-semibold text-xs md:text-sm text-white dark:text-white">— {review.customer_name}</p>
+      <p className="font-semibold text-[10px] md:text-sm text-gray-900 dark:text-white">— {review.customer_name}</p>
     </div>
   ), []);
 
@@ -195,7 +195,7 @@ export default function Page() {
       <Header />
 
       {/* Carousel - Mobile Optimized */}
-      <section className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-12 pt-2 pb-3 md:pt-3 md:pb-4">
+      <section className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-12 pt-2 pb-2 md:pt-3 md:pb-4">
         {isLoadingCarousel ? (
           <CarouselSkeleton />
         ) : carouselSlides.length > 0 ? (
@@ -207,28 +207,28 @@ export default function Page() {
       {isLoadingOffers ? (
         <OffersSkeleton />
       ) : offers.length > 0 ? (
-        <section className="bg-gradient-to-r from-[#D4AF37]/5 via-[#C19B2E]/5 to-[#D4AF37]/5 dark:from-[#D4AF37]/10 dark:via-[#C19B2E]/10 dark:to-[#D4AF37]/10 py-4 md:py-5 border-y border-[#D4AF37]/10 dark:border-[#D4AF37]/20">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
-            <div className="flex items-center justify-center gap-2 md:gap-3 flex-wrap px-2">
-              <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap">Special Offers:</span>
+        <section className="bg-gradient-to-r from-[#D4AF37]/5 via-[#C19B2E]/5 to-[#D4AF37]/5 dark:from-[#D4AF37]/10 dark:via-[#C19B2E]/10 dark:to-[#D4AF37]/10 py-2.5 md:py-5 border-y border-[#D4AF37]/10 dark:border-[#D4AF37]/20">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6">
+            <div className="flex items-center justify-center gap-1.5 md:gap-3 flex-wrap px-1">
+              <span className="text-[10px] md:text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap">Special Offers:</span>
               {offers.slice(0, 3).map((offer, index) => (
                 <Link
                   key={offer.id}
                   href="/products"
-                  className="group inline-flex items-center gap-1.5 md:gap-2 glass backdrop-blur-md active:glass-strong md:hover:glass-strong px-3 md:px-4 py-2 md:py-2 rounded-full border-2 md:border border-[#D4AF37]/30 active:border-[#D4AF37]/50 md:hover:border-[#D4AF37]/50 shadow-lg active:shadow-xl md:hover:shadow-xl transition-all duration-200 touch-manipulation"
+                  className="group inline-flex items-center gap-1 md:gap-2 glass backdrop-blur-md active:glass-strong md:hover:glass-strong px-2 md:px-4 py-1.5 md:py-2 rounded-full border md:border border-[#D4AF37]/30 active:border-[#D4AF37]/50 md:hover:border-[#D4AF37]/50 shadow-md active:shadow-lg md:hover:shadow-xl transition-all duration-200 touch-manipulation"
                 >
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm md:text-base font-bold text-[#D4AF37]">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs md:text-base font-bold text-[#D4AF37]">
                       {offer.discount_type === "percentage"
                         ? `${offer.discount_value}%`
                         : `₹${offer.discount_value}`}
                     </span>
-                    <span className="text-xs text-gray-600 dark:text-white font-semibold md:font-medium">OFF</span>
+                    <span className="text-[10px] md:text-xs text-gray-600 dark:text-white font-semibold md:font-medium">OFF</span>
                   </div>
-                  <span className="text-xs text-gray-700 dark:text-white hidden sm:inline truncate max-w-[120px]">
+                  <span className="text-[10px] md:text-xs text-gray-700 dark:text-white hidden sm:inline truncate max-w-[120px]">
                     {offer.title}
                   </span>
-                  <div className="w-1.5 h-1.5 md:w-1 md:h-1 rounded-full bg-[#D4AF37] hidden sm:block"></div>
+                  <div className="w-1 h-1 md:w-1 md:h-1 rounded-full bg-[#D4AF37] hidden sm:block"></div>
                 </Link>
               ))}
             </div>
@@ -252,13 +252,13 @@ export default function Page() {
             if (collectionProducts.length === 0) return null;
 
             return (
-              <section key={collection.id} className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-12 py-4 md:py-6 lg:py-8">
-                <div className="text-left mb-4 md:mb-5">
-                  <h2 className="font-serif text-2xl md:text-3xl font-light mb-1.5 tracking-tight px-4 text-gray-900 dark:text-white">
+              <section key={collection.id} className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-12 py-3 md:py-6 lg:py-8">
+                <div className="text-left mb-2 md:mb-5">
+                  <h2 className="font-serif text-lg md:text-3xl font-light mb-1 md:mb-1.5 tracking-tight px-2 md:px-4 text-gray-900 dark:text-white">
                     {collection.name}
                   </h2>
                   {collection.short_description && (
-                    <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 max-w-2xl px-4">
+                    <p className="text-xs md:text-base text-gray-600 dark:text-gray-400 max-w-2xl px-2 md:px-4">
                       {collection.short_description}
                     </p>
                   )}
@@ -267,15 +267,17 @@ export default function Page() {
                 <HorizontalSlider
                   items={collectionProducts}
                   renderItem={renderProductItem}
-                  cardWidth={276} // 260px card + 16px gap
+                  cardWidth={176} // 160px card (mobile) + 16px gap
                   gap={16}
                   infiniteScroll={false}
                   showNavigation={collectionProducts.length > 2}
+                  autoSlide={true}
+                  autoSlideInterval={4000}
                   emptyMessage="No products in this collection"
                 />
                 {collectionProducts.length > 2 && (
-                  <div className="text-center mt-4 md:mt-6">
-                    <Button asChild variant="outline" className="border-2 md:border border-gray-300 dark:border-white active:border-[#D4AF37] dark:active:border-[#D4AF37] md:hover:border-[#D4AF37] dark:md:hover:border-[#D4AF37] px-6 md:px-5 py-3 md:py-2 text-sm font-semibold md:font-medium rounded-xl md:rounded-lg active:bg-[#D4AF37]/5 dark:active:bg-[#D4AF37]/5 md:hover:bg-[#D4AF37]/5 dark:md:hover:bg-[#D4AF37]/5 transition-all duration-300 touch-manipulation text-gray-900 dark:text-white active:text-[#D4AF37] dark:active:text-[#D4AF37] md:hover:text-[#D4AF37] dark:md:hover:text-[#D4AF37]">
+                  <div className="text-center mt-2 md:mt-4">
+                    <Button asChild variant="outline" className="border border-gray-300 dark:border-white active:border-[#D4AF37] dark:active:border-[#D4AF37] md:hover:border-[#D4AF37] dark:md:hover:border-[#D4AF37] px-3 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-medium rounded-md active:bg-[#D4AF37]/5 dark:active:bg-[#D4AF37]/5 md:hover:bg-[#D4AF37]/5 dark:md:hover:bg-[#D4AF37]/5 transition-all duration-300 touch-manipulation text-gray-900 dark:text-white active:text-[#D4AF37] dark:active:text-[#D4AF37] md:hover:text-[#D4AF37] dark:md:hover:text-[#D4AF37]">
                       <Link href={`/products?collection=${collection.slug}`}>
                         View All {collection.name}
                       </Link>
@@ -290,30 +292,32 @@ export default function Page() {
 
       {/* Featured Collection (Fallback - New Products) */}
       {isLoadingProducts ? (
-        <section id="collection" className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 py-6 md:py-8">
-          <div className="text-center mb-4 md:mb-5">
-            <div className="h-8 w-64 bg-gray-200 rounded mx-auto mb-2 animate-pulse"></div>
-            <div className="h-4 w-96 bg-gray-200 rounded mx-auto animate-pulse"></div>
+        <section id="collection" className="max-w-7xl mx-auto px-2 md:px-10 lg:px-12 py-3 md:py-8">
+          <div className="text-center mb-3 md:mb-5">
+            <div className="h-6 sm:h-8 w-48 sm:w-64 bg-gray-200 rounded mx-auto mb-2 animate-pulse"></div>
+            <div className="h-3 sm:h-4 w-64 sm:w-96 bg-gray-200 rounded mx-auto animate-pulse"></div>
           </div>
           <ProductSliderSkeleton count={4} />
         </section>
       ) : featuredProducts.length > 0 && featuredCollections.length === 0 ? (
-        <section id="collection" className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 py-6 md:py-8">
-          <div className="text-center mb-4 md:mb-5">
-            <h2 className="font-serif text-2xl md:text-3xl font-light mb-1.5 tracking-tight">Featured Collection</h2>
-            <p className="text-sm md:text-base text-gray-600 max-w-2xl mx-auto">Discover our handpicked selection of timeless pieces</p>
+        <section id="collection" className="max-w-7xl mx-auto px-2 md:px-10 lg:px-12 py-3 md:py-8">
+          <div className="text-center mb-3 md:mb-5">
+            <h2 className="font-serif text-lg md:text-3xl font-light mb-1 md:mb-1.5 tracking-tight">Featured Collection</h2>
+            <p className="text-xs md:text-base text-gray-600 max-w-2xl mx-auto px-2">Discover our handpicked selection of timeless pieces</p>
           </div>
           <HorizontalSlider
             items={featuredProducts}
             renderItem={renderProductItem}
-            cardWidth={276} // 260px card + 16px gap
+            cardWidth={176} // 160px card (mobile) + 16px gap
             gap={16}
             infiniteScroll={false}
             showNavigation={featuredProducts.length > 2}
+            autoSlide={true}
+            autoSlideInterval={4000}
             emptyMessage="No featured products available"
           />
-          <div className="text-center mt-4">
-            <Button asChild variant="outline" className="border border-gray-300 dark:border-white hover:border-[#D4AF37] dark:hover:border-[#D4AF37] px-5 py-2 text-sm font-medium rounded-lg hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/5 transition-all duration-300 text-gray-900 dark:text-white hover:text-[#D4AF37] dark:hover:text-[#D4AF37]">
+          <div className="text-center mt-2 md:mt-4">
+            <Button asChild variant="outline" className="border border-gray-300 dark:border-white hover:border-[#D4AF37] dark:hover:border-[#D4AF37] px-3 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-medium rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/5 transition-all duration-300 text-gray-900 dark:text-white hover:text-[#D4AF37] dark:hover:text-[#D4AF37]">
               <Link href="/products">View All Products</Link>
             </Button>
           </div>
@@ -321,38 +325,35 @@ export default function Page() {
       ) : null}
 
       {/* How It's Made - Mobile Optimized */}
-      <section className="bg-white dark:bg-black py-6 md:py-8 lg:py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 lg:px-12">
-          <h2 className="font-serif text-2xl md:text-3xl font-light text-center mb-6 md:mb-8 tracking-tight px-4 text-gray-900 dark:text-white">How It's Made</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 lg:gap-8">
+      <section className="bg-white dark:bg-black py-2 md:py-6 lg:py-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 md:px-10 lg:px-12">
+          <h2 className="font-serif text-sm md:text-2xl lg:text-3xl font-light text-center mb-2 md:mb-6 tracking-tight px-2 text-gray-900 dark:text-white">How It's Made</h2>
+          <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-5 lg:gap-6">
             <div className="text-center group">
-              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 w-20 h-20 md:w-16 md:h-16 flex items-center justify-center mx-auto mb-4 md:mb-3 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
-                <Sparkles className="h-10 w-10 md:h-8 md:w-8 text-[#D4AF37]" />
+              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 w-10 h-10 md:w-14 md:h-14 flex items-center justify-center mx-auto mb-1.5 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Sparkles className="h-5 w-5 md:h-7 md:w-7 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-lg md:text-lg font-medium mb-2 md:mb-1.5 text-gray-900 dark:text-white">Crafted</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-sm md:text-sm leading-relaxed max-w-sm mx-auto px-4 md:px-0">
-                Each piece is carefully handcrafted by skilled artisans, ensuring quality and
-                attention to detail.
+              <h3 className="font-serif text-[10px] md:text-base font-medium mb-0.5 md:mb-1.5 text-gray-900 dark:text-white">Crafted</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-[9px] md:text-xs leading-tight max-w-sm mx-auto px-0.5 md:px-0 line-clamp-2 md:line-clamp-none">
+                Handcrafted by skilled artisans with quality and attention to detail.
               </p>
             </div>
             <div className="text-center group">
-              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 w-20 h-20 md:w-16 md:h-16 flex items-center justify-center mx-auto mb-4 md:mb-3 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
-                <Shield className="h-10 w-10 md:h-8 md:w-8 text-[#D4AF37]" />
+              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 w-10 h-10 md:w-14 md:h-14 flex items-center justify-center mx-auto mb-1.5 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Shield className="h-5 w-5 md:h-7 md:w-7 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-lg md:text-lg font-medium mb-2 md:mb-1.5 text-gray-900 dark:text-white">Anti-tarnish</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-sm md:text-sm leading-relaxed max-w-sm mx-auto px-4 md:px-0">
-                Advanced plating technology prevents tarnishing, keeping your jewellery looking
-                new for years.
+              <h3 className="font-serif text-[10px] md:text-base font-medium mb-0.5 md:mb-1.5 text-gray-900 dark:text-white">Anti-tarnish</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-[9px] md:text-xs leading-tight max-w-sm mx-auto px-0.5 md:px-0 line-clamp-2 md:line-clamp-none">
+                Advanced plating technology keeps your jewellery looking new for years.
               </p>
             </div>
             <div className="text-center group">
-              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 w-20 h-20 md:w-16 md:h-16 flex items-center justify-center mx-auto mb-4 md:mb-3 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
-                <Leaf className="h-10 w-10 md:h-8 md:w-8 text-[#D4AF37]" />
+              <div className="rounded-full bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 w-10 h-10 md:w-14 md:h-14 flex items-center justify-center mx-auto mb-1.5 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Leaf className="h-5 w-5 md:h-7 md:w-7 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-lg md:text-lg font-medium mb-2 md:mb-1.5 text-gray-900 dark:text-white">Sustainable</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-sm md:text-sm leading-relaxed max-w-sm mx-auto px-4 md:px-0">
-                We're committed to ethical practices and sustainable materials, ensuring beauty
-                that lasts.
+              <h3 className="font-serif text-[10px] md:text-base font-medium mb-0.5 md:mb-1.5 text-gray-900 dark:text-white">Sustainable</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-[9px] md:text-xs leading-tight max-w-sm mx-auto px-0.5 md:px-0 line-clamp-2 md:line-clamp-none">
+                Ethical practices and sustainable materials for beauty that lasts.
               </p>
             </div>
           </div>
@@ -360,15 +361,15 @@ export default function Page() {
       </section>
 
       {/* Testimonials - Mobile Optimized */}
-      <section className="bg-black dark:bg-black py-5 md:py-6 lg:py-8">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-12">
-          <div className="text-center mb-5 md:mb-6 px-4">
-            <h2 className="font-serif text-2xl md:text-3xl font-light mb-2 md:mb-1.5 tracking-tight text-white dark:text-white">What Our Customers Say</h2>
-            <p className="text-white/80 dark:text-white/80 text-sm md:text-sm mb-2">
+      <section className="bg-gray-50 dark:bg-black py-3 md:py-6 lg:py-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-12">
+          <div className="text-center mb-3 md:mb-6 px-2">
+            <h2 className="font-serif text-base md:text-3xl font-light mb-1 md:mb-1.5 tracking-tight text-gray-900 dark:text-white">What Our Customers Say</h2>
+            <p className="text-gray-600 dark:text-white/80 text-[10px] md:text-sm mb-2">
               You can also be featured!{" "}
               <button
                 onClick={() => setShowReviewForm(true)}
-                className="text-[#D4AF37] active:underline md:hover:underline font-semibold md:font-medium touch-manipulation"
+                className="text-[#D4AF37] active:underline md:hover:underline font-semibold md:font-medium touch-manipulation text-[10px] md:text-sm"
               >
                 Write a review
               </button>
@@ -376,9 +377,9 @@ export default function Page() {
           </div>
 
         {isLoadingReviews ? (
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <div className="flex gap-3 md:gap-4 overflow-x-auto pb-3 md:pb-4 scrollbar-hide">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="min-w-[240px] max-w-[240px] shrink-0">
+              <div key={i} className="min-w-[200px] max-w-[200px] md:min-w-[240px] md:max-w-[240px] shrink-0">
                 <ReviewCardSkeleton />
               </div>
             ))}
@@ -387,11 +388,13 @@ export default function Page() {
           <HorizontalSlider
             items={reviews}
             renderItem={renderReviewItem}
-            cardWidth={256} // 240px card + 16px gap
+            cardWidth={216} // 200px card (mobile) + 16px gap
             gap={16}
             infiniteScroll={reviews.length > 2}
             showNavigation={reviews.length > 1}
             buttonSize="sm"
+            autoSlide={true}
+            autoSlideInterval={4000}
             emptyMessage="No reviews yet. Be the first to review!"
           />
         )}
@@ -401,43 +404,43 @@ export default function Page() {
       <ReviewForm open={showReviewForm} onOpenChange={setShowReviewForm} onReviewSubmitted={fetchReviews} />
 
       {/* Why Choose Vairanya - Mobile Optimized */}
-      <section className="bg-gradient-to-br from-gray-50/50 to-white dark:from-black dark:to-black py-6 md:py-8 lg:py-10 border-t border-gray-100 dark:border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 lg:px-12">
-          <h2 className="font-serif text-2xl md:text-3xl font-light text-center mb-6 md:mb-8 tracking-tight px-4 text-gray-900 dark:text-white">Why Choose Vairanya</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4 lg:gap-6">
+      <section className="bg-gradient-to-br from-gray-50/50 to-white dark:from-black dark:to-black py-4 md:py-8 lg:py-10 border-t border-gray-100 dark:border-white/10">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-10 lg:px-12">
+          <h2 className="font-serif text-lg md:text-3xl font-light text-center mb-4 md:mb-8 tracking-tight px-2 text-gray-900 dark:text-white">Why Choose Vairanya</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-4 lg:gap-6">
             <div className="text-center group">
-              <div className="inline-flex items-center justify-center w-14 h-14 md:w-12 md:h-12 rounded-xl md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-3 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
-                <Shield className="h-7 w-7 md:h-6 md:w-6 text-[#D4AF37]" />
+              <div className="inline-flex items-center justify-center w-12 h-12 md:w-12 md:h-12 rounded-lg md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-2 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Shield className="h-6 w-6 md:h-6 md:w-6 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-base md:text-lg font-medium mb-1.5 md:mb-1 text-gray-900 dark:text-white">Premium Quality</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-xs md:text-sm leading-relaxed px-2 md:px-0">
+              <h3 className="font-serif text-sm md:text-lg font-medium mb-1 md:mb-1 text-gray-900 dark:text-white">Premium Quality</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-[10px] md:text-sm leading-relaxed px-1 md:px-0">
                 Finest materials and craftsmanship
               </p>
             </div>
             <div className="text-center group">
-              <div className="inline-flex items-center justify-center w-14 h-14 md:w-12 md:h-12 rounded-xl md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-3 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
-                <Truck className="h-7 w-7 md:h-6 md:w-6 text-[#D4AF37]" />
+              <div className="inline-flex items-center justify-center w-12 h-12 md:w-12 md:h-12 rounded-lg md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-2 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Truck className="h-6 w-6 md:h-6 md:w-6 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-base md:text-lg font-medium mb-1.5 md:mb-1 text-gray-900 dark:text-white">Free Shipping</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-xs md:text-sm leading-relaxed px-2 md:px-0">
+              <h3 className="font-serif text-sm md:text-lg font-medium mb-1 md:mb-1 text-gray-900 dark:text-white">Free Shipping</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-[10px] md:text-sm leading-relaxed px-1 md:px-0">
                 Over ₹999 with fast delivery
               </p>
             </div>
             <div className="text-center group">
-              <div className="inline-flex items-center justify-center w-14 h-14 md:w-12 md:h-12 rounded-xl md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-3 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
-                <RotateCcw className="h-7 w-7 md:h-6 md:w-6 text-[#D4AF37]" />
+              <div className="inline-flex items-center justify-center w-12 h-12 md:w-12 md:h-12 rounded-lg md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-2 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <RotateCcw className="h-6 w-6 md:h-6 md:w-6 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-base md:text-lg font-medium mb-1.5 md:mb-1 text-gray-900 dark:text-white">Easy Returns</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-xs md:text-sm leading-relaxed px-2 md:px-0">
+              <h3 className="font-serif text-sm md:text-lg font-medium mb-1 md:mb-1 text-gray-900 dark:text-white">Easy Returns</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-[10px] md:text-sm leading-relaxed px-1 md:px-0">
                 30-day hassle-free policy
               </p>
             </div>
             <div className="text-center group">
-              <div className="inline-flex items-center justify-center w-14 h-14 md:w-12 md:h-12 rounded-xl md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-3 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
-                <Star className="h-7 w-7 md:h-6 md:w-6 text-[#D4AF37]" />
+              <div className="inline-flex items-center justify-center w-12 h-12 md:w-12 md:h-12 rounded-lg md:rounded-lg bg-gradient-to-br from-[#D4AF37]/10 to-[#C19B2E]/5 dark:from-[#D4AF37]/20 dark:to-[#C19B2E]/10 mb-2 md:mb-2.5 group-active:scale-110 md:group-hover:scale-110 transition-transform duration-300">
+                <Star className="h-6 w-6 md:h-6 md:w-6 text-[#D4AF37]" />
               </div>
-              <h3 className="font-serif text-base md:text-lg font-medium mb-1.5 md:mb-1 text-gray-900 dark:text-white">Lifetime Care</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-xs md:text-sm leading-relaxed px-2 md:px-0">
+              <h3 className="font-serif text-sm md:text-lg font-medium mb-1 md:mb-1 text-gray-900 dark:text-white">Lifetime Care</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-[10px] md:text-sm leading-relaxed px-1 md:px-0">
                 Expert guidance and support
               </p>
             </div>

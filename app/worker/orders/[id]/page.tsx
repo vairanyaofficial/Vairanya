@@ -20,18 +20,17 @@ import {
 } from "lucide-react";
 import { getAdminSession } from "@/lib/admin-auth";
 import { useToast } from "@/components/ToastProvider";
-import type { Order, Task } from "@/lib/orders-types";
+import type { Order } from "@/lib/orders-types";
+import OrderWorkflowProgress from "@/components/OrderWorkflowProgress";
 
 export default function WorkerOrderDetailPage() {
   const router = useRouter();
   const params = useParams();
   const orderId = params.id as string;
   const [order, setOrder] = useState<Order | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoadingRef, setIsLoadingRef] = useState(false);
-  const [showCompleteDialog, setShowCompleteDialog] = useState<{ taskId: string; taskType: string } | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -95,26 +94,12 @@ export default function WorkerOrderDetailPage() {
 
       const order = orderData.order;
       
-      // Load tasks for this order first to check access
-      const tasksRes = await fetch(`/api/admin/tasks?order_id=${orderId}`, {
-        headers: { 
-          "x-admin-username": sessionData.username,
-          "x-admin-role": sessionData.role,
-        },
-      });
-      const tasksData = await tasksRes.json();
-      
-      // Check if worker has access to this order (either assigned to order or has tasks for this order)
+      // Check if worker has access to this order
       if (sessionData.role === "worker") {
-        const hasAccess = 
-          order.assigned_to === sessionData.username ||
-          (tasksData.success && tasksData.tasks.some((t: Task) => t.assigned_to === sessionData.username));
-
-        if (!hasAccess) {
+        if (order.assigned_to !== sessionData.username) {
           setIsLoading(false);
           setIsLoadingRef(false);
           showToast("You don't have access to this order");
-          // Use setTimeout to prevent redirect loop
           setTimeout(() => {
             router.replace("/worker/dashboard");
           }, 100);
@@ -123,14 +108,6 @@ export default function WorkerOrderDetailPage() {
       }
 
       setOrder(order);
-      
-      if (tasksData.success) {
-        // Filter only tasks assigned to this worker
-        const workerTasks = tasksData.tasks.filter(
-          (t: Task) => t.assigned_to === sessionData.username
-        );
-        setTasks(workerTasks);
-      }
       
     } catch (err) {
       showToast("Failed to load order");
@@ -144,49 +121,6 @@ export default function WorkerOrderDetailPage() {
     }
   };
 
-  const updateTaskStatus = async (taskId: string, newStatus: Task["status"]) => {
-    try {
-      setIsUpdating(true);
-      const sessionData = getAdminSession();
-      if (!sessionData) {
-        showToast("Session expired. Please login again.");
-        return;
-      }
-
-      const response = await fetch(`/api/admin/tasks/${taskId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-username": sessionData.username,
-          "x-admin-role": sessionData.role,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        const statusMessage = newStatus === "completed" 
-          ? "Task completed successfully! ✅" 
-          : newStatus === "in_progress"
-          ? "Task started! 🚀"
-          : "Task updated successfully!";
-        
-        showToast(statusMessage);
-        setShowCompleteDialog(null);
-        await loadOrderData();
-      } else {
-        showToast(data.error || "Failed to update task");
-      }
-    } catch (err) {
-      showToast("Failed to update task. Please try again.");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleCompleteTask = (task: Task) => {
-    setShowCompleteDialog({ taskId: task.id, taskType: task.type || "task" });
-  };
 
   const updateOrderStatus = async (newStatus: Order["status"]) => {
     if (!order) {
@@ -823,88 +757,8 @@ export default function WorkerOrderDetailPage() {
             </div>
           </div>
 
-          {/* My Tasks */}
-          {tasks.length > 0 && (
-            <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
-              <h2 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">My Tasks</h2>
-              <div className="space-y-3">
-                {tasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between p-3 border dark:border-white/10 rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium capitalize text-gray-900 dark:text-white">{(task.type || "task").replace("_", " ")}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Status: {task.status || "unknown"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(task.status)}`}
-                      >
-                        {(task.status || "unknown").replace("_", " ").toUpperCase()}
-                      </span>
-                      {task.status === "pending" && (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            onClick={() => updateTaskStatus(task.id, "in_progress")}
-                            disabled={isUpdating}
-                            size="sm"
-                            variant="outline"
-                            className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white"
-                          >
-                            Start Task
-                          </Button>
-                          <Button
-                            onClick={() => handleCompleteTask(task)}
-                            disabled={isUpdating}
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Mark Complete
-                          </Button>
-                        </div>
-                      )}
-                      {task.status === "in_progress" && (
-                        <Button
-                          onClick={() => handleCompleteTask(task)}
-                          disabled={isUpdating}
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white font-medium"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Mark as Complete
-                        </Button>
-                      )}
-                      {task.status === "completed" && (
-                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-medium">
-                          <CheckCircle className="h-5 w-5" />
-                          <span>Task Completed</span>
-                          {task.completed_at && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                              {new Date(task.completed_at).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {!task.status && (
-                        <Button
-                          onClick={() => updateTaskStatus(task.id, "pending")}
-                          disabled={isUpdating}
-                          size="sm"
-                          variant="outline"
-                        >
-                          Initialize Task
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Order Progress */}
+          <OrderWorkflowProgress orderStatus={order.status} />
         </div>
 
         {/* Sidebar */}
@@ -929,11 +783,11 @@ export default function WorkerOrderDetailPage() {
               
               if (!canUpdate) return null;
               
-              // Complete status flow including confirmed
+              // Simplified status flow
               const statusFlow: Record<Order["status"], Order["status"] | null> = {
                 "pending": "confirmed",
                 "confirmed": "processing",
-                "processing": "packing",
+                "processing": "packed",
                 "packing": "packed",
                 "packed": "shipped",
                 "shipped": "delivered",
@@ -947,10 +801,10 @@ export default function WorkerOrderDetailPage() {
               
               const getButtonText = (status: Order["status"]) => {
                 switch (status) {
+                  case "confirmed":
+                    return "Confirm Order";
                   case "processing":
                     return "Start Processing";
-                  case "packing":
-                    return "Start Packing";
                   case "packed":
                     return "Mark as Packed";
                   case "shipped":
@@ -958,7 +812,7 @@ export default function WorkerOrderDetailPage() {
                   case "delivered":
                     return "Mark as Delivered";
                   default:
-                    return `Mark as ${status.charAt(0).toUpperCase() + status.slice(1)}`;
+                    return `Move to ${status.charAt(0).toUpperCase() + status.slice(1)}`;
                 }
               };
               
@@ -1008,16 +862,9 @@ export default function WorkerOrderDetailPage() {
                 )}
                 {order.status === "processing" && (
                   <>
-                    <p>• Complete the processing of all order items</p>
+                    <p>• Process and pack all order items</p>
                     <p>• Ensure quality checks are performed</p>
-                    <p>• Move to packing stage when processing is complete</p>
-                  </>
-                )}
-                {order.status === "packing" && (
-                  <>
-                    <p>• Pack items securely with proper packaging materials</p>
-                    <p>• Include order invoice and any promotional materials</p>
-                    <p>• Mark as packed when ready for shipment</p>
+                    <p>• Mark as packed when ready for shipping</p>
                   </>
                 )}
                 {order.status === "packed" && (
@@ -1159,57 +1006,6 @@ export default function WorkerOrderDetailPage() {
         </div>
       </div>
 
-      {/* Complete Task Confirmation Dialog */}
-      {showCompleteDialog && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg p-6 max-w-md w-full border dark:border-white/10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-green-100 dark:bg-green-900/30 rounded-full p-2">
-                <AlertCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
-              <h3 className="font-serif text-xl text-gray-900 dark:text-white">Complete Task?</h3>
-            </div>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Are you sure you want to mark this{" "}
-              <span className="font-medium capitalize">
-                {showCompleteDialog.taskType.replace("_", " ")}
-              </span>{" "}
-              task as completed? This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <Button
-                onClick={() => setShowCompleteDialog(null)}
-                variant="outline"
-                className="flex-1"
-                disabled={isUpdating}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  if (showCompleteDialog) {
-                    updateTaskStatus(showCompleteDialog.taskId, "completed");
-                  }
-                }}
-                disabled={isUpdating}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
-              >
-                {isUpdating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Completing...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Yes, Complete
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

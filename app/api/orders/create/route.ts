@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       shipping_address: cleanedShippingAddress,
       payment_method: payment_method || "cod",
       payment_status: payment_status || "pending",
-      status: status || "confirmed",
+      status: status || "pending",
     };
 
     // Only include user_id if it has a value

@@ -352,7 +352,7 @@ export default function OrdersPage() {
         )}
       </div>
 
-      <div className="mt-4 text-sm text-gray-500">
+      <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
         Showing {filteredOrders.length} of {orders.length} orders
       </div>
     </div>

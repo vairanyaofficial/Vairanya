@@ -345,9 +345,9 @@ function ProductsContent() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Filters Sidebar */}
           <aside className={`lg:w-64 flex-shrink-0 ${showFilters ? "block" : "hidden lg:block"}`}>
-            <div className="sticky top-4 space-y-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] p-5 shadow-sm">
+            <div className="sticky top-4 space-y-4 rounded-xl border border-[#D4AF37]/50 dark:border-[#D4AF37]/40 bg-white dark:bg-[#0a0a0a] p-5 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 hover:text-[#D4AF37] transition-colors duration-200 cursor-default">
                   <SlidersHorizontal className="h-5 w-5" />
                   Filters
                 </h2>
@@ -364,11 +364,11 @@ function ProductsContent() {
 
               {/* Category Filter */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 hover:text-[#D4AF37] transition-colors duration-200 cursor-default">
                   Category
                 </h3>
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer group transition-colors duration-200">
                     <input
                       type="radio"
                       name="category"
@@ -376,11 +376,11 @@ function ProductsContent() {
                       onChange={() => handleCategoryChange("all")}
                       className="h-4 w-4 text-[#D4AF37] focus:ring-[#D4AF37]"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">All</span>
+                    <span className={`text-sm transition-colors duration-200 ${selectedCategory === "all" ? "text-[#D4AF37] font-medium" : "text-gray-700 dark:text-gray-300 group-hover:text-[#D4AF37]"}`}>All</span>
                   </label>
                   {(["rings", "earrings", "pendants", "bracelets", "necklaces"] as Category[]).map(
                     (category) => (
-                      <label key={category} className="flex items-center gap-2 cursor-pointer">
+                      <label key={category} className="flex items-center gap-2 cursor-pointer group transition-colors duration-200">
                         <input
                           type="radio"
                           name="category"
@@ -388,7 +388,7 @@ function ProductsContent() {
                           onChange={() => handleCategoryChange(category)}
                           className="h-4 w-4 text-[#D4AF37] focus:ring-[#D4AF37]"
                         />
-                        <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
+                        <span className={`text-sm capitalize transition-colors duration-200 ${selectedCategory === category ? "text-[#D4AF37] font-medium" : "text-gray-700 dark:text-gray-300 group-hover:text-[#D4AF37]"}`}>
                           {category}
                         </span>
                       </label>
@@ -399,11 +399,11 @@ function ProductsContent() {
 
               {/* Metal Finish Filter */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 hover:text-[#D4AF37] transition-colors duration-200 cursor-default">
                   Metal Finish
                 </h3>
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer group transition-colors duration-200">
                     <input
                       type="radio"
                       name="metalFinish"
@@ -411,10 +411,10 @@ function ProductsContent() {
                       onChange={() => setSelectedMetalFinish("all")}
                       className="h-4 w-4 text-[#D4AF37] focus:ring-[#D4AF37]"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">All</span>
+                    <span className={`text-sm transition-colors duration-200 ${selectedMetalFinish === "all" ? "text-[#D4AF37] font-medium" : "text-gray-700 dark:text-gray-300 group-hover:text-[#D4AF37]"}`}>All</span>
                   </label>
                   {(["gold", "rose-gold", "silver", "platinum"] as MetalFinish[]).map((finish) => (
-                    <label key={finish} className="flex items-center gap-2 cursor-pointer">
+                    <label key={finish} className="flex items-center gap-2 cursor-pointer group transition-colors duration-200">
                       <input
                         type="radio"
                         name="metalFinish"
@@ -422,7 +422,7 @@ function ProductsContent() {
                         onChange={() => setSelectedMetalFinish(finish)}
                         className="h-4 w-4 text-[#D4AF37] focus:ring-[#D4AF37]"
                       />
-                      <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
+                      <span className={`text-sm capitalize transition-colors duration-200 ${selectedMetalFinish === finish ? "text-[#D4AF37] font-medium" : "text-gray-700 dark:text-gray-300 group-hover:text-[#D4AF37]"}`}>
                         {finish.replace(/-/g, " ")}
                       </span>
                     </label>
@@ -433,11 +433,11 @@ function ProductsContent() {
               {/* Size Filter */}
               {availableSizes.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 hover:text-[#D4AF37] transition-colors duration-200 cursor-default">
                     Size
                   </h3>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer group transition-colors duration-200">
                       <input
                         type="radio"
                         name="size"
@@ -445,10 +445,10 @@ function ProductsContent() {
                         onChange={() => setSelectedSize("all")}
                         className="h-4 w-4 text-[#D4AF37] focus:ring-[#D4AF37]"
                       />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">All</span>
+                      <span className={`text-sm transition-colors duration-200 ${selectedSize === "all" ? "text-[#D4AF37] font-medium" : "text-gray-700 dark:text-gray-300 group-hover:text-[#D4AF37]"}`}>All</span>
                     </label>
                     {availableSizes.map((size) => (
-                      <label key={size} className="flex items-center gap-2 cursor-pointer">
+                      <label key={size} className="flex items-center gap-2 cursor-pointer group transition-colors duration-200">
                         <input
                           type="radio"
                           name="size"
@@ -456,7 +456,7 @@ function ProductsContent() {
                           onChange={() => setSelectedSize(size)}
                           className="h-4 w-4 text-[#D4AF37] focus:ring-[#D4AF37]"
                         />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{size}</span>
+                        <span className={`text-sm transition-colors duration-200 ${selectedSize === size ? "text-[#D4AF37] font-medium" : "text-gray-700 dark:text-gray-300 group-hover:text-[#D4AF37]"}`}>{size}</span>
                       </label>
                     ))}
                   </div>
@@ -465,7 +465,7 @@ function ProductsContent() {
 
               {/* Price Range Filter */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 hover:text-[#D4AF37] transition-colors duration-200 cursor-default">
                   Price Range
                 </h3>
                 <div className="space-y-3">

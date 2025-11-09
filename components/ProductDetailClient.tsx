@@ -74,7 +74,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
       <div>
         <h1 className="font-serif text-xl md:text-3xl font-light mb-2 md:mb-4 tracking-tight text-gray-900 dark:text-white leading-tight">{product.title}</h1>
         <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-5 flex-wrap">
-          <span className="text-2xl md:text-2xl font-bold md:font-semibold text-gray-900 dark:text-white">₹{product.price.toLocaleString()}</span>
+          <span className="text-2xl md:text-2xl font-bold md:font-semibold text-gray-900 dark:text-gray-50">₹{product.price.toLocaleString()}</span>
           {product.mrp && product.mrp > product.price && (
             <span className="text-lg md:text-lg text-gray-400 dark:text-gray-500 line-through">₹{product.mrp.toLocaleString()}</span>
           )}

@@ -91,18 +91,18 @@ export function SectionSkeleton() {
 // Review Card Skeleton
 export function ReviewCardSkeleton() {
   return (
-    <div className="bg-black dark:bg-[#0a0a0a] rounded-lg p-3 md:p-4 shadow-sm border border-white/20 dark:border-white/20 min-w-[240px] max-w-[240px] animate-pulse">
-      <div className="flex gap-0.5 mb-2.5">
+    <div className="bg-white dark:bg-[#0a0a0a] rounded-lg p-2.5 md:p-4 shadow-sm border border-gray-200 dark:border-white/20 min-w-[200px] max-w-[200px] md:min-w-[240px] md:max-w-[240px] animate-pulse">
+      <div className="flex gap-0.5 mb-2">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-3 w-3 bg-white/20 dark:bg-white/20 rounded"></div>
+          <div key={i} className="h-2.5 w-2.5 md:h-3 md:w-3 bg-gray-300 dark:bg-white/20 rounded"></div>
         ))}
       </div>
-      <div className="space-y-2 mb-2.5">
-        <div className="h-3 w-full bg-white/20 dark:bg-white/20 rounded"></div>
-        <div className="h-3 w-5/6 bg-white/20 dark:bg-white/20 rounded"></div>
-        <div className="h-3 w-4/6 bg-white/20 dark:bg-white/20 rounded"></div>
+      <div className="space-y-1.5 md:space-y-2 mb-2">
+        <div className="h-2.5 md:h-3 w-full bg-gray-300 dark:bg-white/20 rounded"></div>
+        <div className="h-2.5 md:h-3 w-5/6 bg-gray-300 dark:bg-white/20 rounded"></div>
+        <div className="h-2.5 md:h-3 w-4/6 bg-gray-300 dark:bg-white/20 rounded"></div>
       </div>
-      <div className="h-4 w-24 bg-white/20 dark:bg-white/20 rounded"></div>
+      <div className="h-2.5 md:h-4 w-20 md:w-24 bg-gray-300 dark:bg-white/20 rounded"></div>
     </div>
   );
 }

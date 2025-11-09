@@ -21,7 +21,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { getAdminSession, isSuperUser } from "@/lib/admin-auth";
-import type { Order, Task } from "@/lib/orders-types";
+import type { Order } from "@/lib/orders-types";
 import OrderWorkflowProgress from "@/components/OrderWorkflowProgress";
 import { useToast } from "@/components/ToastProvider";
 
@@ -37,7 +37,6 @@ export default function OrderDetailPage() {
   const params = useParams();
   const orderId = params.id as string;
   const [order, setOrder] = useState<Order | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -104,15 +103,6 @@ export default function OrderDetailPage() {
       const orderData = await orderRes.json();
       if (orderData.success) {
         setOrder(orderData.order);
-      }
-
-      // Load tasks
-      const tasksRes = await fetch(`/api/admin/tasks?order_id=${orderId}`, {
-        headers: { "x-admin-username": sessionData.username },
-      });
-      const tasksData = await tasksRes.json();
-      if (tasksData.success) {
-        setTasks(tasksData.tasks);
       }
     } catch (err) {
     } finally {
@@ -265,41 +255,6 @@ export default function OrderDetailPage() {
     }
   };
 
-  const createPackingTask = async () => {
-    if (!order || !session) return;
-
-    try {
-      setIsUpdating(true);
-      const sessionData = getAdminSession();
-      if (!sessionData) return;
-
-      const response = await fetch("/api/admin/tasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-username": sessionData.username,
-        },
-        body: JSON.stringify({
-          order_id: order.id,
-          order_number: order.order_number,
-          type: "packing",
-          assigned_to: order.assigned_to || selectedWorker,
-          priority: "high",
-          status: "pending",
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        loadOrderData();
-        showSuccess("Packing task created successfully");
-      }
-    } catch (err) {
-      showError("Failed to create packing task");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   const updateRefundStatus = async () => {
     if (!order) return;
@@ -342,45 +297,45 @@ export default function OrderDetailPage() {
   const getRefundStatusColor = (status?: string) => {
     switch (status) {
       case "started":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300";
       case "processing":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300";
       case "completed":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300";
       case "failed":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300";
       case "confirmed":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300";
       case "processing":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300";
       case "packing":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300";
       case "packed":
-        return "bg-indigo-100 text-indigo-800";
+        return "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300";
       case "shipped":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300";
       case "delivered":
-        return "bg-emerald-100 text-emerald-800";
+        return "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300";
       case "cancelled":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300";
     }
   };
 
   if (isLoading) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Loading order...</p>
+        <p className="text-gray-500 dark:text-gray-400">Loading order...</p>
       </div>
     );
   }
@@ -388,7 +343,7 @@ export default function OrderDetailPage() {
   if (!order) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 mb-4">Order not found</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">Order not found</p>
         <Button asChild variant="outline">
           <Link href="/admin/orders">Back to Orders</Link>
         </Button>
@@ -399,8 +354,7 @@ export default function OrderDetailPage() {
   const nextStatus: Record<string, Order["status"]> = {
     pending: "confirmed",
     confirmed: "processing",
-    processing: "packing",
-    packing: "packed",
+    processing: "packed",
     packed: "shipped",
     shipped: "delivered",
   };
@@ -415,8 +369,8 @@ export default function OrderDetailPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="font-serif text-3xl">Order {order.order_number}</h1>
-          <p className="text-gray-600 text-sm">
+          <h1 className="font-serif text-3xl text-gray-900 dark:text-white">Order {order.order_number}</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
             Placed on {new Date(order.created_at).toLocaleString()}
           </p>
         </div>
@@ -426,11 +380,11 @@ export default function OrderDetailPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Order Items */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <h2 className="font-serif text-xl mb-4">Order Items</h2>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">Order Items</h2>
             <div className="space-y-4">
               {order.items.map((item, index) => (
-                <div key={index} className="flex items-center gap-4 pb-4 border-b last:border-0">
+                <div key={index} className="flex items-center gap-4 pb-4 border-b dark:border-white/10 last:border-0">
                   {item.image && (
                     <img
                       src={item.image}
@@ -439,75 +393,43 @@ export default function OrderDetailPage() {
                     />
                   )}
                   <div className="flex-1">
-                    <p className="font-medium">{item.title}</p>
-                    <p className="text-sm text-gray-500">SKU: {item.sku}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium text-gray-900 dark:text-white">{item.title}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">SKU: {item.sku}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       Quantity: {item.quantity} × ₹{item.price}
                     </p>
                   </div>
-                  <p className="font-semibold">
+                  <p className="font-semibold text-gray-900 dark:text-white">
                     ₹{(item.price * item.quantity).toLocaleString()}
                   </p>
                 </div>
               ))}
             </div>
-            <div className="mt-6 pt-6 border-t space-y-2">
+            <div className="mt-6 pt-6 border-t dark:border-white/10 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Subtotal</span>
-                <span>₹{order.subtotal.toLocaleString()}</span>
+                <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                <span className="text-gray-900 dark:text-white">₹{order.subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Shipping</span>
-                <span>{order.shipping === 0 ? "Free" : `₹${order.shipping}`}</span>
+                <span className="text-gray-600 dark:text-gray-400">Shipping</span>
+                <span className="text-gray-900 dark:text-white">{order.shipping === 0 ? "Free" : `₹${order.shipping}`}</span>
               </div>
-              <div className="flex justify-between text-lg font-semibold pt-2 border-t">
-                <span>Total</span>
-                <span>₹{order.total.toLocaleString()}</span>
+              <div className="flex justify-between text-lg font-semibold pt-2 border-t dark:border-white/10">
+                <span className="text-gray-900 dark:text-white">Total</span>
+                <span className="text-gray-900 dark:text-white">₹{order.total.toLocaleString()}</span>
               </div>
             </div>
           </div>
 
-          {/* Workflow Progress */}
-          <OrderWorkflowProgress tasks={tasks} orderStatus={order.status} />
-
-          {/* Tasks Details */}
-          {tasks.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm p-6 border">
-              <h2 className="font-serif text-xl mb-4">Task Details</h2>
-              <div className="space-y-3">
-                {tasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium capitalize">{task.type.replace("_", " ")}</p>
-                      <p className="text-sm text-gray-500">
-                        Assigned to: {workers.find((w) => w.uid === task.assigned_to)?.name || task.assigned_to} | Status: {task.status}
-                      </p>
-                      {task.completed_at && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          Completed: {new Date(task.completed_at).toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                    <span
-                      className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(task.status)}`}
-                    >
-                      {task.status.replace("_", " ").toUpperCase()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Order Progress */}
+          <OrderWorkflowProgress orderStatus={order.status} />
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Order Status */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <h2 className="font-serif text-xl mb-4">Order Status</h2>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">Order Status</h2>
             <div className="mb-4">
               <span
                 className={`px-3 py-2 text-sm rounded-full inline-block ${getStatusColor(
@@ -542,11 +464,6 @@ export default function OrderDetailPage() {
                   ) : order.status === "processing" ? (
                     <>
                       <Package className="h-4 w-4 mr-2" />
-                      Move to Packing
-                    </>
-                  ) : order.status === "packing" ? (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
                       Mark as Packed
                     </>
                   ) : order.status === "packed" ? (
@@ -564,32 +481,15 @@ export default function OrderDetailPage() {
                   )}
                 </Button>
               )}
-              {/* Show create first task button if no tasks exist and order is assigned */}
-              {tasks.length === 0 && order.status === "confirmed" && isSuperUser() && order.assigned_to && (
-                <Button
-                  onClick={createPackingTask}
-                  disabled={isUpdating}
-                  variant="outline"
-                  className="w-full border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white"
-                >
-                  <Package className="h-4 w-4 mr-2" />
-                  Start Workflow - Create Packing Task
-                </Button>
-              )}
-              {tasks.length === 0 && order.status === "confirmed" && isSuperUser() && !order.assigned_to && (
-                <p className="text-xs text-gray-500 text-center">
-                  Assign order to a worker first to start workflow
-                </p>
-              )}
             </div>
 
             {/* Next Steps */}
-            <div className="mt-4 pt-4 border-t">
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <div className="mt-4 pt-4 border-t dark:border-white/10">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-[#D4AF37]" />
                 Next Steps
               </h3>
-              <div className="space-y-2 text-sm text-gray-700">
+              <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
                 {order.status === "pending" && (
                   <>
                     <p>• Review order details and verify payment status</p>
@@ -600,24 +500,17 @@ export default function OrderDetailPage() {
                 {order.status === "confirmed" && (
                   <>
                     {!order.assigned_to && (
-                      <p className="text-amber-600 font-medium">• ⚠️ Assign order to a worker first</p>
+                      <p className="text-amber-600 dark:text-amber-400 font-medium">• ⚠️ Assign order to a worker first</p>
                     )}
-                    <p>• Create workflow tasks for assigned worker</p>
-                    <p>• Monitor order progress through the workflow</p>
+                    <p>• Start processing the order</p>
+                    <p>• Worker will handle order fulfillment</p>
                   </>
                 )}
                 {order.status === "processing" && (
                   <>
-                    <p>• Ensure worker is processing order items</p>
-                    <p>• Verify quality checks are being performed</p>
-                    <p>• Move to packing when processing is complete</p>
-                  </>
-                )}
-                {order.status === "packing" && (
-                  <>
-                    <p>• Monitor packing progress</p>
-                    <p>• Ensure proper packaging standards are met</p>
-                    <p>• Update status when packing is complete</p>
+                    <p>• Worker is processing and packing order items</p>
+                    <p>• Verify order items are correct</p>
+                    <p>• Mark as packed when ready for shipping</p>
                   </>
                 )}
                 {order.status === "packed" && (
@@ -653,9 +546,9 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Assignment */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-serif text-xl">Assignment</h2>
+              <h2 className="font-serif text-xl text-gray-900 dark:text-white">Assignment</h2>
               {isSuperUser() && (
                 <Button
                   onClick={async () => {
@@ -671,8 +564,8 @@ export default function OrderDetailPage() {
               )}
             </div>
             <div className="text-sm">
-              <p className="text-gray-600 mb-1">Assigned To:</p>
-              <p className="font-medium">
+              <p className="text-gray-600 dark:text-gray-400 mb-1">Assigned To:</p>
+              <p className="font-medium text-gray-900 dark:text-white">
                 {order.assigned_to
                   ? workers.find((w) => w.uid === order.assigned_to)?.name ||
                     order.assigned_to
@@ -682,37 +575,37 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Customer Info */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <h2 className="font-serif text-xl mb-4">Customer</h2>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">Customer</h2>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <User className="h-5 w-5 text-gray-400 mt-0.5" />
+                <User className="h-5 w-5 text-gray-400 dark:text-gray-500 mt-0.5" />
                 <div>
-                  <p className="font-medium">{order.customer.name}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{order.customer.name}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Mail className="h-5 w-5 text-gray-400 mt-0.5" />
+                <Mail className="h-5 w-5 text-gray-400 dark:text-gray-500 mt-0.5" />
                 <div>
-                  <p className="text-sm">{order.customer.email}</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{order.customer.email}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Phone className="h-5 w-5 text-gray-400 mt-0.5" />
+                <Phone className="h-5 w-5 text-gray-400 dark:text-gray-500 mt-0.5" />
                 <div>
-                  <p className="text-sm">{order.customer.phone}</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{order.customer.phone}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Shipping Address */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <h2 className="font-serif text-xl mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
               <MapPin className="h-5 w-5" />
               Shipping Address
             </h2>
-            <div className="text-sm space-y-1">
+            <div className="text-sm space-y-1 text-gray-900 dark:text-white">
               <p className="font-medium">{order.shipping_address.name}</p>
               <p>{order.shipping_address.address_line1}</p>
               {order.shipping_address.address_line2 && (
@@ -727,29 +620,29 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Payment Info */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <h2 className="font-serif text-xl mb-4">Payment</h2>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">Payment</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Method:</span>
-                <span className="font-medium capitalize">{order.payment_method}</span>
+                <span className="text-gray-600 dark:text-gray-400">Method:</span>
+                <span className="font-medium capitalize text-gray-900 dark:text-white">{order.payment_method}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Status:</span>
+                <span className="text-gray-600 dark:text-gray-400">Status:</span>
                 <span
                   className={`px-2 py-1 text-xs rounded-full ${
                     order.payment_status === "paid"
-                      ? "bg-green-100 text-green-800"
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
                       : order.payment_status === "refunded"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-yellow-100 text-yellow-800"
+                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
+                      : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
                   }`}
                 >
                   {order.payment_status}
                 </span>
               </div>
               {order.razorpay_payment_id && (
-                <div className="text-xs text-gray-500 mt-2">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   Payment ID: {order.razorpay_payment_id}
                 </div>
               )}
@@ -758,9 +651,9 @@ export default function OrderDetailPage() {
 
           {/* Refund Management - Only for superusers, cancelled orders with online payment */}
           {isSuperUser() && order.status === "cancelled" && order.payment_method !== "cod" && order.payment_status === "paid" && (
-            <div className="bg-white rounded-lg shadow-sm p-6 border">
+            <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-serif text-xl flex items-center gap-2">
+                <h2 className="font-serif text-xl flex items-center gap-2 text-gray-900 dark:text-white">
                   <RefreshCw className="h-5 w-5" />
                   Refund Management
                 </h2>
@@ -774,18 +667,18 @@ export default function OrderDetailPage() {
               {order.refund_status ? (
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Refund Status:</span>
+                    <span className="text-gray-600 dark:text-gray-400">Refund Status:</span>
                     <span className={`px-2 py-1 text-xs rounded-full font-medium ${getRefundStatusColor(order.refund_status)}`}>
                       {order.refund_status}
                     </span>
                   </div>
                   {order.razorpay_refund_id && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       Refund ID: {order.razorpay_refund_id}
                     </div>
                   )}
                   {order.refund_notes && (
-                    <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                    <div className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-white/5 p-2 rounded">
                       Notes: {order.refund_notes}
                     </div>
                   )}
@@ -805,7 +698,7 @@ export default function OrderDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     This order was cancelled and requires a refund. Click below to start the refund process.
                   </p>
                   <Button
@@ -828,15 +721,15 @@ export default function OrderDetailPage() {
       {/* Refund Management Modal */}
       {showRefundModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="font-serif text-xl mb-4">Manage Refund</h3>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg p-6 max-w-md w-full mx-4 border dark:border-white/10">
+            <h3 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">Manage Refund</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Refund Status</label>
+                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Refund Status</label>
                 <select
                   value={refundStatus}
                   onChange={(e) => setRefundStatus(e.target.value as any)}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                  className="w-full px-4 py-2 border dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
                 >
                   <option value="started">Started</option>
                   <option value="processing">Processing</option>
@@ -845,23 +738,23 @@ export default function OrderDetailPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Refund ID (Optional)</label>
+                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Refund ID (Optional)</label>
                 <input
                   type="text"
                   value={refundId}
                   onChange={(e) => setRefundId(e.target.value)}
                   placeholder="Razorpay refund ID"
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                  className="w-full px-4 py-2 border dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Notes (Optional)</label>
+                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Notes (Optional)</label>
                 <textarea
                   value={refundNotes}
                   onChange={(e) => setRefundNotes(e.target.value)}
                   placeholder="Add any notes about the refund..."
                   rows={3}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                  className="w-full px-4 py-2 border dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
             </div>
@@ -892,17 +785,17 @@ export default function OrderDetailPage() {
       {/* Assign Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="font-serif text-xl mb-4">Assign Order to Worker</h3>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg p-6 max-w-md w-full mx-4 border dark:border-white/10">
+            <h3 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">Assign Order to Worker</h3>
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Select Worker</label>
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Select Worker</label>
               
               {isLoadingWorkers ? (
-                <div className="text-sm text-gray-500 mb-2 py-2">
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 py-2">
                   Loading workers...
                 </div>
               ) : workers.length === 0 ? (
-                <div className="text-sm text-gray-500 mb-2 py-2">
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 py-2">
                   No workers available. Please add workers from the Workers page.
                 </div>
               ) : null}
@@ -912,7 +805,7 @@ export default function OrderDetailPage() {
                 onChange={(e) => {
                   setSelectedWorker(e.target.value);
                 }}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                className="w-full px-4 py-2 border dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
                 disabled={isLoadingWorkers || workers.length === 0}
               >
                 <option value="">Select a worker</option>
@@ -924,7 +817,7 @@ export default function OrderDetailPage() {
               </select>
               
               {workers.length > 0 && (
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   {workers.length} worker{workers.length !== 1 ? 's' : ''} available
                 </p>
               )}
