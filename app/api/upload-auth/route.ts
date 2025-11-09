@@ -14,6 +14,10 @@ import { requireAdmin } from "@/lib/admin-auth-server";
  * 
  * Authentication: Admin only
  */
+
+// Force dynamic rendering since this route uses request headers for authentication
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Require admin authentication for upload authentication
@@ -25,7 +29,6 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (authError: any) {
-    console.error("Upload auth: Authentication error:", authError?.message);
     return NextResponse.json(
       { 
         error: `Authentication failed: ${authError?.message || 'Unknown error'}` 
@@ -41,7 +44,6 @@ export async function GET(request: NextRequest) {
 
     // Validate credentials
     if (!privateKey) {
-      console.error("IMAGEKIT_PRIVATE_KEY is missing");
       return NextResponse.json(
         {
           error: "IMAGEKIT_PRIVATE_KEY is not configured. Please add it to your environment variables.",
@@ -51,7 +53,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (!publicKey) {
-      console.error("NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY is missing");
       return NextResponse.json(
         {
           error: "NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY is not configured. Please add it to your environment variables.",
@@ -77,11 +78,6 @@ export async function GET(request: NextRequest) {
       publicKey: publicKey.trim() 
     });
   } catch (error: any) {
-    console.error("Failed to generate upload auth params:", {
-      message: error?.message,
-      stack: error?.stack?.substring(0, 500),
-    });
-    
     return NextResponse.json(
       {
         error: `Failed to generate upload credentials: ${error?.message || 'Unknown error'}`,
