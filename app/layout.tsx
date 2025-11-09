@@ -117,6 +117,7 @@ export default function RootLayout({
                   if (shouldBeDark) {
                     document.documentElement.classList.add('dark');
                   }
+                  // Don't add transition class on initial load to prevent flash
                 } catch (e) {}
               })();
             `,

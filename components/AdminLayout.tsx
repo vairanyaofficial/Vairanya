@@ -311,14 +311,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 onClick={toggleTheme}
                 variant="secondary"
                 size="sm"
-                className="h-7 w-7 p-0 border-gray-600 dark:border-white/20 bg-transparent text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10 hover:text-white dark:hover:text-white"
+                className="h-7 w-7 p-0 border-gray-600 dark:border-white/20 bg-transparent text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-white/10 hover:text-white dark:hover:text-white relative overflow-hidden"
                 title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
               >
-                {theme === "dark" ? (
-                  <Sun className="h-3.5 w-3.5" />
-                ) : (
-                  <Moon className="h-3.5 w-3.5" />
-                )}
+                <div className="relative w-3.5 h-3.5">
+                  <Moon 
+                    className={`h-3.5 w-3.5 absolute inset-0 transition-all duration-300 ease-in-out ${
+                      theme === "light" 
+                        ? "opacity-100 rotate-0 scale-100" 
+                        : "opacity-0 rotate-90 scale-0"
+                    }`} 
+                  />
+                  <Sun 
+                    className={`h-3.5 w-3.5 absolute inset-0 transition-all duration-300 ease-in-out ${
+                      theme === "dark" 
+                        ? "opacity-100 rotate-0 scale-100" 
+                        : "opacity-0 -rotate-90 scale-0"
+                    }`} 
+                  />
+                </div>
               </Button>
               <Link
                 href="/"

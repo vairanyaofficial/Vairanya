@@ -71,8 +71,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const { adminFirestore } = await import("@/lib/firebaseAdmin.server");
       if (adminFirestore) {
         const snapshot = await adminFirestore.collection("products").get();
-        const productMap = new Map(
-          snapshot.docs.map((doc) => {
+        interface ProductTimestamps {
+          updatedAt: Date | null;
+          createdAt: Date | null;
+        }
+        const productMap = new Map<string, ProductTimestamps>(
+          snapshot.docs.map((doc: any) => {
             const data = doc.data();
             return [
               data.slug || doc.id,
