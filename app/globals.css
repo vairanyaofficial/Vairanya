@@ -142,9 +142,6 @@
     /* Ensure body doesn't cause layout shift */
     margin: 0;
     padding: 0;
-    /* Smooth background transition when theme changes */
-    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   /* Modern dark mode scrollbar */
@@ -259,47 +256,6 @@
     @apply touch-manipulation;
   }
   
-  /* Smooth synchronized theme transition - all elements change together */
-  /* Apply to all elements simultaneously with no delay */
-  html.theme-transitioning *,
-  html.theme-transitioning *::before,
-  html.theme-transitioning *::after {
-    transition: 
-      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s,
-      border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s,
-      color 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s,
-      fill 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s,
-      stroke 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s,
-      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s !important;
-    transition-delay: 0s !important;
-    will-change: background-color, border-color, color;
-  }
-  
-  /* Ensure body transitions first and smoothly */
-  html.theme-transitioning body {
-    transition: 
-      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s,
-      color 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s !important;
-    transition-delay: 0s !important;
-    will-change: background-color, color;
-  }
-  
-  /* Exclude performance-heavy elements from transitions */
-  html.theme-transitioning img,
-  html.theme-transitioning video,
-  html.theme-transitioning iframe,
-  html.theme-transitioning canvas,
-  html.theme-transitioning svg path,
-  html.theme-transitioning svg circle,
-  html.theme-transitioning svg rect,
-  html.theme-transitioning svg line,
-  html.theme-transitioning svg polyline,
-  html.theme-transitioning svg polygon,
-  html.theme-transitioning .no-transition,
-  html.theme-transitioning .no-transition * {
-    transition: none !important;
-    will-change: auto !important;
-  }
   
   /* Safe area insets for mobile devices */
   .safe-top {
