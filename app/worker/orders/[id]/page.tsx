@@ -234,27 +234,27 @@ export default function WorkerOrderDetailPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300";
       case "confirmed":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300";
       case "processing":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300";
       case "packing":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300";
       case "packed":
-        return "bg-indigo-100 text-indigo-800";
+        return "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300";
       case "shipped":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300";
       case "delivered":
-        return "bg-emerald-100 text-emerald-800";
+        return "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300";
       case "cancelled":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300";
       case "in_progress":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300";
       case "completed":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300";
     }
   };
 
@@ -745,7 +745,7 @@ export default function WorkerOrderDetailPage() {
   if (isLoading) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Loading order...</p>
+        <p className="text-gray-500 dark:text-gray-400">Loading order...</p>
       </div>
     );
   }
@@ -753,7 +753,7 @@ export default function WorkerOrderDetailPage() {
   if (!order) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 mb-4">Order not found</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">Order not found</p>
         <Button asChild variant="outline">
           <Link href="/worker/dashboard">Back to Dashboard</Link>
         </Button>
@@ -771,8 +771,8 @@ export default function WorkerOrderDetailPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="font-serif text-3xl">Order {order.order_number}</h1>
-          <p className="text-gray-600 text-sm">
+          <h1 className="font-serif text-3xl text-gray-900 dark:text-white">Order {order.order_number}</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
             Placed on {new Date(order.created_at).toLocaleString()}
           </p>
         </div>
@@ -782,60 +782,60 @@ export default function WorkerOrderDetailPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Order Items */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <h2 className="font-serif text-xl mb-4">Order Items</h2>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">Order Items</h2>
             <div className="space-y-4">
               {order.items.map((item, index) => (
-                <div key={index} className="flex items-center gap-4 pb-4 border-b last:border-0">
+                <div key={index} className="flex items-center gap-4 pb-4 border-b dark:border-white/10 last:border-0">
                   {item.image && (
                     <img
                       src={item.image}
                       alt={item.title}
-                      className="w-16 h-16 object-cover rounded"
+                      className="w-16 h-16 object-cover rounded border dark:border-white/10"
                     />
                   )}
                   <div className="flex-1">
-                    <p className="font-medium">{item.title}</p>
-                    <p className="text-sm text-gray-500">SKU: {item.sku}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium text-gray-900 dark:text-white">{item.title}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">SKU: {item.sku}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       Quantity: {item.quantity} × ₹{item.price}
                     </p>
                   </div>
-                  <p className="font-semibold">
+                  <p className="font-semibold text-gray-900 dark:text-white">
                     ₹{(item.price * item.quantity).toLocaleString()}
                   </p>
                 </div>
               ))}
             </div>
-            <div className="mt-6 pt-6 border-t space-y-2">
+            <div className="mt-6 pt-6 border-t dark:border-white/10 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Subtotal</span>
-                <span>₹{order.subtotal.toLocaleString()}</span>
+                <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                <span className="text-gray-900 dark:text-white">₹{order.subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Shipping</span>
-                <span>{order.shipping === 0 ? "Free" : `₹${order.shipping}`}</span>
+                <span className="text-gray-600 dark:text-gray-400">Shipping</span>
+                <span className="text-gray-900 dark:text-white">{order.shipping === 0 ? "Free" : `₹${order.shipping}`}</span>
               </div>
-              <div className="flex justify-between text-lg font-semibold pt-2 border-t">
-                <span>Total</span>
-                <span>₹{order.total.toLocaleString()}</span>
+              <div className="flex justify-between text-lg font-semibold pt-2 border-t dark:border-white/10">
+                <span className="text-gray-900 dark:text-white">Total</span>
+                <span className="text-gray-900 dark:text-white">₹{order.total.toLocaleString()}</span>
               </div>
             </div>
           </div>
 
           {/* My Tasks */}
           {tasks.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm p-6 border">
-              <h2 className="font-serif text-xl mb-4">My Tasks</h2>
+            <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+              <h2 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">My Tasks</h2>
               <div className="space-y-3">
                 {tasks.map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
+                    className="flex items-center justify-between p-3 border dark:border-white/10 rounded-lg"
                   >
                     <div className="flex-1">
-                      <p className="font-medium capitalize">{(task.type || "task").replace("_", " ")}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-medium capitalize text-gray-900 dark:text-white">{(task.type || "task").replace("_", " ")}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         Status: {task.status || "unknown"}
                       </p>
                     </div>
@@ -879,11 +879,11 @@ export default function WorkerOrderDetailPage() {
                         </Button>
                       )}
                       {task.status === "completed" && (
-                        <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
+                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-medium">
                           <CheckCircle className="h-5 w-5" />
                           <span>Task Completed</span>
                           {task.completed_at && (
-                            <span className="text-xs text-gray-500 ml-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                               {new Date(task.completed_at).toLocaleDateString()}
                             </span>
                           )}
@@ -910,8 +910,8 @@ export default function WorkerOrderDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Order Status */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <h2 className="font-serif text-xl mb-4">Order Status</h2>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">Order Status</h2>
             <div className="mb-4">
               <span
                 className={`px-3 py-2 text-sm rounded-full inline-block ${getStatusColor(
@@ -963,8 +963,8 @@ export default function WorkerOrderDetailPage() {
               };
               
               return (
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm text-gray-600 mb-3">Update Status:</p>
+                <div className="mt-4 pt-4 border-t dark:border-white/10">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Update Status:</p>
                   <Button
                     onClick={() => updateOrderStatus(nextStatus)}
                     disabled={isUpdating}
@@ -986,12 +986,12 @@ export default function WorkerOrderDetailPage() {
             })()}
 
             {/* Next Steps */}
-            <div className="mt-4 pt-4 border-t">
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <div className="mt-4 pt-4 border-t dark:border-white/10">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-[#D4AF37]" />
                 Next Steps
               </h3>
-              <div className="space-y-2 text-sm text-gray-700">
+              <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
                 {order.status === "pending" && (
                   <>
                     <p>• Review the order details and confirm the order</p>
@@ -1053,37 +1053,37 @@ export default function WorkerOrderDetailPage() {
           </div>
 
           {/* Customer Info */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <h2 className="font-serif text-xl mb-4">Customer</h2>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">Customer</h2>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <User className="h-5 w-5 text-gray-400 mt-0.5" />
+                <User className="h-5 w-5 text-gray-400 dark:text-gray-500 mt-0.5" />
                 <div>
-                  <p className="font-medium">{order.customer.name}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{order.customer.name}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Mail className="h-5 w-5 text-gray-400 mt-0.5" />
+                <Mail className="h-5 w-5 text-gray-400 dark:text-gray-500 mt-0.5" />
                 <div>
-                  <p className="text-sm">{order.customer.email}</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{order.customer.email}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Phone className="h-5 w-5 text-gray-400 mt-0.5" />
+                <Phone className="h-5 w-5 text-gray-400 dark:text-gray-500 mt-0.5" />
                 <div>
-                  <p className="text-sm">{order.customer.phone}</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{order.customer.phone}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Shipping Address */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <h2 className="font-serif text-xl mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
               <MapPin className="h-5 w-5" />
               Shipping Address
             </h2>
-            <div className="text-sm space-y-1">
+            <div className="text-sm space-y-1 text-gray-900 dark:text-white">
               <p className="font-medium">{order.shipping_address.name}</p>
               <p>{order.shipping_address.address_line1}</p>
               {order.shipping_address.address_line2 && (
@@ -1098,20 +1098,20 @@ export default function WorkerOrderDetailPage() {
           </div>
 
           {/* Payment Info */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <h2 className="font-serif text-xl mb-4">Payment</h2>
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">Payment</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Method:</span>
-                <span className="font-medium capitalize">{order.payment_method}</span>
+                <span className="text-gray-600 dark:text-gray-400">Method:</span>
+                <span className="font-medium capitalize text-gray-900 dark:text-white">{order.payment_method}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Status:</span>
+                <span className="text-gray-600 dark:text-gray-400">Status:</span>
                 <span
                   className={`px-2 py-1 text-xs rounded-full ${
                     order.payment_status === "paid"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                      : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
                   }`}
                 >
                   {order.payment_status}
@@ -1121,8 +1121,8 @@ export default function WorkerOrderDetailPage() {
           </div>
 
           {/* Print Options */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <h2 className="font-serif text-xl mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
               <Printer className="h-5 w-5" />
               Print Options
             </h2>
@@ -1152,7 +1152,7 @@ export default function WorkerOrderDetailPage() {
                 Print Shipping Label
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
               Shipping label is designed to be stuck on the box
             </p>
           </div>
@@ -1161,15 +1161,15 @@ export default function WorkerOrderDetailPage() {
 
       {/* Complete Task Confirmation Dialog */}
       {showCompleteDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg p-6 max-w-md w-full border dark:border-white/10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="bg-green-100 rounded-full p-2">
-                <AlertCircle className="h-6 w-6 text-green-600" />
+              <div className="bg-green-100 dark:bg-green-900/30 rounded-full p-2">
+                <AlertCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
-              <h3 className="font-serif text-xl">Complete Task?</h3>
+              <h3 className="font-serif text-xl text-gray-900 dark:text-white">Complete Task?</h3>
             </div>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Are you sure you want to mark this{" "}
               <span className="font-medium capitalize">
                 {showCompleteDialog.taskType.replace("_", " ")}
