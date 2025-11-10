@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Image } from "@imagekit/next";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ZoomIn, ZoomOut, X, Maximize2 } from "lucide-react";
-import { validateImageUrl, getFallbackImageUrl, filterValidImageUrls } from "@/lib/imagekit-utils";
+import { getFallbackImageUrl, filterValidImageUrls } from "@/lib/imagekit-utils";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 interface ImageGalleryProps {
   images: string[];
@@ -134,7 +134,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
       <div className="space-y-3 md:space-y-4">
         {/* Main Image */}
         <div className="relative aspect-square w-full overflow-hidden rounded-lg md:rounded-lg bg-gray-100 dark:bg-[#1a1a1a]">
-          <Image
+          <OptimizedImage
             src={displayImages[selectedImage]}
             alt={`${productTitle} - Image ${selectedImage + 1}`}
             fill
@@ -146,13 +146,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
             transformation={[{
               format: 'auto',
             }]}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              const fallbackUrl = getFallbackImageUrl();
-              if (!target.src.includes(fallbackUrl.split('/').pop() || '')) {
-                target.src = fallbackUrl;
-              }
-            }}
+            objectFit="cover"
           />
           <button
             onClick={() => setZoomOpen(true)}
@@ -176,7 +170,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
                     : "border-transparent dark:border-white/10 active:border-gray-300 dark:active:border-white/30 md:hover:border-gray-300 dark:md:hover:border-white/30"
                 }`}
               >
-                <Image
+                <OptimizedImage
                   src={img}
                   alt={`${productTitle} thumbnail ${index + 1}`}
                   fill
@@ -187,13 +181,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
                   transformation={[{
                     format: 'auto',
                   }]}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    const fallbackUrl = getFallbackImageUrl();
-                    if (!target.src.includes(fallbackUrl.split('/').pop() || '')) {
-                      target.src = fallbackUrl;
-                    }
-                  }}
+                  objectFit="cover"
                 />
               </button>
             ))}

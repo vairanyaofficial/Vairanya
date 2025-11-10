@@ -2,13 +2,13 @@
 
 import React, { useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Image } from "@imagekit/next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/components/AuthProvider";
 import { X, Plus, Minus, ShoppingBag } from "lucide-react";
-import { validateImageUrl, getFallbackImageUrl } from "@/lib/imagekit-utils";
+import { getFallbackImageUrl, filterValidImageUrls } from "@/lib/imagekit-utils";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 interface CartProps {
   open: boolean;
@@ -113,8 +113,11 @@ const Cart: React.FC<CartProps> = ({ open, onOpenChange }) => {
                     onClick={() => onOpenChange(false)}
                     className="relative h-24 w-24 md:h-20 md:w-20 flex-shrink-0 overflow-hidden rounded-xl md:rounded-md glass-card backdrop-blur-md"
                   >
-                    <Image
-                      src={validateImageUrl(item.images?.[0])}
+                    <OptimizedImage
+                      src={(() => {
+                        const validImages = filterValidImageUrls(item.images || []);
+                        return validImages.length > 0 ? validImages[0] : getFallbackImageUrl();
+                      })()}
                       alt={item.title}
                       fill
                       className="object-cover"
@@ -123,13 +126,7 @@ const Cart: React.FC<CartProps> = ({ open, onOpenChange }) => {
                       transformation={[{
                         format: 'auto',
                       }]}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        const fallbackUrl = getFallbackImageUrl();
-                        if (!target.src.includes(fallbackUrl.split('/').pop() || '')) {
-                          target.src = fallbackUrl;
-                        }
-                      }}
+                      objectFit="cover"
                     />
                   </Link>
                   <div className="flex flex-1 flex-col min-w-0">
