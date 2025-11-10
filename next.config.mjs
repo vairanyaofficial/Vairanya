@@ -1,9 +1,3 @@
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Production optimizations
@@ -145,11 +139,8 @@ const nextConfig = {
       };
     }
     
-    // Ensure path aliases are resolved correctly (fixes Vercel build issues)
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      "@": path.resolve(__dirname, "."),
-    };
+    // Next.js automatically handles @ path aliases via tsconfig.json
+    // Don't override the alias resolution as it can break module resolution
     
     return config;
   },
@@ -168,9 +159,6 @@ const nextConfig = {
         'test-results/**/*',
         // Exclude large packages that Vercel handles automatically
         'node_modules/@opentelemetry/**/*',
-        // Exclude dev dependencies
-        'node_modules/typescript/**/*',
-        'node_modules/@types/**/*',
       ],
     },
     // Mark firebase-admin and mongodb as external - Vercel handles these automatically
