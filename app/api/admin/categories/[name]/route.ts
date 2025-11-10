@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import { deleteCategory, updateCategory, getAllCategories } from "@/lib/categories-mongodb";
 import { requireAdminOrSuperUser } from "@/lib/admin-auth-server";
-
-const CATEGORIES_COLLECTION = "categories";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // DELETE - Delete category (admin and superuser)
 export async function DELETE(
@@ -15,12 +14,12 @@ export async function DELETE(
   }
 
   try {
-    // Ensure Firebase is initialized before using adminFirestore
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminFirestore) {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
       return NextResponse.json(
         { success: false, error: "Database unavailable" },
-        { status: 500 }
+        { status: 503 }
       );
     }
 
@@ -34,24 +33,17 @@ export async function DELETE(
       );
     }
 
-    // Check if category exists
-    const doc = await adminFirestore.collection(CATEGORIES_COLLECTION).doc(normalizedName).get();
-    if (!doc.exists) {
-      return NextResponse.json(
-        { success: false, error: "Category not found" },
-        { status: 404 }
-      );
-    }
-
-    // Delete category
-    await adminFirestore.collection(CATEGORIES_COLLECTION).doc(normalizedName).delete();
-
-    // Get all remaining categories
-    const snapshot = await adminFirestore.collection(CATEGORIES_COLLECTION).get();
-    const categories = snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => doc.id).sort();
+    // Delete category and get all remaining categories
+    const categories = await deleteCategory(normalizedName);
 
     return NextResponse.json({ success: true, categories });
   } catch (error: any) {
+    if (error.message?.includes("not found")) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
       { success: false, error: error.message || "Failed to delete category" },
       { status: 500 }
@@ -70,12 +62,12 @@ export async function PUT(
   }
 
   try {
-    // Ensure Firebase is initialized before using adminFirestore
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminFirestore) {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
       return NextResponse.json(
         { success: false, error: "Database unavailable" },
-        { status: 500 }
+        { status: 503 }
       );
     }
 
@@ -91,50 +83,23 @@ export async function PUT(
       );
     }
 
-    if (oldName === newName) {
-      // No change, just return current categories
-      const snapshot = await adminFirestore.collection(CATEGORIES_COLLECTION).get();
-      const categories = snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => doc.id).sort();
-      return NextResponse.json({ success: true, categories });
-    }
-
-    // Check if old category exists
-    const oldDoc = await adminFirestore.collection(CATEGORIES_COLLECTION).doc(oldName).get();
-    if (!oldDoc.exists) {
-      return NextResponse.json(
-        { success: false, error: "Category not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check if new name already exists
-    const newDoc = await adminFirestore.collection(CATEGORIES_COLLECTION).doc(newName).get();
-    if (newDoc.exists) {
-      return NextResponse.json(
-        { success: false, error: "Category with that name already exists" },
-        { status: 400 }
-      );
-    }
-
-    // Get old category data
-    const oldData = oldDoc.data();
-
-    // Create new document with new name
-    await adminFirestore.collection(CATEGORIES_COLLECTION).doc(newName).set({
-      name: newName,
-      createdAt: oldData?.createdAt || new Date(),
-      updatedAt: new Date(),
-    });
-
-    // Delete old document
-    await adminFirestore.collection(CATEGORIES_COLLECTION).doc(oldName).delete();
-
-    // Get all categories
-    const snapshot = await adminFirestore.collection(CATEGORIES_COLLECTION).get();
-    const categories = snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => doc.id).sort();
+    // Update category and get all categories
+    const categories = await updateCategory(oldName, newName);
 
     return NextResponse.json({ success: true, categories });
   } catch (error: any) {
+    if (error.message?.includes("not found")) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 404 }
+      );
+    }
+    if (error.message?.includes("already exists")) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { success: false, error: error.message || "Failed to update category" },
       { status: 500 }

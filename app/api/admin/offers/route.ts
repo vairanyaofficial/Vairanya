@@ -6,9 +6,10 @@ import {
   updateOffer,
   deleteOffer,
   getOfferById,
-} from "@/lib/offers-firestore";
+} from "@/lib/offers-mongodb";
 import { requireAdmin } from "@/lib/admin-auth-server";
 import type { Offer } from "@/lib/offers-types";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // GET - Fetch all offers
 export async function GET(request: NextRequest) {
@@ -21,6 +22,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
     const offers = await getAllOffers();
     
     return NextResponse.json({

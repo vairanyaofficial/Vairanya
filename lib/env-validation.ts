@@ -12,6 +12,15 @@ interface EnvConfig {
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?: string;
   NEXT_PUBLIC_FIREBASE_APP_ID?: string;
 
+  // MongoDB (backup database)
+  MONGODB_URI?: string;
+  MONGODB_CONNECTION_STRING?: string;
+  MONGODB_HOST?: string;
+  MONGODB_PORT?: string;
+  MONGODB_DATABASE?: string;
+  MONGODB_USERNAME?: string;
+  MONGODB_PASSWORD?: string;
+
   // Razorpay
   RAZORPAY_KEY_ID?: string;
   RAZORPAY_KEY_SECRET?: string;
@@ -46,13 +55,31 @@ export function validateEnv(): ValidationResult {
 
   // Required for production
   if (isProduction) {
-    // Firebase Admin - at least one must be set
-    if (
-      !process.env.FIREBASE_SERVICE_ACCOUNT_JSON &&
-      !process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64 &&
-      !process.env.GOOGLE_APPLICATION_CREDENTIALS
-    ) {
-      missing.push("FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_SERVICE_ACCOUNT_JSON_B64, or GOOGLE_APPLICATION_CREDENTIALS");
+    // Firebase Admin - at least one method must be set
+    const hasJson = !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    const hasJsonB64 = !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64;
+    const hasGoogleCreds = !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    const hasIndividualCreds = !!(
+      process.env.FIREBASE_PROJECT_ID &&
+      process.env.FIREBASE_CLIENT_EMAIL &&
+      process.env.FIREBASE_PRIVATE_KEY
+    );
+    
+    if (!hasJson && !hasJsonB64 && !hasGoogleCreds && !hasIndividualCreds) {
+      missing.push("FIREBASE_SERVICE_ACCOUNT_JSON_B64 (recommended), FIREBASE_SERVICE_ACCOUNT_JSON, individual credentials (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY), or GOOGLE_APPLICATION_CREDENTIALS");
+    }
+    
+    // Validate individual credentials if partially set
+    if (process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_CLIENT_EMAIL || process.env.FIREBASE_PRIVATE_KEY) {
+      if (!process.env.FIREBASE_PROJECT_ID) {
+        warnings.push("FIREBASE_PROJECT_ID is missing (required for individual credentials)");
+      }
+      if (!process.env.FIREBASE_CLIENT_EMAIL) {
+        warnings.push("FIREBASE_CLIENT_EMAIL is missing (required for individual credentials)");
+      }
+      if (!process.env.FIREBASE_PRIVATE_KEY) {
+        warnings.push("FIREBASE_PRIVATE_KEY is missing (required for individual credentials)");
+      }
     }
 
     // Firebase Client (public vars)
@@ -91,6 +118,18 @@ export function validateEnv(): ValidationResult {
     }
     if (!process.env.NEXTAUTH_URL) {
       warnings.push("NEXTAUTH_URL (authentication may not work correctly)");
+    }
+
+    // MongoDB - recommended for backup/fallback
+    const hasMongoUri = !!process.env.MONGODB_URI;
+    const hasMongoConnectionString = !!process.env.MONGODB_CONNECTION_STRING;
+    const hasMongoParts = !!(
+      process.env.MONGODB_HOST && 
+      process.env.MONGODB_DATABASE
+    );
+    
+    if (!hasMongoUri && !hasMongoConnectionString && !hasMongoParts) {
+      warnings.push("MONGODB_URI or MONGODB_CONNECTION_STRING (recommended for database fallback if Firebase fails)");
     }
   }
 

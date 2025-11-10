@@ -6,8 +6,9 @@ import {
   updateCarouselSlide,
   deleteCarouselSlide,
   reorderCarouselSlides,
-} from "@/lib/carousel-firestore";
+} from "@/lib/carousel-mongodb";
 import type { CarouselSlide } from "@/lib/carousel-types";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // GET - Get all carousel slides (admin)
 export async function GET(request: NextRequest) {
@@ -17,6 +18,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
     const slides = await getCarouselSlides(false); // Get all slides, not just active
     return NextResponse.json({ success: true, slides }, { status: 200 });
   } catch (error: any) {
@@ -35,6 +43,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { image_url, title, subtitle, link_url, link_text, order, is_active } = body;
 
@@ -64,6 +81,7 @@ export async function POST(request: NextRequest) {
     const newSlide = await createCarouselSlide(slideData);
     return NextResponse.json({ success: true, slide: newSlide }, { status: 201 });
   } catch (error: any) {
+    console.error("Error creating carousel slide:", error);
     return NextResponse.json(
       { success: false, error: error.message || "Failed to create carousel slide" },
       { status: 500 }
@@ -79,6 +97,15 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { action, slide_id, updates, slide_orders } = body;
 
@@ -97,6 +124,7 @@ export async function PUT(request: NextRequest) {
       { status: 400 }
     );
   } catch (error: any) {
+    console.error("Error updating carousel:", error);
     return NextResponse.json(
       { success: false, error: error.message || "Failed to update carousel" },
       { status: 500 }
@@ -112,6 +140,15 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const slideId = searchParams.get("id");
 
@@ -125,6 +162,7 @@ export async function DELETE(request: NextRequest) {
     await deleteCarouselSlide(slideId);
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
+    console.error("Error deleting carousel slide:", error);
     return NextResponse.json(
       { success: false, error: error.message || "Failed to delete carousel slide" },
       { status: 500 }

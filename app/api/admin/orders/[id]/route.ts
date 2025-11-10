@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById, updateOrder, getTasksByOrder } from "@/lib/orders-firestore";
+import { getOrderById, updateOrder, getTasksByOrder } from "@/lib/orders-mongodb";
 import { requireAdmin } from "@/lib/admin-auth-server";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -17,15 +18,37 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
-    const { id } = await params;
-    const order = await getOrderById(id);
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
 
+    const { id } = await params;
+    console.log(`[Admin Orders API] Fetching order with ID: ${id}`);
+    
+    // Try to get order by ID
+    let order = await getOrderById(id);
+    
+    // If not found by ID, try by order_number
     if (!order) {
+      console.log(`[Admin Orders API] Order not found by ID, trying order_number...`);
+      const { getOrderByNumber } = await import("@/lib/orders-mongodb");
+      order = await getOrderByNumber(id);
+    }
+    
+    if (!order) {
+      console.error(`[Admin Orders API] Order not found with ID/order_number: ${id}`);
       return NextResponse.json(
         { success: false, error: "Order not found" },
         { status: 404 }
       );
     }
+    
+    console.log(`[Admin Orders API] Found order: ${order.order_number} (ID: ${order.id})`);
 
     // Workers can only view orders assigned to them or orders with tasks assigned to them
     if (auth.role === "worker") {
@@ -67,6 +90,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const { id } = await params;
     
     if (!id || id.trim() === "") {
@@ -75,6 +107,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         { status: 400 }
       );
     }
+
+    console.log(`[Admin Orders API] Updating order with ID: ${id}`);
 
     let updates;
     try {
@@ -111,14 +145,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // Get the order first to check permissions
-    const order = await getOrderById(id);
+    // Get the order first to check permissions - try both ID and order_number
+    let order = await getOrderById(id);
     if (!order) {
+      const { getOrderByNumber } = await import("@/lib/orders-mongodb");
+      order = await getOrderByNumber(id);
+    }
+    
+    if (!order) {
+      console.error(`[Admin Orders API] Order not found for update: ${id}`);
       return NextResponse.json(
         { success: false, error: "Order not found" },
         { status: 404 }
       );
     }
+    
+    console.log(`[Admin Orders API] Found order for update: ${order.order_number} (ID: ${order.id})`);
 
     // Workers can only update orders assigned to them
     if (auth.role === "worker") {
@@ -149,7 +191,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const updatedOrder = await updateOrder(id, updates);
+    // Use the order's actual ID (MongoDB _id) for updating
+    const orderIdToUpdate = order.id;
+    const updatedOrder = await updateOrder(orderIdToUpdate, updates);
     
     if (!updatedOrder) {
       return NextResponse.json(

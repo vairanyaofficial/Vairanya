@@ -6,9 +6,10 @@ import {
   updateCollection,
   deleteCollection,
   getCollectionById,
-} from "@/lib/collections-firestore";
+} from "@/lib/collections-mongodb";
 import { requireAdmin } from "@/lib/admin-auth-server";
 import type { Collection } from "@/lib/collections-types";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
     const collections = await getAllCollections();
     
     return NextResponse.json({
@@ -117,6 +125,14 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { id, ...updates } = body;
 
@@ -134,6 +150,16 @@ export async function PUT(request: NextRequest) {
       collection,
     });
   } catch (error: any) {
+    if (error?.message?.includes("not found")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Collection not found",
+          message: String(error?.message || error),
+        },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
       {
         success: false,
@@ -156,6 +182,14 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -173,6 +207,16 @@ export async function DELETE(request: NextRequest) {
       message: "Collection deleted successfully",
     });
   } catch (error: any) {
+    if (error?.message?.includes("not found")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Collection not found",
+          message: String(error?.message || error),
+        },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
       {
         success: false,

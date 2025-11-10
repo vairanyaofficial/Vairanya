@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { toggleFeaturedReview, deleteReview } from "@/lib/reviews-firestore";
+import { toggleFeaturedReview, deleteReview } from "@/lib/reviews-mongodb";
 import { requireAdmin } from "@/lib/admin-auth-server";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 export async function PUT(request: NextRequest) {
   const auth = requireAdmin(request);
@@ -12,6 +13,13 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
     const body = await request.json();
     const { review_id, is_featured } = body;
 

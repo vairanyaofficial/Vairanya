@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTaskById, updateTask, deleteTask, getTasksByOrder, createTask, getOrderById, updateOrder } from "@/lib/orders-firestore";
+import { getTaskById, updateTask, deleteTask, getTasksByOrder, createTask, getOrderById, updateOrder } from "@/lib/orders-mongodb";
 import { requireAdmin, requireSuperUser } from "@/lib/admin-auth-server";
 import { getNextStep, getStepByType, WORKFLOW_STEPS, isStepCompleted } from "@/lib/workflow";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -18,6 +19,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const { id } = await params;
     const task = await getTaskById(id);
 
@@ -48,6 +58,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const { id } = await params;
     const updates = await request.json();
 
@@ -170,6 +189,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const { id } = await params;
     const task = await getTaskById(id);
     

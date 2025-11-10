@@ -434,7 +434,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Quick Links - Mobile Optimized */}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${session?.role === "superuser" ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-3 sm:gap-4 md:gap-6`}>
+      <div className={`grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 ${session?.role === "superuser" ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-3 sm:gap-4 md:gap-6`}>
         <Link
           href="/admin/orders"
           className="p-3 sm:p-4 md:p-6 border dark:border-white/10 rounded-lg hover:border-[#D4AF37] dark:hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 transition-colors bg-white dark:bg-[#0a0a0a]"

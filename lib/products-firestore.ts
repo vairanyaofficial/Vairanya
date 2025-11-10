@@ -1,395 +1,49 @@
-// Products Firestore service - server-side only
+// Products MongoDB service - server-side only
+// This file maintains backward compatibility by re-exporting MongoDB functions
 import "server-only";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import * as productsMongo from "./products-mongodb";
 import type { Product } from "./products-types";
 
-const PRODUCTS_COLLECTION = "products";
-
-// Convert Firestore document to Product
-function docToProduct(doc: any): Product {
-  const data = doc.data();
-  // Handle both Firestore document format and direct data
-  const docData = data || doc;
-  const docId = doc.id || docData.product_id;
-  
-  // Filter and validate images - remove empty/invalid URLs
-  let images: string[] = [];
-  if (Array.isArray(docData.images)) {
-    // Filter out invalid/empty image URLs
-    images = docData.images.filter((img: any) => {
-      if (!img || typeof img !== 'string') return false;
-      const trimmed = img.trim();
-      return trimmed !== '' && 
-             trimmed !== 'undefined' && 
-             trimmed !== 'null' &&
-             trimmed.toLowerCase() !== 'none';
-    });
-  } else if (docData.imageUrl && typeof docData.imageUrl === 'string') {
-    const trimmed = docData.imageUrl.trim();
-    if (trimmed !== '' && trimmed !== 'undefined' && trimmed !== 'null') {
-      images = [docData.imageUrl];
-    }
-  }
-  
-  return {
-    product_id: docId,
-    sku: docData.sku || "",
-    title: docData.title || "",
-    category: docData.category || "rings",
-    price: docData.price || 0,
-    cost_price: docData.cost_price || null,
-    stock_qty: docData.stock_qty || 0,
-    weight: docData.weight || null,
-    metal_finish: docData.metal_finish || "gold",
-    images: images,
-    description: docData.description || "",
-    short_description: docData.short_description || "",
-    tags: Array.isArray(docData.tags) ? docData.tags : [],
-    dimensions: docData.dimensions || null,
-    shipping_class: docData.shipping_class || "",
-    slug: docData.slug || "",
-    is_new: docData.is_new || false,
-    mrp: docData.mrp || null,
-    size_options: Array.isArray(docData.size_options) ? docData.size_options : [],
-  };
-}
-
-// Get all products
+// Re-export all MongoDB functions
 export async function getAllProducts(): Promise<Product[]> {
-  // Ensure Firebase is initialized
-  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
-  const initResult = await ensureFirebaseInitialized();
-  
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-
-  try {
-    // Add timeout to prevent hanging queries
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("Firestore query timeout (10s)")), 10000)
-    );
-    
-    // Try with orderBy first, but fallback to unordered if index doesn't exist
-    let snapshot;
-    try {
-      const queryPromise = adminFirestore
-        .collection(PRODUCTS_COLLECTION)
-        .orderBy("createdAt", "desc")
-        .get();
-      
-      snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
-      return snapshot.docs.map(docToProduct);
-    } catch (orderByError: any) {
-      // If orderBy fails (likely due to missing index or timeout), get without ordering
-      // and sort in memory
-      console.warn("OrderBy failed, fetching all products without ordering. Error:", orderByError?.message);
-      console.warn("This is usually because the Firestore index doesn't exist or query timed out. Products will be sorted in memory.");
-      
-      try {
-        const queryPromise = adminFirestore
-          .collection(PRODUCTS_COLLECTION)
-          .get();
-        
-        snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
-        
-        // Map docs to products and sort by createdAt
-        const productsWithDates = snapshot.docs.map((doc: any) => {
-          const product = docToProduct(doc);
-          const data = doc.data();
-          const createdAt = data.createdAt?.toDate?.() || data.createdAt || new Date(0);
-          return { product, createdAt };
-        });
-        
-        // Sort by createdAt descending
-        productsWithDates.sort((a: { product: Product; createdAt: any }, b: { product: Product; createdAt: any }) => {
-          const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
-          const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
-          return dateB - dateA;
-        });
-        
-        return productsWithDates.map((item: { product: Product; createdAt: any }) => item.product);
-      } catch (fallbackError: any) {
-        console.error("Error fetching products (fallback):", {
-          message: fallbackError?.message,
-          code: fallbackError?.code,
-          name: fallbackError?.name,
-        });
-        return [];
-      }
-    }
-  } catch (error: any) {
-    console.error("Error fetching products:", {
-      message: error?.message,
-      code: error?.code,
-      name: error?.name,
-    });
-    return [];
-  }
+  return productsMongo.getAllProducts();
 }
 
-// Get product by ID
 export async function getProductById(productId: string): Promise<Product | null> {
-  // Ensure Firebase is initialized
-  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-
-  try {
-    const doc = await adminFirestore.collection(PRODUCTS_COLLECTION).doc(productId).get();
-    if (!doc.exists) return null;
-    return docToProduct(doc);
-  } catch (error) {
-    return null;
-  }
+  return productsMongo.getProductById(productId);
 }
 
-// Get product by slug
 export async function getProductBySlug(slug: string): Promise<Product | null> {
-  // Ensure Firebase is initialized
-  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-
-  try {
-    const snapshot = await adminFirestore
-      .collection(PRODUCTS_COLLECTION)
-      .where("slug", "==", slug)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) return null;
-    return docToProduct(snapshot.docs[0]);
-  } catch (error) {
-    return null;
-  }
+  return productsMongo.getProductBySlug(slug);
 }
 
-// Create new product
 export async function createProduct(product: Product): Promise<Product> {
-  // Ensure Firebase is initialized
-  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-
-  try {
-    // Check if slug already exists
-    const existing = await getProductBySlug(product.slug);
-    if (existing) {
-      throw new Error("Product with this slug already exists");
-    }
-
-    // Generate product_id if not provided
-    let productId = product.product_id;
-    if (!productId) {
-      // Generate unique ID
-      const allProducts = await getAllProducts();
-      const existingIds = allProducts.map((p) => {
-        const match = p.product_id.match(/va-(\d+)/);
-        return match ? parseInt(match[1], 10) : 0;
-      });
-      const nextId = Math.max(0, ...existingIds) + 1;
-      productId = `va-${String(nextId).padStart(2, "0")}`;
-    }
-
-    // Generate SKU if not provided
-    let sku = product.sku;
-    if (!sku) {
-      const allProducts = await getAllProducts();
-      const categoryPrefix = product.category.substring(0, 3).toUpperCase();
-      const existingSKUs = allProducts
-        .filter((p) => p.category === product.category)
-        .map((p) => {
-          const match = p.sku.match(new RegExp(`${categoryPrefix}-(\\d+)`));
-          return match ? parseInt(match[1], 10) : 0;
-        });
-      const nextNum = Math.max(0, ...existingSKUs) + 1;
-      sku = `VA-${categoryPrefix}-${String(nextNum).padStart(3, "0")}`;
-    }
-
-    const productData = {
-      ...product,
-      product_id: productId,
-      sku: sku,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    await adminFirestore.collection(PRODUCTS_COLLECTION).doc(productId).set(productData);
-
-    return { ...product, product_id: productId, sku };
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to create product");
-  }
+  return productsMongo.createProduct(product);
 }
 
-// Update product
 export async function updateProduct(
   productId: string,
   updates: Partial<Product>
 ): Promise<Product> {
-  // Ensure Firebase is initialized
-  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-
-  try {
-    const productRef = adminFirestore.collection(PRODUCTS_COLLECTION).doc(productId);
-    const doc = await productRef.get();
-
-    if (!doc.exists) {
-      throw new Error("Product not found");
-    }
-
-    // Check if slug is being updated and conflicts with another product
-    if (updates.slug) {
-      const existing = await getProductBySlug(updates.slug);
-      if (existing && existing.product_id !== productId) {
-        throw new Error("Product slug already exists");
-      }
-    }
-
-    await productRef.update({
-      ...updates,
-      updatedAt: new Date(),
-    });
-
-    const updated = await productRef.get();
-    return docToProduct(updated);
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to update product");
-  }
+  return productsMongo.updateProduct(productId, updates);
 }
 
-// Delete product
 export async function deleteProduct(productId: string): Promise<void> {
-  // Ensure Firebase is initialized
-  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-
-  try {
-    const productRef = adminFirestore.collection(PRODUCTS_COLLECTION).doc(productId);
-    const doc = await productRef.get();
-
-    if (!doc.exists) {
-      throw new Error("Product not found");
-    }
-
-    // Get product data before deletion to delete images
-    const productData = doc.data();
-    const productSlug = productData?.slug;
-    const productImages = productData?.images || [];
-
-    // Delete images from ImageKit before deleting the product
-    if (productSlug) {
-      try {
-        // Dynamic import to avoid SSR issues
-        const { deleteProductImages } = await import("@/lib/imagekit-server");
-        await deleteProductImages(productSlug, productImages);
-      } catch (imageError: any) {
-        // Silently fail - continue with product deletion even if image deletion fails
-        // Image deletion errors should not block product deletion
-      }
-    }
-
-    // Delete the product from Firestore
-    await productRef.delete();
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to delete product");
-  }
+  return productsMongo.deleteProduct(productId);
 }
 
-// Generate unique product ID
 export async function generateProductId(): Promise<string> {
-  const products = await getAllProducts();
-  const existingIds = products.map((p) => {
-    const match = p.product_id.match(/va-(\d+)/);
-    return match ? parseInt(match[1], 10) : 0;
-  });
-  const nextId = Math.max(0, ...existingIds) + 1;
-  return `va-${String(nextId).padStart(2, "0")}`;
+  return productsMongo.generateProductId();
 }
 
-// Generate unique SKU
 export async function generateSKU(category: string): Promise<string> {
-  const products = await getAllProducts();
-  const categoryPrefix = category.substring(0, 3).toUpperCase();
-  const existingSKUs = products
-    .filter((p) => p.category === category)
-    .map((p) => {
-      const match = p.sku.match(new RegExp(`${categoryPrefix}-(\\d+)`));
-      return match ? parseInt(match[1], 10) : 0;
-    });
-  const nextNum = Math.max(0, ...existingSKUs) + 1;
-  return `VA-${categoryPrefix}-${String(nextNum).padStart(3, "0")}`;
+  return productsMongo.generateSKU(category);
 }
 
-// Get products by category (optimized query)
 export async function getProductsByCategory(category: string, limit: number = 8, excludeProductId?: string): Promise<Product[]> {
-  // Ensure Firebase is initialized
-  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-
-  try {
-    let query = adminFirestore
-      .collection(PRODUCTS_COLLECTION)
-      .where("category", "==", category)
-      .limit(limit + (excludeProductId ? 1 : 0));
-
-    const snapshot = await query.get();
-    let products = snapshot.docs.map(docToProduct);
-    
-    // Exclude the current product if specified
-    if (excludeProductId) {
-      products = products.filter((p: Product) => p.product_id !== excludeProductId);
-    }
-    
-    return products.slice(0, limit);
-  } catch (error) {
-    return [];
-  }
+  return productsMongo.getProductsByCategory(category, limit, excludeProductId);
 }
 
-// Get products by metal finish (optimized query)
 export async function getProductsByMetalFinish(metalFinish: string, limit: number = 8, excludeProductId?: string): Promise<Product[]> {
-  // Ensure Firebase is initialized
-  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-
-  try {
-    let query = adminFirestore
-      .collection(PRODUCTS_COLLECTION)
-      .where("metal_finish", "==", metalFinish)
-      .limit(limit + (excludeProductId ? 1 : 0));
-
-    const snapshot = await query.get();
-    let products = snapshot.docs.map(docToProduct);
-    
-    // Exclude the current product if specified
-    if (excludeProductId) {
-      products = products.filter((p: Product) => p.product_id !== excludeProductId);
-    }
-    
-    return products.slice(0, limit);
-  } catch (error) {
-    return [];
-  }
+  return productsMongo.getProductsByMetalFinish(metalFinish, limit, excludeProductId);
 }
-

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminFirestore, adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
-
-const WISHLIST_COLLECTION = "wishlist";
+import { adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import { initializeMongoDB } from "@/lib/mongodb.server";
+import {
+  getWishlistByUserId,
+  addToWishlist,
+  removeFromWishlist,
+} from "@/lib/wishlist-mongodb";
 
 // Helper to verify Firebase token and get user ID
 async function getUserIdFromToken(request: NextRequest): Promise<string | null> {
@@ -26,12 +30,17 @@ async function getUserIdFromToken(request: NextRequest): Promise<string | null> 
 // GET - Fetch all wishlist items for the authenticated user
 export async function GET(request: NextRequest) {
   try {
-    // Ensure Firebase is initialized
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminFirestore) {
+    // Initialize MongoDB
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      console.error("[Wishlist API] MongoDB initialization failed:", mongoInit.error);
       return NextResponse.json(
-        { success: false, error: "Database unavailable" },
-        { status: 500 }
+        { 
+          success: false, 
+          error: "Database unavailable",
+          message: mongoInit.error || "MongoDB connection failed. The cluster may be paused or unavailable."
+        },
+        { status: 503 }
       );
     }
     
@@ -43,27 +52,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const snapshot = await adminFirestore
-      .collection(WISHLIST_COLLECTION)
-      .where("user_id", "==", userId)
-      .get();
+    const wishlistItems = await getWishlistByUserId(userId);
 
-    const wishlistItems = snapshot.docs.map((doc: any) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    // Sort by created_at descending (newest first)
-    wishlistItems.sort((a: any, b: any) => {
-      const dateA = new Date(a.created_at || 0).getTime();
-      const dateB = new Date(b.created_at || 0).getTime();
-      return dateB - dateA;
-    });
-
-    return NextResponse.json({ success: true, items: wishlistItems });
+    return NextResponse.json({ success: true, items: wishlistItems || [] });
   } catch (error: any) {
+    console.error("[Wishlist API] Error fetching wishlist:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to fetch wishlist" },
+      { 
+        success: false, 
+        error: error.message || "Failed to fetch wishlist",
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
@@ -72,12 +71,17 @@ export async function GET(request: NextRequest) {
 // POST - Add item to wishlist
 export async function POST(request: NextRequest) {
   try {
-    // Ensure Firebase is initialized
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminFirestore) {
+    // Initialize MongoDB
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      console.error("[Wishlist API] MongoDB initialization failed for POST:", mongoInit.error);
       return NextResponse.json(
-        { success: false, error: "Database unavailable" },
-        { status: 500 }
+        { 
+          success: false, 
+          error: "Database unavailable",
+          message: mongoInit.error || "MongoDB connection failed. The cluster may be paused or unavailable."
+        },
+        { status: 503 }
       );
     }
     
@@ -99,38 +103,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if item already exists in wishlist
-    const existing = await adminFirestore
-      .collection(WISHLIST_COLLECTION)
-      .where("user_id", "==", userId)
-      .where("product_id", "==", product_id)
-      .limit(1)
-      .get();
-
-    if (!existing.empty) {
-      return NextResponse.json(
-        { success: false, error: "Product already in wishlist" },
-        { status: 400 }
-      );
-    }
-
-    const wishlistItem = {
-      user_id: userId,
-      product_id,
-      created_at: new Date().toISOString(),
-    };
-
-    const docRef = await adminFirestore
-      .collection(WISHLIST_COLLECTION)
-      .add(wishlistItem);
+    const wishlistItem = await addToWishlist(userId, product_id);
 
     return NextResponse.json({
       success: true,
-      item: { id: docRef.id, ...wishlistItem },
+      item: wishlistItem,
     });
   } catch (error: any) {
+    console.error("[Wishlist API] Error adding to wishlist:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to add to wishlist" },
+      { 
+        success: false, 
+        error: error.message || "Failed to add to wishlist",
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
@@ -139,12 +125,17 @@ export async function POST(request: NextRequest) {
 // DELETE - Remove item from wishlist
 export async function DELETE(request: NextRequest) {
   try {
-    // Ensure Firebase is initialized
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminFirestore) {
+    // Initialize MongoDB
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      console.error("[Wishlist API] MongoDB initialization failed for DELETE:", mongoInit.error);
       return NextResponse.json(
-        { success: false, error: "Database unavailable" },
-        { status: 500 }
+        { 
+          success: false, 
+          error: "Database unavailable",
+          message: mongoInit.error || "MongoDB connection failed. The cluster may be paused or unavailable."
+        },
+        { status: 503 }
       );
     }
     
@@ -166,34 +157,17 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!adminFirestore) {
-      return NextResponse.json(
-        { success: false, error: "Database unavailable" },
-        { status: 500 }
-      );
-    }
-
-    // Find and delete the wishlist item
-    const snapshot = await adminFirestore
-      .collection(WISHLIST_COLLECTION)
-      .where("user_id", "==", userId)
-      .where("product_id", "==", product_id)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) {
-      return NextResponse.json(
-        { success: false, error: "Item not found in wishlist" },
-        { status: 404 }
-      );
-    }
-
-    await snapshot.docs[0].ref.delete();
+    await removeFromWishlist(userId, product_id);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error("[Wishlist API] Error removing from wishlist:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to remove from wishlist" },
+      { 
+        success: false, 
+        error: error.message || "Failed to remove from wishlist",
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined
+      },
       { status: 500 }
     );
   }

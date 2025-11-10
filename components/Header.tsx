@@ -83,48 +83,26 @@ const Header: React.FC = () => {
                     <Menu className="h-5 w-5" />
                   </button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[80vw] sm:w-[320px] p-0">
+                <SheetContent side="left" className="w-[70vw] max-w-[300px] sm:max-w-[350px] p-0">
                   <div className="flex flex-col h-full">
                     {/* Mobile Menu Header */}
                     <SheetHeader className="px-2 py-2 border-b border-gray-200 dark:border-white/10">
                       <div className="flex items-center justify-between">
+                        <SheetTitle className="text-sm font-serif font-semibold text-gray-900 dark:text-white">Menu</SheetTitle>
                         <SheetClose asChild>
                           <button
-                            className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-colors"
+                            className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-colors ml-auto"
                             aria-label="Close menu"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-5 w-5" />
                           </button>
                         </SheetClose>
-                        <SheetTitle className="text-sm font-serif font-semibold text-gray-900 dark:text-white ml-auto">Menu</SheetTitle>
                       </div>
                     </SheetHeader>
 
                     {/* Mobile Menu Content */}
-                    <div className="flex-1 overflow-y-auto px-2 pt-2 pb-2 flex flex-col">
+                    <div className="flex-1 overflow-y-auto px-2 pt-4 pb-2 flex flex-col">
                       <div className="flex-1">
-                        {/* Mobile Search Bar */}
-                        <form onSubmit={handleSearch} className="mb-3">
-                          <div className="flex gap-1.5">
-                            <input
-                              type="text"
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                              placeholder="Search..."
-                              className="flex-1 px-2.5 py-1.5 text-xs border border-[#D4AF37]/50 dark:border-[#D4AF37]/50 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                              autoComplete="off"
-                            />
-                            <button
-                              type="submit"
-                              className="px-2.5 py-1.5 bg-[#D4AF37] active:bg-[#C19B2E] text-white rounded-md transition-all shadow-sm touch-manipulation min-w-[36px] flex items-center justify-center"
-                              aria-label="Search"
-                              onClick={() => setMobileMenuOpen(false)}
-                            >
-                              <Search className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </form>
-
                         {/* Mobile Account Section */}
                         {user ? (
                           <div className="mb-3 pb-3 border-b border-gray-200 dark:border-[#1a1a1a]">
@@ -314,90 +292,90 @@ const Header: React.FC = () => {
             </div>
 
             {/* Search Bar - Desktop */}
-            <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-lg mx-6">
+            <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-md mx-4">
               <div className="flex w-full relative">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search jewellery..."
-                  className="flex-1 px-3 py-2 border border-[#D4AF37]/50 dark:border-[#D4AF37]/50 rounded-full focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] glass-card backdrop-blur-md transition-all text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-white/70"
+                  className="flex-1 px-2.5 py-1.5 border border-[#D4AF37]/50 dark:border-[#D4AF37]/50 rounded-full focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] glass-card backdrop-blur-md transition-all text-xs text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-white/70"
                 />
                 <button
                   type="submit"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 bg-[#D4AF37] hover:bg-[#C19B2E] text-white rounded-full transition-all duration-300"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 bg-[#D4AF37] hover:bg-[#C19B2E] text-white rounded-full transition-all duration-300"
                   aria-label="Search"
                 >
-                  <Search className="h-3.5 w-3.5" />
+                  <Search className="h-3 w-3" />
                 </button>
               </div>
             </form>
 
             {/* Right Side Actions - Mobile Optimized with Better Touch Targets */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* Theme Toggle */}
+            <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 flex-shrink-0">
+              {/* Theme Toggle - Always visible */}
               <button
                 onClick={toggleTheme}
-                className="p-2.5 text-gray-700 dark:text-gray-400 active:text-[#D4AF37] dark:active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-[#1a1a1a] rounded-lg touch-manipulation"
+                className="p-2 sm:p-2.5 text-gray-700 dark:text-gray-400 active:text-[#D4AF37] dark:active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-[#1a1a1a] rounded-lg touch-manipulation transition-colors"
                 aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
               >
                 {theme === "light" ? (
-                  <Moon className="h-5 w-5" />
+                  <Moon className="h-4 w-4 sm:h-5 sm:w-5" />
                 ) : (
-                  <Sun className="h-5 w-5" />
+                  <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
                 )}
               </button>
 
-              {/* Mobile Search Button - Better touch target */}
+              {/* Mobile Search Button - Visible on small and medium screens */}
               <button
                 onClick={() => {
                   router.push("/products");
                 }}
-                className="lg:hidden p-2.5 -mr-1 text-gray-700 dark:text-gray-400 active:text-[#D4AF37] dark:active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-[#1a1a1a] transition-colors rounded-lg touch-manipulation"
+                className="lg:hidden p-2 sm:p-2.5 text-gray-700 dark:text-gray-400 active:text-[#D4AF37] dark:active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-[#1a1a1a] transition-colors rounded-lg touch-manipulation"
                 aria-label="Search"
               >
-                <Search className="h-5 w-5" />
+                <Search className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
 
-              {/* Wishlist - Show on mobile too */}
+              {/* Wishlist - Always visible when user is logged in */}
               {user && (
                 <Link
                   href="/wishlist"
-                  className="flex items-center justify-center p-2.5 text-gray-700 dark:text-gray-400 active:text-[#D4AF37] dark:active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-[#1a1a1a] transition-colors relative rounded-lg touch-manipulation"
+                  className="flex items-center justify-center p-2 sm:p-2.5 text-gray-700 dark:text-gray-400 active:text-[#D4AF37] dark:active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-[#1a1a1a] transition-colors relative rounded-lg touch-manipulation"
                   aria-label={`Wishlist with ${wishlistCount} items`}
                 >
-                  <Heart className="h-5 w-5" />
+                  <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#D4AF37] text-[10px] text-white font-bold min-w-[18px]">
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 sm:h-4.5 sm:w-4.5 items-center justify-center rounded-full bg-[#D4AF37] text-[9px] sm:text-[10px] text-white font-bold min-w-[16px] sm:min-w-[18px]">
                       {wishlistCount > 9 ? '9+' : wishlistCount}
                     </span>
                   )}
                 </Link>
               )}
 
-              {/* Cart - Better touch target */}
+              {/* Cart - Always visible */}
               <button
                 onClick={() => {
                   setCartOpen(true);
                 }}
-                className="flex items-center justify-center p-2.5 text-gray-700 dark:text-gray-300 active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-gray-800 transition-colors relative rounded-lg touch-manipulation"
+                className="flex items-center justify-center p-2 sm:p-2.5 text-gray-700 dark:text-gray-300 active:text-[#D4AF37] active:bg-gray-100 dark:active:bg-gray-800 transition-colors relative rounded-lg touch-manipulation"
                 aria-label={`Cart with ${totalItems} items`}
               >
-                <ShoppingBag className="h-5 w-5" />
+                <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#D4AF37] text-[10px] text-white font-bold min-w-[18px]">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 sm:h-4.5 sm:w-4.5 items-center justify-center rounded-full bg-[#D4AF37] text-[9px] sm:text-[10px] text-white font-bold min-w-[16px] sm:min-w-[18px]">
                     {totalItems > 9 ? '9+' : totalItems}
                   </span>
                 )}
               </button>
 
-              {/* Account Menu */}
-              <div className="relative hidden md:block">
+              {/* Account Menu - Visible on medium screens and above */}
+              <div className="relative hidden sm:block">
                 {user ? (
                   <div className="relative">
                     <button
                       onClick={() => setShowAccountMenu(!showAccountMenu)}
-                      className="flex items-center gap-1.5 px-1.5 py-1 text-gray-700 dark:text-gray-400 hover:opacity-80 transition-all rounded-lg hover:bg-gray-50 dark:hover:bg-[#1a1a1a]"
+                      className="flex items-center gap-1 sm:gap-1.5 px-1 sm:px-1.5 py-1 text-gray-700 dark:text-gray-400 hover:opacity-80 transition-all rounded-lg hover:bg-gray-50 dark:hover:bg-[#1a1a1a] touch-manipulation"
                       aria-label="Account menu"
                     >
                       {user.photoURL ? (
@@ -406,7 +384,7 @@ const Header: React.FC = () => {
                           alt={user.displayName || "User"}
                           width={28}
                           height={28}
-                          className="w-7 h-7 rounded-full border border-gray-200 hover:border-[#D4AF37] transition-colors object-cover bg-gray-100 dark:bg-gray-800"
+                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border border-gray-200 hover:border-[#D4AF37] transition-colors object-cover bg-gray-100 dark:bg-gray-800"
                           loading="lazy"
                           referrerPolicy="no-referrer"
                           onError={(e) => {
@@ -416,14 +394,14 @@ const Header: React.FC = () => {
                             const parent = target.parentElement;
                             if (parent && !parent.querySelector('.user-fallback')) {
                               const fallback = document.createElement('div');
-                              fallback.className = 'user-fallback w-7 h-7 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C19B2E] flex items-center justify-center text-white font-semibold text-xs';
+                              fallback.className = 'user-fallback w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C19B2E] flex items-center justify-center text-white font-semibold text-xs';
                               fallback.textContent = user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U";
                               parent.appendChild(fallback);
                             }
                           }}
                         />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C19B2E] flex items-center justify-center text-white font-semibold text-xs">
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C19B2E] flex items-center justify-center text-white font-semibold text-xs">
                           {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
                         </div>
                       )}
@@ -461,7 +439,7 @@ const Header: React.FC = () => {
                               <div className="border-t border-gray-100 dark:border-[#1a1a1a] my-1" />
                               <Link
                                 href={isWorker ? "/worker/dashboard" : adminDashboardPath}
-                                className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] hover:text-[#D4AF37] transition-colors flex items-center gap-2"
+                                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] hover:text-[#D4AF37] transition-colors"
                                 onClick={() => setShowAccountMenu(false)}
                               >
                                 {isWorker ? <Briefcase className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
@@ -486,10 +464,10 @@ const Header: React.FC = () => {
                 ) : (
                   <Link
                     href="/login"
-                    className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-[#1a1a1a]"
+                    className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-[#1a1a1a] touch-manipulation"
                     aria-label="Sign in"
                   >
-                    <LogIn className="h-4 w-4" />
+                    <LogIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     <span className="hidden lg:inline text-sm">Sign In</span>
                   </Link>
                 )}
@@ -502,40 +480,40 @@ const Header: React.FC = () => {
         {/* Navigation Bar - Compact */}
         <div className="hidden md:block border-t border-gray-200/50 dark:border-white/10 glass backdrop-blur-xl">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="flex items-center justify-center gap-1 h-10">
+            <nav className="flex items-center justify-center gap-1 h-10 w-[75%] mx-auto">
               <Link
                 href="/products"
-                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10"
+                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 whitespace-nowrap"
               >
                 All Products
               </Link>
               <Link
                 href="/products?category=rings"
-                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10"
+                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 whitespace-nowrap"
               >
                 Rings
               </Link>
               <Link
                 href="/products?category=earrings"
-                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10"
+                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 whitespace-nowrap"
               >
                 Earrings
               </Link>
               <Link
                 href="/products?category=pendants"
-                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10"
+                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 whitespace-nowrap"
               >
                 Pendants
               </Link>
               <Link
                 href="/products?category=bracelets"
-                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10"
+                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 whitespace-nowrap"
               >
                 Bracelets
               </Link>
               <Link
                 href="/products?category=necklaces"
-                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10"
+                className="text-xs font-medium text-gray-700 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-all duration-200 py-1.5 px-3 rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/10 whitespace-nowrap"
               >
                 Necklaces
               </Link>

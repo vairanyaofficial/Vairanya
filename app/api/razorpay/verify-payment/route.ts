@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { createOrder } from "@/lib/orders-firestore";
-import { updateProduct } from "@/lib/products-firestore";
-import { incrementOfferUsage } from "@/lib/offers-firestore";
+import { createOrder } from "@/lib/orders-mongodb";
+import { updateProduct } from "@/lib/products-mongodb";
+import { incrementOfferUsage } from "@/lib/offers-mongodb";
 import type { Order } from "@/lib/orders-types";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "test_secret";
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const {
       razorpay_order_id,
@@ -93,8 +103,8 @@ export async function POST(request: NextRequest) {
 
     // Update inventory
     try {
+      const { getProductById } = await import("@/lib/products-mongodb");
       for (const item of orderItems) {
-        const { getProductById } = await import("@/lib/products-firestore");
         const product = await getProductById(item.product_id);
         if (product) {
           await updateProduct(item.product_id, {
@@ -104,6 +114,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (inventoryError) {
       // Continue even if inventory update fails
+      console.error("Failed to update inventory:", inventoryError);
     }
 
     return NextResponse.json({

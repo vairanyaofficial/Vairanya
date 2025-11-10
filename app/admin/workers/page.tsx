@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, Plus, Edit, Trash2, Shield, User, Mail, Calendar, ChevronDown, ChevronRight, Package, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Users, Plus, Edit, Trash2, Shield, User, Mail, Calendar, ChevronDown, ChevronRight, Package, CheckCircle, Clock, XCircle, ArrowLeft, Search, X } from "lucide-react";
 import { getAdminSession, isSuperUser } from "@/lib/admin-auth";
 import type { Order } from "@/lib/orders-types";
 import type { Task } from "@/lib/orders-types";
@@ -39,6 +39,8 @@ export default function WorkersPage() {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterRole, setFilterRole] = useState<"all" | "worker" | "admin" | "superadmin">("all");
 
   useEffect(() => {
     if (!isSuperUser()) {
@@ -167,20 +169,20 @@ export default function WorkersPage() {
   const getTaskStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className="h-3 w-3 text-green-600" />;
       case "in_progress":
-        return <Clock className="h-4 w-4 text-yellow-600" />;
+        return <Clock className="h-3 w-3 text-yellow-600" />;
       case "pending":
-        return <Clock className="h-4 w-4 text-gray-600" />;
+        return <Clock className="h-3 w-3 text-gray-600" />;
       case "cancelled":
-        return <XCircle className="h-4 w-4 text-red-600" />;
+        return <XCircle className="h-3 w-3 text-red-600" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-400" />;
+        return <Clock className="h-3 w-3 text-gray-400" />;
     }
   };
 
   const getTaskStatusBadge = (status: string) => {
-    const baseClasses = "px-2 py-1 text-xs rounded-full";
+    const baseClasses = "px-1.5 py-0.5 text-[10px] rounded-full";
     switch (status) {
       case "completed":
         return `${baseClasses} bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300`;
@@ -378,26 +380,49 @@ export default function WorkersPage() {
     setShowEditModal(true);
   };
 
+  // Filter workers
+  const filteredWorkers = useMemo(() => {
+    let filtered = workers;
+
+    // Filter by role
+    if (filterRole !== "all") {
+      filtered = filtered.filter((w) => w.role === filterRole);
+    }
+
+    // Search by name, email, or UID
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (w) =>
+          w.name.toLowerCase().includes(query) ||
+          w.email?.toLowerCase().includes(query) ||
+          w.uid.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [workers, searchQuery, filterRole]);
+
   const getRoleBadge = (role: string) => {
     if (role === "superadmin") {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-[#D4AF37]/20 dark:bg-[#D4AF37]/10 text-[#D4AF37]">
-          <Shield className="h-3 w-3" />
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[#D4AF37]/20 dark:bg-[#D4AF37]/10 text-[#D4AF37]">
+          <Shield className="h-2.5 w-2.5" />
           Super Admin
         </span>
       );
     }
     if (role === "admin") {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300">
-          <Shield className="h-3 w-3" />
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/20 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300">
+          <Shield className="h-2.5 w-2.5" />
           Admin
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300">
-        <User className="h-3 w-3" />
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300">
+        <User className="h-2.5 w-2.5" />
         Worker
       </span>
     );
@@ -406,286 +431,311 @@ export default function WorkersPage() {
   // Only superadmin can access workers management
   if (!isSuperUser()) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400">You don't have permission to access this page. Only superadmins can manage workers.</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-black p-4">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-12">
+            You don't have permission to access this page. Only superadmins can manage workers.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-black p-4">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Loading workers...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="font-serif text-3xl mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
-            <Users className="h-8 w-8" />
-            Workers Management
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage workers and their roles</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-black p-3 md:p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Link href="/admin">
+              <Button variant="outline" size="sm" className="h-8 px-2 text-xs">
+                <ArrowLeft className="h-3 w-3 mr-1" />
+                Back
+              </Button>
+            </Link>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Workers</h1>
+            <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+              {workers.length}
+            </span>
+          </div>
+          <Button
+            onClick={() => {
+              setShowAddModal(true);
+              setFormData({ uid: "", name: "", email: "", role: "worker" });
+              setError("");
+            }}
+            size="sm"
+            className="h-8 px-2 text-xs bg-[#D4AF37] hover:bg-[#C19B2E]"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Add Worker
+          </Button>
         </div>
-        <Button
-          onClick={() => {
-            setShowAddModal(true);
-            setFormData({ uid: "", name: "", email: "", role: "worker" });
-            setError("");
-          }}
-          className="bg-[#D4AF37] hover:bg-[#C19B2E]"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Worker
-        </Button>
-      </div>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
-          {error}
-        </div>
-      )}
+        {error && (
+          <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
+            {error}
+          </div>
+        )}
 
-      {success && (
-        <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-300">
-          {success}
-        </div>
-      )}
+        {success && (
+          <div className="mb-3 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-xs text-green-700 dark:text-green-300">
+            {success}
+          </div>
+        )}
 
-      {isLoading ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">Loading workers...</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* Workers Table */}
-          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-[#0a0a0a] border-b dark:border-white/10">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-8"></th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Orders
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      UID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-white/10">
-                  {workers.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                        No workers found. Add your first worker to get started.
-                      </td>
-                    </tr>
-                  ) : (
-                    workers.map((worker) => {
-                      const workerData = workersWithOrders.find(w => w.uid === worker.uid);
-                      const ordersCount = workerData?.orders.length || 0;
-                      const isExpanded = expandedWorkers.has(worker.uid);
-                      
-                      return (
-                        <React.Fragment key={worker.uid}>
-                          <tr className="hover:bg-gray-50 dark:hover:bg-white/5">
-                            <td className="px-6 py-4">
-                              {worker.role === "worker" && ordersCount > 0 && (
-                                <button
-                                  onClick={() => toggleWorkerExpanded(worker.uid)}
-                                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                                >
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-5 w-5" />
-                                  ) : (
-                                    <ChevronRight className="h-5 w-5" />
-                                  )}
-                                </button>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{worker.name}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                              {worker.email && (
-                                <>
-                                  <Mail className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                                  {worker.email}
-                                </>
-                              )}
-                              {!worker.email && <span className="text-gray-400 dark:text-gray-500">No email</span>}
-                            </td>
-                            <td className="px-6 py-4">{getRoleBadge(worker.role)}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                              {worker.role === "worker" ? (
-                                <span className="font-medium">{ordersCount} order(s)</span>
-                              ) : (
-                                <span className="text-gray-400 dark:text-gray-500">N/A</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono text-xs">
-                              {worker.uid.substring(0, 8)}...
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                              {worker.createdAt ? (
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                                  {new Date(worker.createdAt).toLocaleDateString()}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 dark:text-gray-500">N/A</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  onClick={() => openEditModal(worker)}
-                                  variant="outline"
-                                  size="sm"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                {worker.uid !== session?.username && (
-                                  <Button
-                                    onClick={() => handleDeleteWorker(worker.uid)}
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                          {/* Expanded Orders and Tasks */}
-                          {isExpanded && workerData && workerData.orders.length > 0 && (
-                            <tr>
-                              <td colSpan={8} className="px-6 py-4 bg-gray-50 dark:bg-[#1a1a1a]">
-                                <div className="space-y-3">
-                                  <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3">
-                                    Orders & Tasks for {worker.name}
-                                  </h4>
-                                  {workerData.orders.map((order) => {
-                                    const tasks = workerData.tasksByOrder[order.id] || [];
-                                    const isOrderExpanded = expandedOrders.has(order.id);
-                                    
-                                    return (
-                                      <div key={order.id} className="bg-white dark:bg-[#0a0a0a] border dark:border-white/10 rounded-lg p-4">
-                                        <div 
-                                          className="flex items-center justify-between cursor-pointer"
-                                          onClick={() => toggleOrderExpanded(order.id)}
-                                        >
-                                          <div className="flex items-center gap-3 flex-1">
-                                            <button className="text-gray-500 dark:text-gray-400">
-                                              {isOrderExpanded ? (
-                                                <ChevronDown className="h-4 w-4" />
-                                              ) : (
-                                                <ChevronRight className="h-4 w-4" />
-                                              )}
-                                            </button>
-                                            <Package className="h-5 w-5 text-[#D4AF37]" />
-                                            <div className="flex-1">
-                                              <div className="flex items-center gap-3">
-                                                <Link 
-                                                  href={`/admin/orders/${order.id}`}
-                                                  className="font-medium text-sm hover:text-[#D4AF37] text-gray-900 dark:text-white"
-                                                  onClick={(e) => e.stopPropagation()}
-                                                >
-                                                  {order.order_number}
-                                                </Link>
-                                                <span className={`px-2 py-1 text-xs rounded-full ${
-                                                  order.status === "delivered" ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300" :
-                                                  order.status === "processing" || order.status === "packing" || order.status === "packed" ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300" :
-                                                  order.status === "cancelled" ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300" :
-                                                  "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300"
-                                                }`}>
-                                                  {order.status}
-                                                </span>
-                                              </div>
-                                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                {order.customer.name} • ₹{order.total.toLocaleString()} • {tasks.length} task(s)
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                        {/* Expanded Tasks */}
-                                        {isOrderExpanded && tasks.length > 0 && (
-                                          <div className="mt-3 ml-8 space-y-2">
-                                            {tasks.map((task) => (
-                                              <div 
-                                                key={task.id} 
-                                                className="bg-gray-50 dark:bg-[#1a1a1a] rounded p-3 border-l-2 border-[#D4AF37]"
-                                              >
-                                                <div className="flex items-center justify-between">
-                                                  <div className="flex items-center gap-2">
-                                                    {getTaskStatusIcon(task.status)}
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{task.type}</span>
-                                                    <span className={getTaskStatusBadge(task.status)}>
-                                                      {task.status}
-                                                    </span>
-                                                  </div>
-                                                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                    Priority: {task.priority}
-                                                  </div>
-                                                </div>
-                                                {task.notes && (
-                                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 ml-6">
-                                                    {task.notes}
-                                                  </div>
-                                                )}
-                                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-6">
-                                                  Created: {new Date(task.created_at).toLocaleDateString()}
-                                                </div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                        {isOrderExpanded && tasks.length === 0 && (
-                                          <div className="mt-3 ml-8 text-sm text-gray-500 dark:text-gray-400">
-                                            No tasks for this order
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                  {workerData.orders.length === 0 && (
-                                    <div className="text-sm text-gray-500 dark:text-gray-400 py-4">
-                                      No orders assigned to this worker
-                                    </div>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+        {/* Search and Filter */}
+        <div className="mb-3 space-y-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search workers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-xs md:text-sm border border-gray-200 dark:border-white/10 rounded-md bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            {(["all", "worker", "admin", "superadmin"] as const).map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setFilterRole(filter)}
+                className={`px-2 py-1 text-xs rounded-md transition-colors capitalize ${
+                  filterRole === filter
+                    ? "bg-[#D4AF37] text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                }`}
+              >
+                {filter === "all" ? "All" : filter}
+              </button>
+            ))}
+            <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+              {filteredWorkers.length}/{workers.length}
+            </span>
           </div>
         </div>
-      )}
 
-      {/* Add Worker Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-xl max-w-md w-full p-6 border dark:border-white/10">
-            <h2 className="font-serif text-2xl mb-4 text-gray-900 dark:text-white">Add New Worker</h2>
-            <form onSubmit={handleAddWorker}>
-              <div className="space-y-4">
+        {/* Workers List - Compact Cards */}
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10">
+          {filteredWorkers.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-8 w-8 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                {searchQuery || filterRole !== "all" ? "No workers found" : "No workers yet"}
+              </p>
+              {!searchQuery && filterRole === "all" && (
+                <Button
+                  onClick={() => setShowAddModal(true)}
+                  size="sm"
+                  className="h-8 text-xs bg-[#D4AF37] hover:bg-[#C19B2E]"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Worker
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-white/10 max-h-[calc(100vh-350px)] overflow-y-auto">
+              {filteredWorkers.map((worker) => {
+                const workerData = workersWithOrders.find(w => w.uid === worker.uid);
+                const ordersCount = workerData?.orders.length || 0;
+                const isExpanded = expandedWorkers.has(worker.uid);
+                
+                return (
+                  <React.Fragment key={worker.uid}>
+                    <div className="p-2 md:p-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {worker.role === "worker" && ordersCount > 0 && (
+                            <button
+                              onClick={() => toggleWorkerExpanded(worker.uid)}
+                              className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              ) : (
+                                <ChevronRight className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <Users className="h-4 w-4 text-[#D4AF37] flex-shrink-0" />
+                              <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {worker.name}
+                              </span>
+                              {getRoleBadge(worker.role)}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
+                              {worker.email && (
+                                <div className="flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  <span className="truncate">{worker.email}</span>
+                                </div>
+                              )}
+                              {worker.role === "worker" && (
+                                <div className="flex items-center gap-1">
+                                  <Package className="h-3 w-3" />
+                                  <span>{ordersCount} orders</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <span className="font-mono text-[10px]">{worker.uid.substring(0, 8)}...</span>
+                              </div>
+                              {worker.createdAt && (
+                                <span>{new Date(worker.createdAt).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button
+                            onClick={() => openEditModal(worker)}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          {worker.uid !== session?.username && (
+                            <Button
+                              onClick={() => handleDeleteWorker(worker.uid)}
+                              variant="outline"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Expanded Orders and Tasks */}
+                    {isExpanded && workerData && workerData.orders.length > 0 && (
+                      <div className="px-2 md:px-3 py-2 bg-gray-50 dark:bg-[#1a1a1a] border-t dark:border-white/10">
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            Orders & Tasks for {worker.name}
+                          </h4>
+                          {workerData.orders.map((order) => {
+                            const tasks = workerData.tasksByOrder[order.id] || [];
+                            const isOrderExpanded = expandedOrders.has(order.id);
+                            
+                            return (
+                              <div key={order.id} className="bg-white dark:bg-[#0a0a0a] border dark:border-white/10 rounded-md p-2">
+                                <div 
+                                  className="flex items-center justify-between cursor-pointer"
+                                  onClick={() => toggleOrderExpanded(order.id)}
+                                >
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <button className="p-0.5 text-gray-500 dark:text-gray-400 flex-shrink-0">
+                                      {isOrderExpanded ? (
+                                        <ChevronDown className="h-3 w-3" />
+                                      ) : (
+                                        <ChevronRight className="h-3 w-3" />
+                                      )}
+                                    </button>
+                                    <Package className="h-3.5 w-3.5 text-[#D4AF37] flex-shrink-0" />
+                                    <Link 
+                                      href={`/admin/orders/${order.id}`}
+                                      className="text-xs font-medium hover:text-[#D4AF37] text-gray-900 dark:text-white truncate"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {order.order_number}
+                                    </Link>
+                                    <span className={`px-1.5 py-0.5 text-[10px] rounded-full flex-shrink-0 ${
+                                      order.status === "delivered" ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300" :
+                                      order.status === "processing" || order.status === "packing" || order.status === "packed" ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300" :
+                                      order.status === "cancelled" ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300" :
+                                      "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300"
+                                    }`}>
+                                      {order.status}
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                                      {order.customer.name} • ₹{order.total.toLocaleString()} • {tasks.length} tasks
+                                    </span>
+                                  </div>
+                                </div>
+                                {/* Expanded Tasks */}
+                                {isOrderExpanded && tasks.length > 0 && (
+                                  <div className="mt-2 ml-6 space-y-1.5">
+                                    {tasks.map((task) => (
+                                      <div 
+                                        key={task.id} 
+                                        className="bg-gray-50 dark:bg-[#1a1a1a] rounded p-2 border-l-2 border-[#D4AF37]"
+                                      >
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            {getTaskStatusIcon(task.status)}
+                                            <span className="text-xs font-medium text-gray-900 dark:text-white">{task.type}</span>
+                                            <span className={getTaskStatusBadge(task.status)}>
+                                              {task.status}
+                                            </span>
+                                          </div>
+                                          <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                                            Priority: {task.priority}
+                                          </div>
+                                        </div>
+                                        {task.notes && (
+                                          <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 ml-5">
+                                            {task.notes}
+                                          </div>
+                                        )}
+                                        <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-5">
+                                          Created: {new Date(task.created_at).toLocaleDateString()}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {isOrderExpanded && tasks.length === 0 && (
+                                  <div className="mt-2 ml-6 text-xs text-gray-500 dark:text-gray-400">
+                                    No tasks for this order
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Add Worker Modal */}
+        {showAddModal && (
+          <div className="fixed inset-0 bg-gray-900/20 dark:bg-black/40 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-lg max-w-md w-full border dark:border-white/10">
+              <div className="p-3 md:p-4 border-b dark:border-white/10 flex items-center justify-between">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Add Worker</h2>
+                <button
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setError("");
+                  }}
+                  className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-white/5"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <form onSubmit={handleAddWorker} className="p-3 md:p-4 space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Firebase UID <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -694,14 +744,14 @@ export default function WorkersPage() {
                     value={formData.uid}
                     onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
                     placeholder="Enter Firebase UID"
-                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
                     Get this from Firebase Authentication console
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -710,74 +760,85 @@ export default function WorkersPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter worker name"
-                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="Enter email (optional)"
-                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Role <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
+                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
                   >
                     <option value="worker">Worker</option>
                     <option value="admin">Admin</option>
                     <option value="superadmin">Super Admin</option>
                   </select>
                 </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
+                <div className="flex gap-2 pt-2 border-t dark:border-white/10">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setError("");
+                    }}
+                    className="flex-1 h-8 text-xs"
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" size="sm" className="flex-1 h-8 text-xs bg-[#D4AF37] hover:bg-[#C19B2E]">
+                    Add Worker
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Worker Modal */}
+        {showEditModal && editingWorker && (
+          <div className="fixed inset-0 bg-gray-900/20 dark:bg-black/40 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-lg max-w-md w-full border dark:border-white/10">
+              <div className="p-3 md:p-4 border-b dark:border-white/10 flex items-center justify-between">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Edit Worker</h2>
+                <button
                   onClick={() => {
-                    setShowAddModal(false);
+                    setShowEditModal(false);
+                    setEditingWorker(null);
                     setError("");
                   }}
-                  className="flex-1"
+                  className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-white/5"
                 >
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1 bg-[#D4AF37] hover:bg-[#C19B2E]">
-                  Add Worker
-                </Button>
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Worker Modal */}
-      {showEditModal && editingWorker && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-xl max-w-md w-full p-6 border dark:border-white/10">
-            <h2 className="font-serif text-2xl mb-4 text-gray-900 dark:text-white">Edit Worker</h2>
-            <form onSubmit={handleEditWorker}>
-              <div className="space-y-4">
+              <form onSubmit={handleEditWorker} className="p-3 md:p-4 space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">UID</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">UID</label>
                   <input
                     type="text"
                     value={editingWorker.uid}
                     disabled
-                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 bg-gray-50 dark:bg-[#1a1a1a] text-gray-500 dark:text-gray-400"
+                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md bg-gray-50 dark:bg-[#1a1a1a] text-gray-500 dark:text-gray-400"
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">UID cannot be changed</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">UID cannot be changed</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -786,27 +847,27 @@ export default function WorkersPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter worker name"
-                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="Enter email (optional)"
-                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Role <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full rounded-md border dark:border-white/10 border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
+                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
                     disabled={editingWorker.uid === session?.username}
                   >
                     <option value="worker">Worker</option>
@@ -814,31 +875,32 @@ export default function WorkersPage() {
                     <option value="superadmin">Super Admin</option>
                   </select>
                   {editingWorker.uid === session?.username && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">You cannot change your own role</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">You cannot change your own role</p>
                   )}
                 </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setEditingWorker(null);
-                    setError("");
-                  }}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1 bg-[#D4AF37] hover:bg-[#C19B2E]">
-                  Update Worker
-                </Button>
-              </div>
-            </form>
+                <div className="flex gap-2 pt-2 border-t dark:border-white/10">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingWorker(null);
+                      setError("");
+                    }}
+                    className="flex-1 h-8 text-xs"
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" size="sm" className="flex-1 h-8 text-xs bg-[#D4AF37] hover:bg-[#C19B2E]">
+                    Update Worker
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

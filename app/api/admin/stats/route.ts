@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllOrders } from "@/lib/orders-firestore";
+import { getAllOrders } from "@/lib/orders-mongodb";
 import { requireAdmin } from "@/lib/admin-auth-server";
 import type { DashboardStats } from "@/lib/orders-types";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // Simple in-memory cache for stats (30 second TTL)
 let statsCache: { data: DashboardStats; timestamp: number } | null = null;
@@ -18,6 +19,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     // Check cache first
     const now = Date.now();
     if (statsCache && (now - statsCache.timestamp) < CACHE_TTL) {

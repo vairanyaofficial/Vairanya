@@ -103,8 +103,17 @@ export default function OrderDetailPage() {
       const orderData = await orderRes.json();
       if (orderData.success) {
         setOrder(orderData.order);
+      } else {
+        console.error(`[Admin Orders] Failed to load order ${orderId}:`, orderData.error);
+        if (orderData.error === "Order not found") {
+          showError(`Order not found: ${orderId}`);
+        } else {
+          showError(`Failed to load order: ${orderData.error || "Unknown error"}`);
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error(`[Admin Orders] Error loading order ${orderId}:`, err);
+      showError(`Failed to load order: ${err.message || "Network error"}`);
     } finally {
       if (showLoading) {
         setIsLoading(false);
@@ -380,41 +389,42 @@ export default function OrderDetailPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Order Items */}
-          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
-            <h2 className="font-serif text-xl mb-4 text-gray-900 dark:text-white">Order Items</h2>
-            <div className="space-y-4">
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 lg:p-6 border dark:border-white/10">
+            <h2 className="font-serif text-lg lg:text-xl mb-3 lg:mb-4 text-gray-900 dark:text-white">Order Items</h2>
+            {/* Mobile: 2 columns grid, Desktop: List view */}
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:gap-4">
               {order.items.map((item, index) => (
-                <div key={index} className="flex items-center gap-4 pb-4 border-b dark:border-white/10 last:border-0">
+                <div key={index} className="flex flex-col lg:flex-row lg:items-center gap-1.5 lg:gap-4 p-2 lg:p-0 lg:pb-4 border border-gray-200 dark:border-white/10 lg:border-0 lg:border-b rounded-md lg:rounded-none lg:last:border-0 bg-gray-50 dark:bg-white/5 lg:bg-transparent">
                   {item.image && (
                     <img
                       src={item.image}
                       alt={item.title}
-                      className="w-16 h-16 object-cover rounded"
+                      className="w-full aspect-square lg:w-16 lg:h-16 object-cover rounded"
                     />
                   )}
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 dark:text-white">{item.title}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">SKU: {item.sku}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Quantity: {item.quantity} × ₹{item.price}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-xs lg:text-base text-gray-900 dark:text-white line-clamp-2 lg:whitespace-normal">{item.title}</p>
+                    <p className="text-[10px] lg:text-sm text-gray-500 dark:text-gray-400 truncate">SKU: {item.sku}</p>
+                    <p className="text-[10px] lg:text-sm text-gray-500 dark:text-gray-400">
+                      {item.quantity} × ₹{item.price}
                     </p>
                   </div>
-                  <p className="font-semibold text-gray-900 dark:text-white">
+                  <p className="font-semibold text-xs lg:text-base text-gray-900 dark:text-white lg:whitespace-nowrap mt-auto lg:mt-0">
                     ₹{(item.price * item.quantity).toLocaleString()}
                   </p>
                 </div>
               ))}
             </div>
-            <div className="mt-6 pt-6 border-t dark:border-white/10 space-y-2">
-              <div className="flex justify-between text-sm">
+            <div className="mt-4 lg:mt-6 pt-4 lg:pt-6 border-t dark:border-white/10 space-y-1.5 lg:space-y-2">
+              <div className="flex justify-between text-xs lg:text-sm">
                 <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
                 <span className="text-gray-900 dark:text-white">₹{order.subtotal.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs lg:text-sm">
                 <span className="text-gray-600 dark:text-gray-400">Shipping</span>
                 <span className="text-gray-900 dark:text-white">{order.shipping === 0 ? "Free" : `₹${order.shipping}`}</span>
               </div>
-              <div className="flex justify-between text-lg font-semibold pt-2 border-t dark:border-white/10">
+              <div className="flex justify-between text-base lg:text-lg font-semibold pt-2 border-t dark:border-white/10">
                 <span className="text-gray-900 dark:text-white">Total</span>
                 <span className="text-gray-900 dark:text-white">₹{order.total.toLocaleString()}</span>
               </div>

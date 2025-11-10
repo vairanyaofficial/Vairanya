@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createMessage } from "@/lib/messages-firestore";
+import { createMessage } from "@/lib/messages-mongodb";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize MongoDB
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { name, email, phone, message } = body;
 

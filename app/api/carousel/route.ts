@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCarouselSlides } from "@/lib/carousel-firestore";
+import { getCarouselSlides } from "@/lib/carousel-mongodb";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // Simple in-memory cache for carousel (60 second TTL)
 let carouselCache: { active: any[]; all: any[]; timestamp: number } | null = null;
@@ -8,6 +9,15 @@ const CACHE_TTL = 60 * 1000; // 60 seconds
 // GET - Get all active carousel slides (public endpoint)
 export async function GET(request: NextRequest) {
   try {
+    // Initialize MongoDB
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: true, slides: [] },
+        { status: 200 }
+      );
+    }
+
     const activeOnly = request.nextUrl.searchParams.get("all") !== "true";
     
     // Check cache first
@@ -41,9 +51,11 @@ export async function GET(request: NextRequest) {
     response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
     return response;
   } catch (error: any) {
+    console.error("Error in carousel API:", error);
+    // Return success with empty array to prevent homepage breakage
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to fetch carousel slides" },
-      { status: 500 }
+      { success: true, slides: [] },
+      { status: 200 }
     );
   }
 }

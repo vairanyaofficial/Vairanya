@@ -73,33 +73,33 @@ export default function FAQPage() {
   return (
     <div className="min-h-screen bg-[#FAF9F6] dark:bg-black">
       <Header />
-      <main className="max-w-3xl mx-auto px-6 py-16">
-        <div className="mb-12 text-center">
-          <h1 className="font-serif text-4xl md:text-5xl mb-4 dark:text-white">Frequently Asked Questions</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+      <main className="max-w-3xl mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-8">
+        <div className="mb-8 sm:mb-10 md:mb-12 text-center">
+          <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl mb-3 sm:mb-4 dark:text-white">Frequently Asked Questions</h1>
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-400">
             Find answers to common questions about our products, shipping, and policies.
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2 sm:space-y-3 md:space-y-4">
           {faqs.map((faq, index) => (
             <div
               key={index}
-              className="bg-white dark:bg-[#0a0a0a] rounded-lg border border-gray-200/50 dark:border-white/10 shadow-sm dark:shadow-none overflow-hidden"
+              className="bg-white dark:bg-[#0a0a0a] rounded-lg sm:rounded-xl border border-gray-200/50 dark:border-white/10 shadow-sm dark:shadow-none overflow-hidden"
             >
               <button
                 onClick={() => toggleFAQ(index)}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors"
               >
-                <span className="font-semibold pr-4 dark:text-white">{faq.question}</span>
+                <span className="font-semibold text-xs sm:text-sm md:text-base pr-4 dark:text-white">{faq.question}</span>
                 {openIndex === index ? (
-                  <ChevronUp className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                  <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                  <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                 )}
               </button>
               {openIndex === index && (
-                <div className="px-6 pb-4 text-gray-700 dark:text-gray-300">
+                <div className="px-4 sm:px-6 pb-3 sm:pb-4 text-xs sm:text-sm md:text-base text-gray-700 dark:text-gray-300">
                   <p>{faq.answer}</p>
                 </div>
               )}
@@ -107,14 +107,14 @@ export default function FAQPage() {
           ))}
         </div>
 
-        <div className="mt-12 bg-white dark:bg-[#0a0a0a] rounded-lg p-8 text-center shadow-sm dark:shadow-none border border-gray-200/50 dark:border-white/10">
-          <h2 className="font-serif text-2xl mb-4 dark:text-white">Still have questions?</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <div className="mt-8 sm:mt-10 md:mt-12 bg-white dark:bg-[#0a0a0a] rounded-lg sm:rounded-xl p-6 sm:p-8 text-center shadow-sm dark:shadow-none border border-gray-200/50 dark:border-white/10">
+          <h2 className="font-serif text-xl sm:text-2xl mb-3 sm:mb-4 dark:text-white">Still have questions?</h2>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
             Can't find the answer you're looking for? Please contact our friendly team.
           </p>
           <a
             href="/contact"
-            className="inline-block bg-[#D4AF37] hover:bg-[#C19B2E] text-white px-6 py-3 rounded-md transition-colors"
+            className="inline-block bg-[#D4AF37] hover:bg-[#C19B2E] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-md text-xs sm:text-sm transition-colors"
           >
             Contact Us
           </a>
@@ -124,4 +124,3 @@ export default function FAQPage() {
     </div>
   );
 }
-

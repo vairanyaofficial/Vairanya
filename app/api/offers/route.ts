@@ -1,6 +1,7 @@
 // app/api/offers/route.ts - Public API for fetching active offers
 import { NextRequest, NextResponse } from "next/server";
-import { getActiveOffers } from "@/lib/offers-firestore";
+import { getActiveOffers } from "@/lib/offers-mongodb";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // Mark route as dynamic to prevent static generation
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,15 @@ const CACHE_TTL = 30 * 1000; // 30 seconds
 // GET - Get active offers (public endpoint)
 export async function GET(request: NextRequest) {
   try {
+    // Initialize MongoDB
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: true, offers: [] },
+        { status: 200 }
+      );
+    }
+
     const customerEmail = request.nextUrl.searchParams.get("customer_email") || undefined;
     const customerId = request.nextUrl.searchParams.get("customer_id") || undefined;
 
@@ -43,13 +53,13 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error: any) {
     console.error("Error in offers API:", error);
+    // Return success with empty array to prevent homepage breakage
     return NextResponse.json(
       {
-        success: false,
-        error: "Failed to fetch offers",
-        message: String(error?.message || error),
+        success: true,
+        offers: [],
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }

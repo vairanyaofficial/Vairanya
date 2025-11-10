@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createOrder } from "@/lib/orders-firestore";
-import { updateProduct } from "@/lib/products-firestore";
-import { incrementOfferUsage } from "@/lib/offers-firestore";
+import { createOrder } from "@/lib/orders-mongodb";
+import { updateProduct } from "@/lib/products-mongodb";
+import { incrementOfferUsage } from "@/lib/offers-mongodb";
 import { logger } from "@/lib/logger";
 import { rateLimiters } from "@/lib/rate-limit";
 import type { Order } from "@/lib/orders-types";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     // Rate limiting for order creation
     const rateLimitResult = rateLimiters.standard(request);
     if (!rateLimitResult.allowed) {
@@ -145,8 +155,8 @@ export async function POST(request: NextRequest) {
 
     // Update inventory
     try {
+      const { getProductById } = await import("@/lib/products-mongodb");
       for (const item of orderItems) {
-        const { getProductById } = await import("@/lib/products-firestore");
         const product = await getProductById(item.product_id);
         if (product) {
           await updateProduct(item.product_id, {
@@ -156,6 +166,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (inventoryError) {
       // Continue even if inventory update fails
+      logger.error("Failed to update inventory", inventoryError as Error);
     }
 
     return NextResponse.json({
@@ -167,27 +178,15 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     logger.error("Error creating order", error);
     
-    // Check if it's a Firebase/Firestore initialization error
-    if (error.message && error.message.includes("Database unavailable")) {
+    // Check if it's a MongoDB initialization error
+    if (error.message && error.message.includes("Database unavailable") || error.message?.includes("MongoDB")) {
       return NextResponse.json(
         {
           success: false,
           error: "Server configuration error. Please contact support.",
-          details: "Firebase Admin not initialized",
+          details: "MongoDB not available",
         },
         { status: 500 }
-      );
-    }
-
-    // Check if it's a permission error
-    if (error.code === 7 || error.code === "PERMISSION_DENIED" || error.message?.includes("403")) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Permission denied. Please check Firebase configuration.",
-          details: error.message,
-        },
-        { status: 403 }
       );
     }
 

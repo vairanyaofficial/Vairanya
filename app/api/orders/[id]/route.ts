@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById, updateOrder } from "@/lib/orders-firestore";
+import { getOrderById, updateOrder } from "@/lib/orders-mongodb";
 import { adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // Helper to verify Firebase token and get user ID
 async function getUserIdFromToken(request: NextRequest): Promise<string | null> {
@@ -27,6 +28,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const { id } = await params;
     const order = await getOrderById(id);
 
@@ -52,7 +62,16 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Ensure Firebase is initialized
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
+    // Ensure Firebase is initialized for authentication
     const initResult = await ensureFirebaseInitialized();
     if (!initResult.success) {
       return NextResponse.json(

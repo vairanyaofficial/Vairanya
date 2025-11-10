@@ -1,9 +1,14 @@
 // app/api/categories/route.ts
 import { NextResponse } from "next/server";
-import { getAllCategories, addCategory } from "@/lib/categories-firestore";
+import { getAllCategories, addCategory } from "@/lib/categories-mongodb";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 export async function GET() {
   try {
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json({ success: true, categories: [] }, { status: 200 });
+    }
     const categories = await getAllCategories();
     return NextResponse.json({ success: true, categories });
   } catch (err) {
@@ -13,6 +18,10 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
+    }
     const body = await req.json();
     const { name } = body;
     if (!name || typeof name !== "string") {

@@ -1,6 +1,7 @@
 // app/api/collections/route.ts - Public API for fetching collections
 import { NextRequest, NextResponse } from "next/server";
-import { getFeaturedCollections, getAllCollections } from "@/lib/collections-firestore";
+import { getFeaturedCollections, getAllCollections } from "@/lib/collections-mongodb";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // Mark route as dynamic to prevent static generation
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,15 @@ const CACHE_TTL = 60 * 1000; // 60 seconds
 // GET - Get collections (public endpoint)
 export async function GET(request: NextRequest) {
   try {
+    // Initialize MongoDB
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: true, collections: [] },
+        { status: 200 }
+      );
+    }
+
     const featured = request.nextUrl.searchParams.get("featured"); // ?featured=true to get only featured collections
 
     // Check cache first
@@ -58,18 +68,11 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error: any) {
     console.error("Error in collections API:", error);
-    const errorMessage = String(error?.message || error);
-    
-    // Check if it's a Firestore initialization error
-    const isFirestoreError = errorMessage.includes("Database unavailable") || 
-                             errorMessage.includes("Firebase");
-    
     // Return success with empty array instead of error to prevent frontend issues
     return NextResponse.json(
       {
         success: true,
         collections: [], // Return empty array on error
-        error: isFirestoreError ? "Database unavailable" : "Failed to fetch collections",
       },
       { status: 200 }
     );

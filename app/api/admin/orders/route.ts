@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllOrders, createOrder, getOrdersByStatus } from "@/lib/orders-firestore";
+import { getAllOrders, createOrder, getOrdersByStatus } from "@/lib/orders-mongodb";
 import { requireAdmin } from "@/lib/admin-auth-server";
-import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import type { Order } from "@/lib/orders-types";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // GET - List all orders
 export async function GET(request: NextRequest) {
@@ -15,9 +15,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Ensure Firebase is initialized
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminFirestore) {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
       return NextResponse.json(
         { success: false, error: "Database unavailable" },
         { status: 503 }
@@ -30,87 +30,42 @@ export async function GET(request: NextRequest) {
     const limitParam = searchParams.get("limit");
     const limit = limitParam ? parseInt(limitParam, 10) : undefined;
 
-    // Optimize: If we only need a few orders and have filters, use direct query
-    // Otherwise fallback to getAllOrders (which is cached)
-    let orders: Order[];
+    // Get all orders from MongoDB
+    let orders: Order[] = await getAllOrders();
     
-    // For worker dashboard or limited requests, use optimized query
-    if (assignedTo && adminFirestore && limit) {
-      try {
-        let query: FirebaseFirestore.Query = adminFirestore
-          .collection("orders")
-          .where("assigned_to", "==", assignedTo)
-          .orderBy("created_at", "desc")
-          .limit(limit || 100);
-        
-        const snapshot = await query.get();
-        orders = snapshot.docs.map((doc: any) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            order_number: data.order_number || doc.id,
-            items: data.items || [],
-            total: data.total || 0,
-            subtotal: data.subtotal || 0,
-            shipping: data.shipping || 0,
-            discount: data.discount || undefined,
-            offer_id: data.offer_id || undefined,
-            customer: data.customer || {},
-            shipping_address: data.shipping_address || {},
-            payment_method: data.payment_method || "razorpay",
-            payment_status: data.payment_status || "pending",
-            status: data.status || "pending",
-            razorpay_order_id: data.razorpay_order_id || null,
-            razorpay_payment_id: data.razorpay_payment_id || null,
-            tracking_number: data.tracking_number || null,
-            assigned_to: data.assigned_to || null,
-            notes: data.notes || null,
-            refund_status: data.refund_status || null,
-            razorpay_refund_id: data.razorpay_refund_id || null,
-            refund_notes: data.refund_notes || null,
-            created_at: data.created_at 
-              ? (typeof data.created_at === 'string' ? data.created_at : data.created_at.toDate?.()?.toISOString() || new Date().toISOString())
-              : (data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()),
-            updated_at: data.updated_at 
-              ? (typeof data.updated_at === 'string' ? data.updated_at : data.updated_at.toDate?.()?.toISOString() || new Date().toISOString())
-              : (data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString()),
-            user_id: data.user_id || null,
-          };
-        });
-      } catch (error) {
-        // Fallback to getAllOrders if query fails
-        orders = await getAllOrders();
-        if (assignedTo) {
-          orders = orders.filter((o) => o.assigned_to === assignedTo);
-        }
-      }
-    } else {
-      // Use getAllOrders for admin dashboard (may be cached)
-      orders = await getAllOrders();
-    }
+    console.log(`[Admin Orders API] Retrieved ${orders.length} orders from MongoDB`);
 
     // Filter by status (can be comma-separated)
     if (statusParam) {
       const statuses = statusParam.split(",");
       orders = orders.filter((o) => statuses.includes(o.status));
+      console.log(`[Admin Orders API] Filtered by status (${statusParam}): ${orders.length} orders`);
     }
 
-    // Filter by assigned worker (if not already filtered)
-    if (assignedTo && !(assignedTo && adminFirestore && limit)) {
+    // Filter by assigned worker
+    if (assignedTo) {
       orders = orders.filter((o) => o.assigned_to === assignedTo);
+      console.log(`[Admin Orders API] Filtered by assigned_to (${assignedTo}): ${orders.length} orders`);
     }
 
-    // Apply limit if not already applied in query
-    if (limit && !(assignedTo && adminFirestore && limit)) {
+    // Apply limit
+    if (limit) {
       orders = orders.slice(0, limit);
     }
 
-    // Already sorted by created_at desc in getAllOrders or query
+    // Sort by created_at desc (already sorted in getAllOrders, but ensure it)
+    orders.sort((a, b) => {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return dateB - dateA;
+    });
 
+    console.log(`[Admin Orders API] Returning ${orders.length} orders`);
     return NextResponse.json({ success: true, orders });
   } catch (error: any) {
+    console.error("[Admin Orders API] Error fetching orders:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: error.message || "Failed to fetch orders" },
       { status: 500 }
     );
   }
@@ -127,6 +82,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const order: Omit<Order, "id" | "order_number" | "created_at" | "updated_at"> = body;
 
@@ -147,4 +111,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

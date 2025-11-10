@@ -3,17 +3,27 @@ import {
   getProductBySlug, 
   getProductsByCategory, 
   getProductsByMetalFinish,
-} from "@/lib/products-firestore";
+} from "@/lib/products-mongodb";
 import { 
   getCollectionsByProductId, 
   getFeaturedCollectionsExcluding 
-} from "@/lib/collections-firestore";
+} from "@/lib/collections-mongodb";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const { slug } = await params;
     const product = await getProductBySlug(slug);
 

@@ -3,9 +3,10 @@ import {
   getProductById,
   updateProduct,
   deleteProduct,
-} from "@/lib/products-firestore";
+} from "@/lib/products-mongodb";
 import type { Product } from "@/lib/products-types";
 import { requireAdmin, requireSuperUser } from "@/lib/admin-auth-server";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -22,20 +23,42 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      console.error("[Admin Products API] MongoDB initialization failed for GET:", mongoInit.error);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Database unavailable",
+          message: mongoInit.error || "MongoDB connection failed"
+        },
+        { status: 503 }
+      );
+    }
+
     const { id } = await params;
+    console.log(`[Admin Products API] Fetching product with ID: ${id}`);
     const product = await getProductById(id);
 
     if (!product) {
+      console.error(`[Admin Products API] Product not found with ID: ${id}`);
       return NextResponse.json(
         { success: false, error: "Product not found" },
         { status: 404 }
       );
     }
 
+    console.log(`[Admin Products API] Found product: ${product.title} (ID: ${product.product_id})`);
     return NextResponse.json({ success: true, product });
   } catch (error: any) {
+    console.error("[Admin Products API] Error fetching product:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { 
+        success: false, 
+        error: error.message || "Failed to fetch product",
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
@@ -52,14 +75,35 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      console.error("[Admin Products API] MongoDB initialization failed for PUT:", mongoInit.error);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Database unavailable",
+          message: mongoInit.error || "MongoDB connection failed"
+        },
+        { status: 503 }
+      );
+    }
+
     const { id } = await params;
+    console.log(`[Admin Products API] Updating product with ID: ${id}`);
     const updates: Partial<Product> = await request.json();
 
     const updatedProduct = await updateProduct(id, updates);
+    console.log(`[Admin Products API] Product updated successfully: ${id}`);
     return NextResponse.json({ success: true, product: updatedProduct });
   } catch (error: any) {
+    console.error("[Admin Products API] Error updating product:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { 
+        success: false, 
+        error: error.message || "Failed to update product",
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined
+      },
       { status: 400 }
     );
   }
@@ -76,12 +120,33 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      console.error("[Admin Products API] MongoDB initialization failed for DELETE:", mongoInit.error);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Database unavailable",
+          message: mongoInit.error || "MongoDB connection failed"
+        },
+        { status: 503 }
+      );
+    }
+
     const { id } = await params;
+    console.log(`[Admin Products API] Deleting product with ID: ${id}`);
     await deleteProduct(id);
+    console.log(`[Admin Products API] Product deleted successfully: ${id}`);
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error("[Admin Products API] Error deleting product:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { 
+        success: false, 
+        error: error.message || "Failed to delete product",
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined
+      },
       { status: 400 }
     );
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllProducts } from "@/lib/products-firestore";
+import { getAllProducts } from "@/lib/products-mongodb";
 import { logger } from "@/lib/logger";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // Force dynamic rendering since we use searchParams
 export const dynamic = 'force-dynamic';
@@ -19,15 +20,12 @@ export async function GET(request: NextRequest) {
 
     logger.info(`[API /api/products] Request - limit: ${limit}, offset: ${offset}, getAll: ${getAll}`);
 
-    const { adminFirestore, ensureFirebaseInitialized, getFirebaseDiagnostics } = await import("@/lib/firebaseAdmin.server");
-    
-    // Try to ensure initialization
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminFirestore) {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
       // Log the error for debugging
-      logger.error("Firebase initialization failed in products route", {
-        initResult,
-        diagnostics: getFirebaseDiagnostics(),
+      logger.error("MongoDB initialization failed in products route", {
+        mongoInit,
       });
       
       // In development, return error details; in production, return empty array
@@ -36,8 +34,7 @@ export async function GET(request: NextRequest) {
           { 
             success: false,
             error: "Database unavailable",
-            message: (initResult as { success: false; error: string }).error || "Firebase not initialized",
-            diagnostics: getFirebaseDiagnostics(),
+            message: mongoInit.error || "MongoDB not initialized",
             products: [],
             total: 0,
             hasMore: false,
@@ -74,7 +71,7 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    // Fetch products from Firestore
+    // Fetch products from MongoDB
     const allProducts = await getAllProducts();
     
     // Update cache for getAll requests
@@ -82,7 +79,7 @@ export async function GET(request: NextRequest) {
       productsCache = { data: allProducts, timestamp: now };
     }
     
-    logger.info(`[API /api/products] Fetched ${allProducts.length} total products from Firestore`);
+    logger.info(`[API /api/products] Fetched ${allProducts.length} total products from MongoDB`);
     
     // If requesting all products (for max price calculation), return all
     if (getAll) {
@@ -135,13 +132,13 @@ export async function GET(request: NextRequest) {
     
     // In development, return error details; in production, return empty array gracefully
     if (process.env.NODE_ENV === "development") {
-      const { getFirebaseDiagnostics } = await import("@/lib/firebaseAdmin.server");
+      const { getMongoDBDiagnostics } = await import("@/lib/mongodb.server");
       return NextResponse.json(
         { 
           success: false,
           error: errorMessage,
           code: errorCode,
-          diagnostics: getFirebaseDiagnostics(),
+          diagnostics: getMongoDBDiagnostics(),
           products: [],
           total: 0,
           hasMore: false,

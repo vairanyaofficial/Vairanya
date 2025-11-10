@@ -1,10 +1,19 @@
 // app/api/offers/validate/route.ts - Validate and apply offer
 import { NextRequest, NextResponse } from "next/server";
-import { getOfferById, getOfferByCode } from "@/lib/offers-firestore";
+import { getOfferById, getOfferByCode, hasUserUsedOffer } from "@/lib/offers-mongodb";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // POST - Validate offer and calculate discount
 export async function POST(request: NextRequest) {
   try {
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { offer_id, offer_code, subtotal, customer_email, customer_id } = body;
 
@@ -68,7 +77,6 @@ export async function POST(request: NextRequest) {
 
     // Check if user has already used this offer (one_time_per_user)
     if (offer.one_time_per_user) {
-      const { hasUserUsedOffer } = await import("@/lib/offers-firestore");
       const hasUsed = await hasUserUsedOffer(offer.id, customer_email, customer_id);
       if (hasUsed) {
         return NextResponse.json(

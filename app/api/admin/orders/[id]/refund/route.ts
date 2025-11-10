@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById, updateOrder } from "@/lib/orders-firestore";
+import { getOrderById, updateOrder } from "@/lib/orders-mongodb";
 import { requireAdmin, requireSuperUser } from "@/lib/admin-auth-server";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -17,6 +18,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { refund_status, refund_id, notes } = body;
@@ -113,6 +123,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const { id } = await params;
     const order = await getOrderById(id);
 

@@ -4,9 +4,10 @@ import {
   createTask,
   getTasksByWorker,
   getTasksByOrder,
-} from "@/lib/orders-firestore";
+} from "@/lib/orders-mongodb";
 import { requireAdmin, requireSuperUser } from "@/lib/admin-auth-server";
 import type { Task } from "@/lib/orders-types";
+import { initializeMongoDB } from "@/lib/mongodb.server";
 
 // GET - List all tasks
 export async function GET(request: NextRequest) {
@@ -19,6 +20,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const workerUsername = searchParams.get("assigned_to");
     const orderId = searchParams.get("order_id");
@@ -65,6 +75,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const task: Omit<Task, "id" | "created_at" | "updated_at"> = {
       ...body,

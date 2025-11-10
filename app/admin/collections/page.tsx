@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,6 +13,10 @@ import {
   X,
   CheckCircle,
   XCircle,
+  ArrowLeft,
+  Search,
+  Filter,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAdminSession, isAdminAuthenticated } from "@/lib/admin-auth";
@@ -30,6 +34,10 @@ export default function CollectionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterFeatured, setFilterFeatured] = useState<"all" | "featured" | "not-featured">("all");
+  const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
+  const [productSearchQuery, setProductSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -40,6 +48,53 @@ export default function CollectionsPage() {
     slug: "",
     display_order: 0,
   });
+
+  // Filter collections
+  const filteredCollections = useMemo(() => {
+    let filtered = collections;
+
+    // Filter by featured status
+    if (filterFeatured === "featured") {
+      filtered = filtered.filter((c) => c.is_featured);
+    } else if (filterFeatured === "not-featured") {
+      filtered = filtered.filter((c) => !c.is_featured);
+    }
+
+    // Filter by active status
+    if (filterActive === "active") {
+      filtered = filtered.filter((c) => c.is_active);
+    } else if (filterActive === "inactive") {
+      filtered = filtered.filter((c) => !c.is_active);
+    }
+
+    // Search by name, slug, or description
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (c) =>
+          c.name.toLowerCase().includes(query) ||
+          c.slug.toLowerCase().includes(query) ||
+          c.description?.toLowerCase().includes(query) ||
+          c.short_description?.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [collections, searchQuery, filterFeatured, filterActive]);
+
+  // Filter products in form
+  const filteredProducts = useMemo(() => {
+    if (!productSearchQuery.trim()) {
+      return products;
+    }
+    const query = productSearchQuery.toLowerCase();
+    return products.filter(
+      (p) =>
+        p.title.toLowerCase().includes(query) ||
+        p.sku.toLowerCase().includes(query) ||
+        p.description?.toLowerCase().includes(query)
+    );
+  }, [products, productSearchQuery]);
 
   useEffect(() => {
     if (user && !adminInfo) {
@@ -243,317 +298,381 @@ export default function CollectionsPage() {
 
   if (isLoading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400">Loading collections...</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-black p-4">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Loading collections...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="font-serif text-3xl mb-2 text-gray-900 dark:text-white">Collections</h1>
-          <p className="text-gray-600 dark:text-gray-400">Create and manage product collections</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-black p-3 md:p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Link href="/admin">
+              <Button variant="outline" size="sm" className="h-8 px-2 text-xs">
+                <ArrowLeft className="h-3 w-3 mr-1" />
+                Back
+              </Button>
+            </Link>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Collections</h1>
+            <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+              {collections.length}
+            </span>
+          </div>
+          <Button
+            onClick={() => {
+              setShowForm(true);
+              setEditingCollection(null);
+              resetForm();
+            }}
+            size="sm"
+            className="h-8 px-2 text-xs bg-[#D4AF37] hover:bg-[#C19B2E]"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Create
+          </Button>
         </div>
-        <Button
-          onClick={() => {
-            setShowForm(true);
-            setEditingCollection(null);
-            resetForm();
-          }}
-          className="bg-[#D4AF37] hover:bg-[#C19B2E]"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Collection
-        </Button>
-      </div>
 
-      {/* Collection Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border dark:border-white/10">
-            <div className="p-6 border-b dark:border-white/10 flex items-center justify-between">
-              <h2 className="font-serif text-xl text-gray-900 dark:text-white">
-                {editingCollection ? "Edit Collection" : "Create New Collection"}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowForm(false);
-                  setEditingCollection(null);
-                  resetForm();
-                }}
-                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <X className="h-5 w-5" />
-              </button>
+        {/* Search and Filter */}
+        <div className="mb-3 space-y-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search collections..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-xs md:text-sm border border-gray-200 dark:border-white/10 rounded-md bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+            <div className="flex-1 overflow-x-auto scroll-smooth scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="flex items-center gap-1 min-w-max">
+                <div className="flex gap-1">
+                  {(["all", "featured", "not-featured"] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setFilterFeatured(filter)}
+                      className={`px-2 py-1 text-xs rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${
+                        filterFeatured === filter
+                          ? "bg-[#D4AF37] text-white"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      {filter === "all" ? "All" : filter === "featured" ? "Featured" : "Not Featured"}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-1 ml-1">
+                  {(["all", "active", "inactive"] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setFilterActive(filter)}
+                      className={`px-2 py-1 text-xs rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${
+                        filterActive === filter
+                          ? "bg-[#D4AF37] text-white"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      {filter === "all" ? "All" : filter === "active" ? "Active" : "Inactive"}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Collection Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => {
-                      setFormData({ ...formData, name: e.target.value });
-                      // Auto-generate slug from name if slug is empty
-                      if (!formData.slug || formData.slug === editingCollection?.slug) {
-                        const autoSlug = e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-                        setFormData((prev) => ({ ...prev, slug: autoSlug }));
-                      }
-                    }}
-                    className="w-full px-3 py-2 border dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                    placeholder="e.g., Christmas Collection"
-                  />
-                </div>
+            <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">
+              {filteredCollections.length}/{collections.length}
+            </span>
+          </div>
+        </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Slug *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })}
-                    className="w-full px-3 py-2 border dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                    placeholder="e.g., christmas-collection"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Short Description
-                </label>
-                <input
-                  type="text"
-                  value={formData.short_description}
-                  onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
-                  className="w-full px-3 py-2 border dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="Brief description for display"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  rows={3}
-                  placeholder="Full description of the collection..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Select Products
-                </label>
-                <div className="border dark:border-white/10 rounded-lg p-4 max-h-60 overflow-y-auto bg-white dark:bg-[#0a0a0a]">
-                  {products.length === 0 ? (
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">No products available</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {products.map((product) => (
-                        <label
-                          key={product.product_id}
-                          className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.product_ids.includes(product.product_id)}
-                            onChange={() => toggleProduct(product.product_id)}
-                            className="h-4 w-4 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300 dark:border-white/20"
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium text-sm text-gray-900 dark:text-white">{product.title}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">{product.sku} - ₹{product.price}</div>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {formData.product_ids.length > 0 && (
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    {formData.product_ids.length} product{formData.product_ids.length > 1 ? "s" : ""} selected
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Display Order
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.display_order}
-                    onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                    placeholder="0"
-                  />
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Lower numbers appear first</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_featured}
-                    onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
-                    className="h-4 w-4 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300 dark:border-white/20"
-                  />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Featured (Show on Homepage)</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="h-4 w-4 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300 dark:border-white/20"
-                  />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
-                </label>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="submit"
-                  className="bg-[#D4AF37] hover:bg-[#C19B2E] flex-1"
-                >
-                  {editingCollection ? "Update Collection" : "Create Collection"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
+        {/* Collection Form Modal */}
+        {showForm && (
+          <div className="fixed inset-0 bg-gray-900/20 dark:bg-black/40 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto border dark:border-white/10">
+              <div className="p-3 md:p-4 border-b dark:border-white/10 flex items-center justify-between sticky top-0 bg-white dark:bg-[#0a0a0a] z-10">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
+                  {editingCollection ? "Edit Collection" : "Create Collection"}
+                </h2>
+                <button
                   onClick={() => {
                     setShowForm(false);
                     setEditingCollection(null);
                     resetForm();
                   }}
+                  className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-white/5"
                 >
-                  Cancel
-                </Button>
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <form onSubmit={handleSubmit} className="p-3 md:p-4 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => {
+                        setFormData({ ...formData, name: e.target.value });
+                        if (!formData.slug || formData.slug === editingCollection?.slug) {
+                          const autoSlug = e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+                          setFormData((prev) => ({ ...prev, slug: autoSlug }));
+                        }
+                      }}
+                      className="w-full px-2 py-1.5 text-sm border dark:border-white/10 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                      placeholder="Collection name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Slug *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })}
+                      className="w-full px-2 py-1.5 text-sm border dark:border-white/10 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                      placeholder="collection-slug"
+                    />
+                  </div>
+                </div>
 
-      {/* Collections List */}
-      <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10">
-        {collections.length === 0 ? (
-          <div className="text-center py-12">
-            <Package className="h-12 w-12 text-gray-400 dark:text-gray-700 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 mb-4">No collections created yet</p>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="bg-[#D4AF37] hover:bg-[#C19B2E]"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Your First Collection
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-[#0a0a0a] border-b dark:border-white/10">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Collection
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Products
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Featured
-                  </th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-white/10">
-                {collections.map((collection) => (
-                  <tr key={collection.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white">{collection.name}</p>
-                        {collection.short_description && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{collection.short_description}</p>
-                        )}
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">/{collection.slug}</p>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Short Description
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.short_description}
+                    onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
+                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    placeholder="Brief description"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    rows={2}
+                    placeholder="Full description..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Products ({formData.product_ids.length} selected)
+                  </label>
+                  <div className="mb-2">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search products..."
+                        value={productSearchQuery}
+                        onChange={(e) => setProductSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 dark:border-white/10 rounded-md bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+                      />
+                    </div>
+                  </div>
+                  <div className="border dark:border-white/10 rounded-md p-2 max-h-40 overflow-y-auto bg-white dark:bg-[#0a0a0a]">
+                    {filteredProducts.length === 0 ? (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">No products available</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {filteredProducts.map((product) => (
+                          <label
+                            key={product.product_id}
+                            className="flex items-center gap-2 p-1.5 hover:bg-gray-50 dark:hover:bg-white/5 rounded cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.product_ids.includes(product.product_id)}
+                              onChange={() => toggleProduct(product.product_id)}
+                              className="h-3.5 w-3.5 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300 dark:border-white/20"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-medium text-gray-900 dark:text-white truncate">{product.title}</div>
+                              <div className="text-[10px] text-gray-500 dark:text-gray-400">{product.sku} - ₹{product.price}</div>
+                            </div>
+                          </label>
+                        ))}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {collection.product_ids?.length || 0} product{collection.product_ids?.length !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {collection.is_active ? (
-                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 flex items-center gap-1 w-fit">
-                          <CheckCircle className="h-3 w-3" />
-                          Active
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300 flex items-center gap-1 w-fit">
-                          <XCircle className="h-3 w-3" />
-                          Inactive
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {collection.is_featured ? (
-                        <span className="px-2 py-1 text-xs rounded-full bg-[#D4AF37]/10 dark:bg-[#D4AF37]/20 text-[#D4AF37] flex items-center gap-1 w-fit">
-                          <Star className="h-3 w-3" />
-                          Featured
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(collection)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(collection.id)}
-                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Display Order
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.display_order}
+                      onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
+                      className="w-full px-2 py-1.5 text-sm border dark:border-white/10 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_featured}
+                      onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                      className="h-3.5 w-3.5 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300 dark:border-white/20"
+                    />
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Featured</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                      className="h-3.5 w-3.5 border-gray-300 dark:border-white/20"
+                    />
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Active</span>
+                  </label>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t dark:border-white/10">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="h-8 flex-1 text-xs bg-[#D4AF37] hover:bg-[#C19B2E]"
+                  >
+                    {editingCollection ? "Update" : "Create"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-xs"
+                    onClick={() => {
+                      setShowForm(false);
+                      setEditingCollection(null);
+                      resetForm();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
+
+        {/* Collections List - Compact Cards */}
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10">
+          {filteredCollections.length === 0 ? (
+            <div className="text-center py-8">
+              <Layers className="h-8 w-8 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                {searchQuery || filterFeatured !== "all" || filterActive !== "all" ? "No collections found" : "No collections yet"}
+              </p>
+              {!searchQuery && filterFeatured === "all" && filterActive === "all" && (
+                <Button
+                  onClick={() => setShowForm(true)}
+                  size="sm"
+                  className="h-8 text-xs bg-[#D4AF37] hover:bg-[#C19B2E]"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Create Collection
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-white/10 max-h-[calc(100vh-300px)] overflow-y-auto">
+              {filteredCollections.map((collection) => (
+                <div
+                  key={collection.id}
+                  className="p-2 md:p-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Layers className="h-4 w-4 text-[#D4AF37] flex-shrink-0" />
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {collection.name}
+                        </p>
+                        {collection.is_featured && (
+                          <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-[#D4AF37]/10 dark:bg-[#D4AF37]/20 text-[#D4AF37] flex items-center gap-0.5 flex-shrink-0">
+                            <Star className="h-2.5 w-2.5" />
+                            Featured
+                          </span>
+                        )}
+                        {collection.is_active ? (
+                          <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 flex items-center gap-0.5 flex-shrink-0">
+                            <CheckCircle className="h-2.5 w-2.5" />
+                            Active
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300 flex items-center gap-0.5 flex-shrink-0">
+                            <XCircle className="h-2.5 w-2.5" />
+                            Inactive
+                          </span>
+                        )}
+                      </div>
+                      {collection.short_description && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mb-1">
+                          {collection.short_description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                          <Package className="h-3 w-3" />
+                          <span>{collection.product_ids?.length || 0} products</span>
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-500">
+                          /{collection.slug}
+                        </div>
+                        {collection.display_order !== undefined && collection.display_order > 0 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-500">
+                            Order: {collection.display_order}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(collection)}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(collection.id)}
+                        className="h-7 w-7 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

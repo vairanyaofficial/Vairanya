@@ -80,9 +80,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
       }
       
-      // Sync customer to Firestore when user signs in (only for regular customers, not admins)
+      // Sync customer to MongoDB when user signs in (only for regular customers, not admins)
       if (u && u.email && !adminInfo) {
         try {
+          console.log(`[AuthProvider] Syncing customer to MongoDB: ${u.email}`);
           const response = await fetch("/api/customer/sync", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -95,13 +96,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }),
           });
           
-          if (!response.ok) {
-            const data = await response.json().catch(() => ({}));
-            console.error("Failed to sync customer:", data.error || "Unknown error");
+          const data = await response.json().catch(() => ({}));
+          if (response.ok && data.success) {
+            console.log(`[AuthProvider] Customer synced successfully: ${u.email}`);
+          } else {
+            console.warn(`[AuthProvider] Customer sync warning:`, data.error || data.message || "Unknown error");
           }
-        } catch (err) {
-          // Silently fail - don't block auth flow
-          console.error("Failed to sync customer:", err);
+        } catch (err: any) {
+          // Silently fail - don't block auth flow, but log for debugging
+          console.warn(`[AuthProvider] Failed to sync customer (non-blocking):`, err?.message || err);
         }
       }
     });
@@ -158,10 +161,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Sync customer to Firestore
+      // Sync customer to MongoDB on email/password sign-in
+      // Note: onAuthStateChanged will also trigger sync, but this ensures it happens immediately
       if (userCredential.user.email) {
         try {
-          await fetch("/api/customer/sync", {
+          console.log(`[AuthProvider] Syncing customer on email sign-in: ${userCredential.user.email}`);
+          const response = await fetch("/api/customer/sync", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -169,10 +174,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               name: userCredential.user.displayName || userCredential.user.email.split("@")[0],
               phone: userCredential.user.phoneNumber || undefined,
               userId: userCredential.user.uid,
+              photoURL: userCredential.user.photoURL || undefined,
             }),
-          }).catch(() => {});
-        } catch (err) {
-          // Silently fail
+          });
+          
+          const data = await response.json().catch(() => ({}));
+          if (response.ok && data.success) {
+            console.log(`[AuthProvider] Customer synced on email sign-in: ${userCredential.user.email}`);
+          }
+        } catch (err: any) {
+          // Silently fail - don't block sign-in
+          console.warn(`[AuthProvider] Failed to sync customer on email sign-in (non-blocking):`, err?.message || err);
         }
       }
     } catch (err: any) {
@@ -208,20 +220,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Send email verification
       await sendEmailVerification(userCredential.user).catch(() => {});
       
-      // Sync customer to Firestore (including phone if provided)
-      try {
-        await fetch("/api/customer/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: userCredential.user.email,
-            name: name || userCredential.user.email?.split("@")[0] || "",
-            phone: phone || userCredential.user.phoneNumber || undefined,
-            userId: userCredential.user.uid,
-          }),
-        }).catch(() => {});
-      } catch (err) {
-        // Silently fail
+      // Sync customer to MongoDB (including phone if provided)
+      if (userCredential.user.email) {
+        try {
+          console.log(`[AuthProvider] Syncing new customer to MongoDB: ${userCredential.user.email}`);
+          const response = await fetch("/api/customer/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: userCredential.user.email,
+              name: name || userCredential.user.email?.split("@")[0] || "",
+              phone: phone || userCredential.user.phoneNumber || undefined,
+              userId: userCredential.user.uid,
+              photoURL: userCredential.user.photoURL || undefined,
+            }),
+          });
+          
+          const data = await response.json().catch(() => ({}));
+          if (response.ok && data.success) {
+            console.log(`[AuthProvider] New customer synced successfully: ${userCredential.user.email}`);
+          } else {
+            console.warn(`[AuthProvider] Customer sync warning during registration:`, data.error || data.message);
+          }
+        } catch (err: any) {
+          // Silently fail - don't block registration
+          console.warn(`[AuthProvider] Failed to sync customer during registration (non-blocking):`, err?.message || err);
+        }
       }
     } catch (err: any) {
       // Handle Firebase auth errors
