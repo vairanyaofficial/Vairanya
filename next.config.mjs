@@ -141,7 +141,7 @@ const nextConfig = {
     return config;
   },
   
-  // Exclude test files and directories from output file tracing (prevents test files from being included in serverless bundles)
+  // Optimize build for Vercel - exclude unnecessary files from tracing
   experimental: {
     outputFileTracingExcludes: {
       '*': [
@@ -153,30 +153,16 @@ const nextConfig = {
         'playwright.config.ts',
         'playwright-report/**/*',
         'test-results/**/*',
-        // Exclude OpenTelemetry packages from tracing
+        // Exclude large packages that Vercel handles automatically
         'node_modules/@opentelemetry/**/*',
+        // Exclude dev dependencies
+        'node_modules/typescript/**/*',
+        'node_modules/@types/**/*',
       ],
     },
-    // Include firebase-admin and its dependencies in serverless bundles for Vercel
-    // This ensures all required files are included in the serverless function bundle
-    outputFileTracingIncludes: {
-      '*': [
-        'node_modules/firebase-admin/**/*',
-        'node_modules/@firebase/**/*',
-        'node_modules/google-gax/**/*',
-        'node_modules/protobufjs/**/*',
-        'node_modules/google-auth-library/**/*',
-        'node_modules/gtoken/**/*',
-        'node_modules/jwa/**/*',
-        'node_modules/jws/**/*',
-        'node_modules/lru-cache/**/*',
-        'node_modules/yallist/**/*',
-        'node_modules/ecdsa-sig-formatter/**/*',
-        'node_modules/safe-buffer/**/*',
-      ],
-    },
-    // Mark firebase-admin as external - Vercel will include it from node_modules
-    // This is better for serverless functions as it reduces bundle size
+    // Mark firebase-admin and mongodb as external - Vercel handles these automatically
+    // This prevents Next.js from trying to bundle them, which causes slow builds
+    // Vercel's serverless functions have access to node_modules automatically
     serverComponentsExternalPackages: ['firebase-admin', 'mongodb'],
   },
 };

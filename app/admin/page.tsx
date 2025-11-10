@@ -136,8 +136,8 @@ export default function AdminDashboardPage() {
         return;
       }
 
-      // Load all data in parallel for faster loading
-      const [statsRes, ordersRes, messagesRes] = await Promise.all([
+      // Load all data in parallel, but handle errors individually so one failure doesn't block others
+      const [statsRes, ordersRes, messagesRes] = await Promise.allSettled([
         fetch("/api/admin/stats", {
           headers: { "x-admin-username": sessionData.username },
         }),
@@ -149,26 +149,54 @@ export default function AdminDashboardPage() {
         }),
       ]);
 
-      // Process responses
-      const [statsData, ordersData, messagesData] = await Promise.all([
-        statsRes.json(),
-        ordersRes.json(),
-        messagesRes.json(),
-      ]);
-
-      if (statsData.success && statsData.stats) {
-        setStats(statsData.stats);
+      // Process stats
+      if (statsRes.status === 'fulfilled') {
+        try {
+          const statsData = await statsRes.value.json();
+          if (statsData.success && statsData.stats) {
+            setStats(statsData.stats);
+          }
+        } catch (err) {
+          console.warn("Failed to parse stats response:", err);
+        }
+      } else {
+        console.warn("Stats request failed, continuing without stats:", statsRes.reason);
       }
 
-      if (ordersData.success) {
-        setRecentOrders(ordersData.orders.slice(0, 5));
+      // Process orders
+      if (ordersRes.status === 'fulfilled') {
+        try {
+          const ordersData = await ordersRes.value.json();
+          if (ordersData.success) {
+            setRecentOrders(ordersData.orders.slice(0, 5));
+          }
+        } catch (err) {
+          console.warn("Failed to parse orders response:", err);
+        }
+      } else {
+        console.warn("Orders request failed, continuing without orders:", ordersRes.reason);
       }
 
-      if (messagesData.success) {
-        setUnreadMessagesCount(messagesData.count || 0);
+      // Process messages (non-critical, can fail silently)
+      if (messagesRes.status === 'fulfilled') {
+        try {
+          const messagesData = await messagesRes.value.json();
+          if (messagesData.success) {
+            setUnreadMessagesCount(messagesData.count || 0);
+          } else {
+            setUnreadMessagesCount(0);
+          }
+        } catch (err) {
+          console.warn("Failed to parse messages response:", err);
+          setUnreadMessagesCount(0); // Default to 0 if messages fail
+        }
+      } else {
+        console.warn("Messages request failed, setting count to 0:", messagesRes.reason);
+        setUnreadMessagesCount(0); // Default to 0 if messages fail
       }
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
+      // Don't block dashboard loading even if all requests fail
     } finally {
       setIsLoading(false);
     }

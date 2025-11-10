@@ -1,9 +1,17 @@
 // Messages Firestore service - server-side only
 import "server-only";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import type { ContactMessage } from "./messages-types";
 
 const MESSAGES_COLLECTION = "contact_messages";
+
+// Helper function to ensure Firestore is initialized
+async function ensureInitialized(): Promise<void> {
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
+    throw new Error("Database unavailable");
+  }
+}
 
 // Convert Firestore document to ContactMessage
 function docToMessage(doc: any): ContactMessage {
@@ -26,12 +34,10 @@ function docToMessage(doc: any): ContactMessage {
 
 // Get all messages
 export async function getAllMessages(): Promise<ContactMessage[]> {
-  if (!adminFirestore) {
-    throw new Error("Database unavailable");
-  }
+  await ensureInitialized();
 
   try {
-    const snapshot = await adminFirestore
+    const snapshot = await adminFirestore!
       .collection(MESSAGES_COLLECTION)
       .orderBy("created_at", "desc")
       .get();
@@ -49,31 +55,29 @@ export async function getAllMessages(): Promise<ContactMessage[]> {
 
 // Get unread messages count
 export async function getUnreadMessagesCount(): Promise<number> {
-  if (!adminFirestore) {
-    throw new Error("Database unavailable");
-  }
+  await ensureInitialized();
 
   try {
-    const snapshot = await adminFirestore
+    const snapshot = await adminFirestore!
       .collection(MESSAGES_COLLECTION)
       .where("is_read", "==", false)
       .get();
 
     return snapshot.size;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching unread messages count:", error);
+    // For query errors, return 0 as a safe fallback
+    // Initialization errors are thrown before this try-catch, so they propagate to the caller
     return 0;
   }
 }
 
 // Get message by ID
 export async function getMessageById(id: string): Promise<ContactMessage | null> {
-  if (!adminFirestore) {
-    throw new Error("Database unavailable");
-  }
+  await ensureInitialized();
 
   try {
-    const doc = await adminFirestore.collection(MESSAGES_COLLECTION).doc(id).get();
+    const doc = await adminFirestore!.collection(MESSAGES_COLLECTION).doc(id).get();
     if (!doc.exists) {
       return null;
     }
@@ -88,9 +92,7 @@ export async function getMessageById(id: string): Promise<ContactMessage | null>
 export async function createMessage(
   message: Omit<ContactMessage, "id" | "is_read" | "created_at" | "updated_at">
 ): Promise<ContactMessage> {
-  if (!adminFirestore) {
-    throw new Error("Database unavailable");
-  }
+  await ensureInitialized();
 
   try {
     const messageData = {
@@ -103,7 +105,7 @@ export async function createMessage(
       updated_at: new Date().toISOString(),
     };
 
-    const docRef = await adminFirestore.collection(MESSAGES_COLLECTION).add(messageData);
+    const docRef = await adminFirestore!.collection(MESSAGES_COLLECTION).add(messageData);
     const doc = await docRef.get();
     return docToMessage(doc);
   } catch (error: any) {
@@ -116,9 +118,7 @@ export async function updateMessage(
   id: string,
   updates: Partial<Pick<ContactMessage, "is_read">>
 ): Promise<ContactMessage> {
-  if (!adminFirestore) {
-    throw new Error("Database unavailable");
-  }
+  await ensureInitialized();
 
   try {
     const updateData: any = {
@@ -129,8 +129,8 @@ export async function updateMessage(
       updateData.is_read = updates.is_read;
     }
 
-    await adminFirestore.collection(MESSAGES_COLLECTION).doc(id).update(updateData);
-    const updatedDoc = await adminFirestore.collection(MESSAGES_COLLECTION).doc(id).get();
+    await adminFirestore!.collection(MESSAGES_COLLECTION).doc(id).update(updateData);
+    const updatedDoc = await adminFirestore!.collection(MESSAGES_COLLECTION).doc(id).get();
     return docToMessage(updatedDoc);
   } catch (error: any) {
     throw new Error(error.message || "Failed to update message");
@@ -139,12 +139,10 @@ export async function updateMessage(
 
 // Delete message
 export async function deleteMessage(id: string): Promise<void> {
-  if (!adminFirestore) {
-    throw new Error("Database unavailable");
-  }
+  await ensureInitialized();
 
   try {
-    await adminFirestore.collection(MESSAGES_COLLECTION).doc(id).delete();
+    await adminFirestore!.collection(MESSAGES_COLLECTION).doc(id).delete();
   } catch (error: any) {
     throw new Error(error.message || "Failed to delete message");
   }

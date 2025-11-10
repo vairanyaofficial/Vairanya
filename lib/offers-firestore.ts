@@ -55,32 +55,54 @@ export async function getAllOffers(): Promise<Offer[]> {
   await ensureInitialized();
 
   try {
+    // Add timeout to prevent hanging queries
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Firestore query timeout (10s)")), 10000)
+    );
+    
     // Try with orderBy first, but fallback to unordered if index doesn't exist
     let snapshot;
     try {
-      snapshot = await adminFirestore
+      const queryPromise = adminFirestore
         .collection(OFFERS_COLLECTION)
         .orderBy("created_at", "desc")
         .get();
-    } catch (orderByError: any) {
-      // If orderBy fails (likely due to missing index), get without ordering
-      // and sort in memory
-      snapshot = await adminFirestore
-        .collection(OFFERS_COLLECTION)
-        .get();
       
-      const offers = snapshot.docs.map(docToOffer);
-      // Sort by created_at descending
-      return offers.sort((a: Offer, b: Offer) => {
-        const dateA = new Date(a.created_at).getTime();
-        const dateB = new Date(b.created_at).getTime();
-        return dateB - dateA;
-      });
+      snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
+    } catch (orderByError: any) {
+      // If orderBy fails (likely due to missing index or timeout), get without ordering
+      // and sort in memory
+      try {
+        const queryPromise = adminFirestore
+          .collection(OFFERS_COLLECTION)
+          .get();
+        
+        snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
+        
+        const offers = snapshot.docs.map(docToOffer);
+        // Sort by created_at descending
+        return offers.sort((a: Offer, b: Offer) => {
+          const dateA = new Date(a.created_at).getTime();
+          const dateB = new Date(b.created_at).getTime();
+          return dateB - dateA;
+        });
+      } catch (fallbackError: any) {
+        console.error("Error fetching offers (fallback):", {
+          message: fallbackError?.message,
+          code: fallbackError?.code,
+          name: fallbackError?.name,
+        });
+        return [];
+      }
     }
 
     return snapshot.docs.map(docToOffer);
-  } catch (error) {
-    console.error("Error fetching offers:", error);
+  } catch (error: any) {
+    console.error("Error fetching offers:", {
+      message: error?.message,
+      code: error?.code,
+      name: error?.name,
+    });
     return [];
   }
 }

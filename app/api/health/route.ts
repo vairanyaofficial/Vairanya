@@ -2,7 +2,7 @@
 // Health check endpoint for monitoring and load balancers
 
 import { NextResponse } from "next/server";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized, getFirebaseDiagnostics } from "@/lib/firebaseAdmin.server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,7 +16,9 @@ export async function GET() {
     services: {
       database: "ok" | "error";
       responseTime: number;
+      error?: string;
     };
+    diagnostics?: any;
     version?: string;
   } = {
     status: "healthy",
@@ -30,19 +32,44 @@ export async function GET() {
 
   // Check database connectivity
   try {
-    if (adminFirestore) {
-      const dbStartTime = Date.now();
-      // Simple read operation to check connectivity
-      await adminFirestore.collection("_health").limit(1).get();
-      health.services.responseTime = Date.now() - dbStartTime;
-      health.services.database = "ok";
-    } else {
+    // First ensure Firebase is initialized
+    const initResult = await ensureFirebaseInitialized();
+    
+    if (!initResult.success) {
       health.services.database = "error";
-      health.status = "degraded";
+      health.services.error = (initResult as { success: false; error: string }).error || "Initialization failed";
+      health.status = "unhealthy";
+      health.diagnostics = getFirebaseDiagnostics();
+    } else if (!adminFirestore) {
+      health.services.database = "error";
+      health.services.error = "Firestore instance not available";
+      health.status = "unhealthy";
+      health.diagnostics = getFirebaseDiagnostics();
+    } else {
+      // Try a simple read operation to check connectivity
+      const dbStartTime = Date.now();
+      try {
+        // Use a timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Database connection timeout")), 5000)
+        );
+        
+        const queryPromise = adminFirestore.collection("_health").limit(1).get();
+        await Promise.race([queryPromise, timeoutPromise]);
+        
+        health.services.responseTime = Date.now() - dbStartTime;
+        health.services.database = "ok";
+      } catch (dbError: any) {
+        health.services.database = "error";
+        health.services.error = dbError?.message || "Database query failed";
+        health.status = "unhealthy";
+      }
     }
-  } catch (error) {
+  } catch (error: any) {
     health.services.database = "error";
+    health.services.error = error?.message || "Unknown error";
     health.status = "unhealthy";
+    health.diagnostics = getFirebaseDiagnostics();
   }
 
   const totalResponseTime = Date.now() - startTime;

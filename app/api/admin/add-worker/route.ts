@@ -1,12 +1,14 @@
 // app/api/admin/add-worker/route.ts
 // Utility endpoint to add a worker to the system
 import { NextRequest, NextResponse } from "next/server";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import { FieldValue } from "firebase-admin/firestore";
 
 export async function POST(req: NextRequest) {
   try {
-    if (!adminFirestore) {
+    // Ensure Firebase is initialized before using adminFirestore
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
       return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
     }
 

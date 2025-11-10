@@ -1,12 +1,14 @@
 // Categories Firestore service - server-side only
 import "server-only";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 
 const CATEGORIES_COLLECTION = "categories";
 
 // Get all categories
 export async function getAllCategories(): Promise<string[]> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 
@@ -33,7 +35,9 @@ export async function getAllCategories(): Promise<string[]> {
 
 // Add new category
 export async function addCategory(categoryName: string): Promise<string[]> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 

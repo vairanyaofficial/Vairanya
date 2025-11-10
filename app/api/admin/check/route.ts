@@ -2,15 +2,25 @@
 // Lightweight endpoint to check if a user is an admin/worker
 // Returns 200 with status, never 403, to avoid console errors for regular customers
 import { NextResponse } from "next/server";
-import { adminAuth, adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminAuth, adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 
 export async function POST(req: Request) {
   try {
-    if (!adminAuth || !adminFirestore) {
+    // Ensure Firebase is initialized before using adminAuth/adminFirestore
+    // If initialization fails, return false (not admin) instead of error to allow login flow
+    try {
+      const initResult = await ensureFirebaseInitialized();
+      if (!initResult.success || !adminAuth || !adminFirestore) {
+        console.warn("Firebase not initialized in admin/check, returning isAdmin: false");
+        return NextResponse.json({ 
+          isAdmin: false
+        }, { status: 200 }); // Return 200 to avoid blocking login
+      }
+    } catch (initError) {
+      console.error("Firebase initialization error in admin/check:", initError);
       return NextResponse.json({ 
-        isAdmin: false,
-        error: "Server not configured" 
-      }, { status: 500 });
+        isAdmin: false
+      }, { status: 200 }); // Return 200 to avoid blocking login
     }
 
     const body = await req.json().catch(() => ({}));
@@ -57,11 +67,17 @@ export async function POST(req: Request) {
         }, { status: 200 });
       }
 
-      // Map Firestore role to system role
+      // Map Firestore role to system role (same mapping as /api/admin/login)
+      // superadmin -> superuser (full access)
+      // admin -> admin (limited access, no workers management)
+      // worker -> worker (very limited access)
       let role: string = adminData.role || "worker";
       if (role === "superadmin") {
         role = "superuser";
+      } else if (role === "admin") {
+        role = "admin"; // Keep as admin (not superuser)
       }
+      // worker stays as worker
 
       // User is an admin/worker
       return NextResponse.json({

@@ -65,60 +65,75 @@ export async function getAllProducts(): Promise<Product[]> {
   }
 
   try {
+    // Add timeout to prevent hanging queries
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Firestore query timeout (10s)")), 10000)
+    );
+    
     // Try with orderBy first, but fallback to unordered if index doesn't exist
     let snapshot;
     try {
-      snapshot = await adminFirestore
+      const queryPromise = adminFirestore
         .collection(PRODUCTS_COLLECTION)
         .orderBy("createdAt", "desc")
         .get();
       
+      snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
       return snapshot.docs.map(docToProduct);
     } catch (orderByError: any) {
-      // If orderBy fails (likely due to missing index), get without ordering
+      // If orderBy fails (likely due to missing index or timeout), get without ordering
       // and sort in memory
       console.warn("OrderBy failed, fetching all products without ordering. Error:", orderByError?.message);
-      console.warn("This is usually because the Firestore index doesn't exist. Products will be sorted in memory.");
+      console.warn("This is usually because the Firestore index doesn't exist or query timed out. Products will be sorted in memory.");
       
-      snapshot = await adminFirestore
-        .collection(PRODUCTS_COLLECTION)
-        .get();
-      
-      // Map docs to products and sort by createdAt
-      const productsWithDates = snapshot.docs.map((doc: any) => {
-        const product = docToProduct(doc);
-        const data = doc.data();
-        const createdAt = data.createdAt?.toDate?.() || data.createdAt || new Date(0);
-        return { product, createdAt };
-      });
-      
-      // Sort by createdAt descending
-      productsWithDates.sort((a: { product: Product; createdAt: any }, b: { product: Product; createdAt: any }) => {
-        const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
-        const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
-        return dateB - dateA;
-      });
-      
-      return productsWithDates.map((item: { product: Product; createdAt: any }) => item.product);
+      try {
+        const queryPromise = adminFirestore
+          .collection(PRODUCTS_COLLECTION)
+          .get();
+        
+        snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
+        
+        // Map docs to products and sort by createdAt
+        const productsWithDates = snapshot.docs.map((doc: any) => {
+          const product = docToProduct(doc);
+          const data = doc.data();
+          const createdAt = data.createdAt?.toDate?.() || data.createdAt || new Date(0);
+          return { product, createdAt };
+        });
+        
+        // Sort by createdAt descending
+        productsWithDates.sort((a: { product: Product; createdAt: any }, b: { product: Product; createdAt: any }) => {
+          const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+          const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+          return dateB - dateA;
+        });
+        
+        return productsWithDates.map((item: { product: Product; createdAt: any }) => item.product);
+      } catch (fallbackError: any) {
+        console.error("Error fetching products (fallback):", {
+          message: fallbackError?.message,
+          code: fallbackError?.code,
+          name: fallbackError?.name,
+        });
+        return [];
+      }
     }
   } catch (error: any) {
-    console.error("Error fetching products:", error);
-    // Final fallback - try to get all products without any sorting
-    try {
-      const snapshot = await adminFirestore
-        .collection(PRODUCTS_COLLECTION)
-        .get();
-      return snapshot.docs.map(docToProduct);
-    } catch (fallbackError) {
-      console.error("Error in fallback fetch:", fallbackError);
-      return [];
-    }
+    console.error("Error fetching products:", {
+      message: error?.message,
+      code: error?.code,
+      name: error?.name,
+    });
+    return [];
   }
 }
 
 // Get product by ID
 export async function getProductById(productId: string): Promise<Product | null> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 
@@ -133,7 +148,10 @@ export async function getProductById(productId: string): Promise<Product | null>
 
 // Get product by slug
 export async function getProductBySlug(slug: string): Promise<Product | null> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 
@@ -153,7 +171,10 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 
 // Create new product
 export async function createProduct(product: Product): Promise<Product> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 
@@ -213,7 +234,10 @@ export async function updateProduct(
   productId: string,
   updates: Partial<Product>
 ): Promise<Product> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 
@@ -247,7 +271,10 @@ export async function updateProduct(
 
 // Delete product
 export async function deleteProduct(productId: string): Promise<void> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 
@@ -310,7 +337,10 @@ export async function generateSKU(category: string): Promise<string> {
 
 // Get products by category (optimized query)
 export async function getProductsByCategory(category: string, limit: number = 8, excludeProductId?: string): Promise<Product[]> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 
@@ -336,7 +366,10 @@ export async function getProductsByCategory(category: string, limit: number = 8,
 
 // Get products by metal finish (optimized query)
 export async function getProductsByMetalFinish(metalFinish: string, limit: number = 8, excludeProductId?: string): Promise<Product[]> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 

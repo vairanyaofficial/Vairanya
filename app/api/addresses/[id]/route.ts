@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
-import { adminAuth } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 
 const ADDRESSES_COLLECTION = "addresses";
 
 // Helper to verify Firebase token and get user ID
 async function getUserIdFromToken(request: NextRequest): Promise<string | null> {
   try {
+    // Ensure Firebase is initialized before using adminAuth
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminAuth) {
+      return null;
+    }
+    
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) return null;
     

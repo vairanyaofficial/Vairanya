@@ -1,6 +1,6 @@
 // app/api/admin/workers/[uid]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import { FieldValue } from "firebase-admin/firestore";
 
 interface RouteParams {
@@ -13,7 +13,9 @@ export async function PATCH(
   { params }: RouteParams
 ) {
   try {
-    if (!adminFirestore) {
+    // Ensure Firebase is initialized before using adminFirestore
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
       return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
     }
 
@@ -148,7 +150,9 @@ export async function DELETE(
   { params }: RouteParams
 ) {
   try {
-    if (!adminFirestore) {
+    // Ensure Firebase is initialized before using adminFirestore
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
       return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
     }
 

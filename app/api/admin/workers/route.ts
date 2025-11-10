@@ -64,7 +64,9 @@ export async function GET(req: NextRequest) {
 // POST - Add new worker/admin
 export async function POST(req: NextRequest) {
   try {
-    if (!adminFirestore) {
+    // Ensure Firebase is initialized before using adminFirestore
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
       return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
     }
 

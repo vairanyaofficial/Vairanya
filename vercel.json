@@ -1,7 +1,7 @@
 {
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
-  "installCommand": "npm install",
+  "installCommand": "npm install --legacy-peer-deps",
   "framework": "nextjs",
   "regions": ["bom1"],
   "functions": {
@@ -12,6 +12,12 @@
   },
   "env": {
     "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production",
+      "SKIP_ENV_VALIDATION": "true"
+    }
   }
 }
 

@@ -1,6 +1,6 @@
 // app/api/admin/login/route.ts
 import { NextResponse } from "next/server";
-import { adminAuth, adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminAuth, adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import { logger } from "@/lib/logger";
 import { rateLimiters } from "@/lib/rate-limit";
 
@@ -24,19 +24,25 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if Firebase Admin is properly initialized
-    if (!adminAuth) {
-      logger.error("Firebase Admin Auth not initialized");
+    // Ensure Firebase Admin is properly initialized
+    // For login, we need Firebase to work, but handle errors gracefully
+    let initResult;
+    try {
+      initResult = await ensureFirebaseInitialized();
+      if (!initResult.success || !adminAuth || !adminFirestore) {
+        const errorMessage = initResult.success ? "Unknown error" : (initResult as { success: false; error: string }).error;
+        logger.error("Firebase Admin not initialized", { error: errorMessage });
+        return NextResponse.json({ 
+          error: "Server configuration error", 
+          message: "Authentication service is temporarily unavailable. Please try again later." 
+        }, { status: 503 }); // Use 503 (Service Unavailable) instead of 500
+      }
+    } catch (initError: any) {
+      logger.error("Firebase initialization exception in admin/login", initError);
       return NextResponse.json({ 
         error: "Server configuration error", 
-        message: "Authentication service is not properly configured. Please contact support." 
-      }, { status: 500 });
-    }
-    if (!adminFirestore) {
-      return NextResponse.json({ 
-        error: "Server configuration error", 
-        message: "Database service is not properly configured. Please contact support." 
-      }, { status: 500 });
+        message: "Authentication service is temporarily unavailable. Please try again later." 
+      }, { status: 503 });
     }
 
     const body = await req.json().catch((e) => ({ __parseError: String(e) }));
@@ -122,13 +128,30 @@ export async function POST(req: Request) {
     // Return user object for client
     const user = {
       username: uid, // Use UID as username
-      role: role,
+      role: role, // Mapped role: "superuser", "admin", or "worker"
       name: decoded.name || adminData.name || decoded.email?.split("@")[0] || "Admin",
     };
+
+    // Log for debugging (only in development)
+    if (process.env.NODE_ENV === "development") {
+      logger.info("Admin login successful", {
+        uid: uid.substring(0, 8) + "...",
+        firestoreRole: adminData.role,
+        mappedRole: role,
+        email: decoded.email || "N/A",
+      });
+    }
 
     return NextResponse.json({
       ok: true,
       user: user,
+      // Include original Firestore role in response for debugging (only in development)
+      ...(process.env.NODE_ENV === "development" && {
+        debug: {
+          firestoreRole: adminData.role,
+          mappedRole: role,
+        },
+      }),
     });
   } catch (err: any) {
     return NextResponse.json({ error: "Unexpected server error", message: String(err?.message || err) }, { status: 500 });

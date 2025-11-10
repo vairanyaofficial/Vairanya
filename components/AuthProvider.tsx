@@ -65,7 +65,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
+      // Reload user to get latest profile data including photoURL
+      if (u) {
+        try {
+          // Reload user to ensure we have the latest photoURL and displayName
+          await u.reload();
+          // Get fresh user data after reload
+          setUser(u);
+        } catch (reloadErr) {
+          // If reload fails, still set the user (might be a network issue)
+          setUser(u);
+        }
+      } else {
+        setUser(null);
+      }
       
       // Sync customer to Firestore when user signs in (only for regular customers, not admins)
       if (u && u.email && !adminInfo) {
@@ -78,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               name: u.displayName || u.email.split("@")[0],
               phone: u.phoneNumber || undefined,
               userId: u.uid,
+              photoURL: u.photoURL || undefined,
             }),
           });
           
@@ -103,11 +117,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsPopupOpen(true);
     try {
       const provider = new GoogleAuthProvider();
+      // Request profile and email scopes to get photoURL
+      provider.addScope('profile');
+      provider.addScope('email');
       // Set additional OAuth parameters to prevent popup blocking
       provider.setCustomParameters({
         prompt: "select_account",
       });
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      
+      // Reload user to ensure we get the latest photoURL
+      if (result.user) {
+        try {
+          await result.user.reload();
+        } catch (reloadErr) {
+          // Reload failed, but continue - photoURL might still be available
+          console.warn("Failed to reload user after Google sign-in:", reloadErr);
+        }
+      }
+      
       // Reset immediately on success
       setIsPopupOpen(false);
     } catch (err: any) {
@@ -216,6 +244,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error("A sign-in popup is already open. Please wait or close it and try again.");
     }
     
+    // Clear any existing admin session first to ensure fresh login
+    setAdminInfo(null);
+    setAdminSessionLocal(null);
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem("admin_session");
+        localStorage.removeItem("va_admin_session_local");
+      } catch (err) {
+        // Ignore errors
+      }
+    }
+    
     setIsPopupOpen(true);
     const provider = new GoogleAuthProvider();
     // Set additional OAuth parameters to prevent popup blocking
@@ -242,10 +282,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw err;
     }
 
-    // get idToken
+    // get idToken - force refresh to get latest token
     let idToken: string | null = null;
     try {
-      idToken = await result.user.getIdToken();
+      idToken = await result.user.getIdToken(true); // Force refresh token
     } catch (err) {
       // sign out to keep state clean
       await firebaseSignOut(auth).catch(() => {});
@@ -273,7 +313,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (!res.ok || body?.error) {
       await firebaseSignOut(auth).catch(() => {});
-      throw new Error(body?.error || `Admin verification failed (status ${res.status})`);
+      // Preserve the detailed error message from the server
+      const errorMsg = body?.error || body?.message || `Admin verification failed (status ${res.status})`;
+      throw new Error(errorMsg);
     }
 
     // Extract user info from response
@@ -282,9 +324,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error("Admin verification failed: no user data received");
     }
 
+    // Log the role for debugging (only in development)
+    if (process.env.NODE_ENV === "development") {
+      console.log("Admin login successful:", {
+        username: body.user.username,
+        role: body.user.role,
+        name: body.user.name,
+      });
+    }
+
     const userInfo: AdminInfo = {
       username: body.user.username,
-      role: body.user.role,
+      role: body.user.role, // This should be "superuser", "admin", or "worker"
       name: body.user.name,
     };
 
@@ -301,6 +352,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: userInfo.name,
         }));
       } catch (err) {
+        console.error("Failed to set sessionStorage:", err);
       }
     }
   };
@@ -309,15 +361,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Clear admin session FIRST before any redirects
     const isAdmin = adminInfo !== null;
     
-    // Clear admin session if exists
+    // Clear admin session if exists - do this aggressively
     setAdminInfo(null);
     setAdminSessionLocal(null);
     
-    // Also clear sessionStorage for admin-auth.ts compatibility
+    // Also clear ALL session storage for admin-auth.ts compatibility
     if (typeof window !== "undefined") {
       try {
+        // Clear sessionStorage
         sessionStorage.removeItem("admin_session");
+        // Clear localStorage
         localStorage.removeItem("va_admin_session_local");
+        // Also clear any other potential admin session keys
+        localStorage.removeItem("admin_session");
+        sessionStorage.removeItem("va_admin_session_local");
       } catch {
         /* ignore */
       }
@@ -335,6 +392,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       /* ignore */
     }
+    
+    // Small delay to ensure all cleanup is done
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Use window.location.href for hard redirect to prevent loops
     if (typeof window !== "undefined") {

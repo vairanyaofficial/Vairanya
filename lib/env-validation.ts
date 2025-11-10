@@ -49,9 +49,10 @@ export function validateEnv(): ValidationResult {
     // Firebase Admin - at least one must be set
     if (
       !process.env.FIREBASE_SERVICE_ACCOUNT_JSON &&
+      !process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64 &&
       !process.env.GOOGLE_APPLICATION_CREDENTIALS
     ) {
-      missing.push("FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS");
+      missing.push("FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_SERVICE_ACCOUNT_JSON_B64, or GOOGLE_APPLICATION_CREDENTIALS");
     }
 
     // Firebase Client (public vars)
@@ -94,9 +95,22 @@ export function validateEnv(): ValidationResult {
   }
 
   // Validate Firebase Service Account JSON format if present
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+  const svcJsonB64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64;
+  const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  
+  if (svcJsonB64) {
     try {
-      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+      // Try to decode base64 and parse JSON
+      const decoded = Buffer.from(svcJsonB64.replace(/\s/g, ''), 'base64').toString('utf8');
+      JSON.parse(decoded);
+    } catch {
+      warnings.push("FIREBASE_SERVICE_ACCOUNT_JSON_B64 is not valid base64-encoded JSON");
+    }
+  }
+  
+  if (svcJson) {
+    try {
+      JSON.parse(svcJson);
     } catch {
       warnings.push("FIREBASE_SERVICE_ACCOUNT_JSON is not valid JSON");
     }

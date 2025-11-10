@@ -9,6 +9,7 @@ export interface CustomerData {
   name: string;
   phone?: string;
   user_id?: string; // Firebase user ID
+  photoURL?: string; // User profile photo URL
   created_at: string;
   updated_at: string;
   last_login?: string; // Track last login time
@@ -19,7 +20,8 @@ export async function syncCustomerToFirestore(
   email: string,
   name: string,
   phone?: string,
-  userId?: string
+  userId?: string,
+  photoURL?: string
 ): Promise<void> {
   if (!adminFirestore) {
     return;
@@ -46,6 +48,9 @@ export async function syncCustomerToFirestore(
       if (userId && userId.trim() !== "") {
         updateData.user_id = userId;
       }
+      if (photoURL && photoURL.trim() !== "") {
+        updateData.photoURL = photoURL.trim();
+      }
       
       await customerRef.update(updateData);
     } else {
@@ -55,6 +60,7 @@ export async function syncCustomerToFirestore(
         name: name.trim(),
         phone: phone && phone.trim() !== "" ? phone.trim() : undefined,
         user_id: userId && userId.trim() !== "" ? userId.trim() : undefined,
+        photoURL: photoURL && photoURL.trim() !== "" ? photoURL.trim() : undefined,
         created_at: now,
         updated_at: now,
         last_login: now,
@@ -74,6 +80,9 @@ export async function syncCustomerToFirestore(
       }
       if (customerData.user_id) {
         cleanData.user_id = customerData.user_id;
+      }
+      if (customerData.photoURL) {
+        cleanData.photoURL = customerData.photoURL;
       }
       
       await customerRef.set(cleanData);

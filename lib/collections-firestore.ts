@@ -40,9 +40,16 @@ export async function getAllCollections(): Promise<Collection[]> {
   await ensureInitialized();
 
   try {
-    const snapshot = await adminFirestore
+    // Add timeout to prevent hanging queries
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Firestore query timeout (10s)")), 10000)
+    );
+    
+    const queryPromise = adminFirestore
       .collection(COLLECTIONS_COLLECTION)
       .get();
+    
+    const snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
 
     const collections = snapshot.docs.map(docToCollection);
     // Sort by display_order then by createdAt
@@ -52,7 +59,12 @@ export async function getAllCollections(): Promise<Collection[]> {
       }
       return (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Error fetching collections:", {
+      message: error?.message,
+      code: error?.code,
+      name: error?.name,
+    });
     return [];
   }
 }
@@ -62,11 +74,18 @@ export async function getFeaturedCollections(): Promise<Collection[]> {
   await ensureInitialized();
 
   try {
-    const snapshot = await adminFirestore
+    // Add timeout to prevent hanging queries
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Firestore query timeout (10s)")), 10000)
+    );
+    
+    const queryPromise = adminFirestore
       .collection(COLLECTIONS_COLLECTION)
       .where("is_featured", "==", true)
       .where("is_active", "==", true)
       .get();
+    
+    const snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
 
     const collections = snapshot.docs.map(docToCollection);
     // Sort by display_order then by createdAt
@@ -76,7 +95,12 @@ export async function getFeaturedCollections(): Promise<Collection[]> {
       }
       return (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Error fetching featured collections:", {
+      message: error?.message,
+      code: error?.code,
+      name: error?.name,
+    });
     return [];
   }
 }

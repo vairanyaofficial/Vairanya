@@ -40,23 +40,43 @@ export default function WorkerDashboardPage() {
     try {
       setIsLoading(true);
       const sessionData = getAdminSession();
-      if (!sessionData) return;
+      if (!sessionData) {
+        setIsLoading(false);
+        return;
+      }
 
-      const response = await fetch(
-        `/api/admin/orders?assigned_to=${sessionData.username}`,
-        {
-          headers: { 
-            "x-admin-username": sessionData.username,
-            "x-admin-role": sessionData.role,
-          },
+      try {
+        const response = await fetch(
+          `/api/admin/orders?assigned_to=${sessionData.username}`,
+          {
+            headers: { 
+              "x-admin-username": sessionData.username,
+              "x-admin-role": sessionData.role,
+            },
+          }
+        );
+        
+        if (!response.ok) {
+          console.warn("Orders API returned non-ok status:", response.status);
+          setAssignedOrders([]); // Set empty array on error
+          return;
         }
-      );
-      const data = await response.json();
-      if (data.success) {
-        setAssignedOrders(data.orders || []);
+        
+        const data = await response.json();
+        if (data.success) {
+          setAssignedOrders(data.orders || []);
+        } else {
+          console.warn("Orders API returned success: false:", data.error);
+          setAssignedOrders([]); // Set empty array on error
+        }
+      } catch (fetchErr) {
+        console.error("Failed to fetch orders:", fetchErr);
+        setAssignedOrders([]); // Set empty array on error
+        // Don't show toast for network errors to avoid annoying users
       }
     } catch (err) {
-      showToast("Failed to load orders");
+      console.error("Error in loadAssignedOrders:", err);
+      setAssignedOrders([]); // Set empty array on error
     } finally {
       setIsLoading(false);
     }

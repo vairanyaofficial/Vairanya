@@ -20,8 +20,18 @@ export async function GET(request: NextRequest) {
     const countOnly = searchParams.get("count") === "true";
 
     if (countOnly) {
-      const count = await getUnreadMessagesCount();
-      return NextResponse.json({ success: true, count });
+      try {
+        const count = await getUnreadMessagesCount();
+        return NextResponse.json({ success: true, count });
+      } catch (error: any) {
+        // For count endpoint, return 0 if database is unavailable to prevent UI errors
+        if (error?.message?.includes("Database unavailable")) {
+          console.warn("Database unavailable for message count, returning 0");
+          return NextResponse.json({ success: true, count: 0 });
+        }
+        // Re-throw other errors
+        throw error;
+      }
     }
 
     if (id) {

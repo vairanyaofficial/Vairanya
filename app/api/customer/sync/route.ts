@@ -5,7 +5,7 @@ import { syncCustomerToFirestore } from "@/lib/customer-sync";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, name, phone, userId } = body;
+    const { email, name, phone, userId, photoURL } = body;
 
     if (!email || !name) {
       return NextResponse.json(
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await syncCustomerToFirestore(email, name, phone, userId);
+    await syncCustomerToFirestore(email, name, phone, userId, photoURL);
 
     return NextResponse.json({
       success: true,

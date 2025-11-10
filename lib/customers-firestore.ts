@@ -1,6 +1,6 @@
 // Customers Firestore service - server-side only
 import "server-only";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import { getAllOrders } from "./orders-firestore";
 import type { Customer } from "./offers-types";
 
@@ -8,7 +8,9 @@ const CUSTOMERS_COLLECTION = "customers";
 
 // Get all unique customers from orders and customers collection
 export async function getAllCustomers(): Promise<Customer[]> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 
@@ -74,7 +76,9 @@ export async function getAllCustomers(): Promise<Customer[]> {
 
 // Get customer by email
 export async function getCustomerByEmail(email: string): Promise<Customer | null> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 
@@ -88,7 +92,9 @@ export async function getCustomerByEmail(email: string): Promise<Customer | null
 
 // Get customer by user ID
 export async function getCustomerByUserId(userId: string): Promise<Customer | null> {
-  if (!adminFirestore) {
+  // Ensure Firebase is initialized
+  const initResult = await ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
     throw new Error("Database unavailable");
   }
 

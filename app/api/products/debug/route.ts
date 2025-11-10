@@ -32,9 +32,9 @@ export async function GET() {
     const diagnostics = getFirebaseDiagnostics();
     debugInfo.diagnostics = diagnostics;
     debugInfo.firestore.initialized = diagnostics.initialized;
-    debugInfo.environment.serviceAccountJsonValid = diagnostics.serviceAccountJsonValid;
-    if (diagnostics.serviceAccountJsonError) {
-      debugInfo.environment.serviceAccountJsonError = diagnostics.serviceAccountJsonError;
+    debugInfo.environment.serviceAccountJsonValid = diagnostics.serviceAccountParsed;
+    if (diagnostics.serviceAccountParseError) {
+      debugInfo.environment.serviceAccountJsonError = diagnostics.serviceAccountParseError;
     }
     if (diagnostics.initializationError) {
       debugInfo.firestore.error = diagnostics.initializationError;
@@ -43,7 +43,7 @@ export async function GET() {
     // Try to ensure initialization
     const initResult = await ensureFirebaseInitialized();
     if (!initResult.success) {
-      debugInfo.firestore.error = initResult.error || "Firestore initialization failed";
+      debugInfo.firestore.error = (initResult as { success: false; error: string }).error || "Firestore initialization failed";
     }
 
     // Check Firestore initialization

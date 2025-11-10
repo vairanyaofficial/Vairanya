@@ -46,15 +46,27 @@ export async function getAllReviews(): Promise<Review[]> {
   await ensureInitialized();
 
   try {
-    const snapshot = await adminFirestore
+    // Add timeout to prevent hanging queries
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Firestore query timeout (10s)")), 10000)
+    );
+    
+    const queryPromise = adminFirestore
       .collection(REVIEWS_COLLECTION)
       .orderBy("created_at", "desc")
       .get();
+    
+    const snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
 
     return snapshot.docs.map(docToReview);
-  } catch (error) {
-    console.error("Error fetching reviews:", error);
-    throw error;
+  } catch (error: any) {
+    console.error("Error fetching reviews:", {
+      message: error?.message,
+      code: error?.code,
+      name: error?.name,
+    });
+    // Return empty array instead of throwing to prevent app crashes
+    return [];
   }
 }
 
@@ -63,11 +75,18 @@ export async function getFeaturedReviews(): Promise<Review[]> {
   await ensureInitialized();
 
   try {
+    // Add timeout to prevent hanging queries
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Firestore query timeout (10s)")), 10000)
+    );
+    
     // Fetch all featured reviews without orderBy to avoid index requirement
-    const snapshot = await adminFirestore
+    const queryPromise = adminFirestore
       .collection(REVIEWS_COLLECTION)
       .where("is_featured", "==", true)
       .get();
+    
+    const snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
 
     // Sort in memory by created_at descending
     const reviews = snapshot.docs.map(docToReview);
@@ -76,9 +95,13 @@ export async function getFeaturedReviews(): Promise<Review[]> {
       const dateB = new Date(b.created_at).getTime();
       return dateB - dateA; // Descending order
     });
-  } catch (error) {
-    console.error("Error fetching featured reviews:", error);
-    throw error;
+  } catch (error: any) {
+    console.error("Error fetching featured reviews:", {
+      message: error?.message,
+      code: error?.code,
+      name: error?.name,
+    });
+    return [];
   }
 }
 

@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth } from "@/lib/firebaseAdmin.server";
+import { adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 
 // Helper to verify Firebase token and get user ID
 async function getUserIdFromToken(request: NextRequest): Promise<string | null> {
   try {
+    // Ensure Firebase is initialized before using adminAuth
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminAuth) {
+      return null;
+    }
+    
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) return null;
     
@@ -18,18 +24,20 @@ async function getUserIdFromToken(request: NextRequest): Promise<string | null> 
 // GET - Get user profile
 export async function GET(request: NextRequest) {
   try {
+    // Ensure Firebase is initialized
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminAuth) {
+      return NextResponse.json(
+        { success: false, error: "Auth service unavailable" },
+        { status: 500 }
+      );
+    }
+    
     const userId = await getUserIdFromToken(request);
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
-      );
-    }
-
-    if (!adminAuth) {
-      return NextResponse.json(
-        { success: false, error: "Auth not initialized" },
-        { status: 500 }
       );
     }
 
@@ -56,6 +64,15 @@ export async function GET(request: NextRequest) {
 // PUT - Update user profile
 export async function PUT(request: NextRequest) {
   try {
+    // Ensure Firebase is initialized
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminAuth) {
+      return NextResponse.json(
+        { success: false, error: "Auth service unavailable" },
+        { status: 500 }
+      );
+    }
+    
     const userId = await getUserIdFromToken(request);
     if (!userId) {
       return NextResponse.json(
@@ -66,13 +83,6 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
     const { displayName, phoneNumber, photoURL } = body;
-
-    if (!adminAuth) {
-      return NextResponse.json(
-        { success: false, error: "Auth not initialized" },
-        { status: 500 }
-      );
-    }
 
     const updates: any = {};
     if (displayName !== undefined) updates.displayName = displayName;

@@ -19,12 +19,34 @@ export async function GET(request: NextRequest) {
 
     logger.info(`[API /api/products] Request - limit: ${limit}, offset: ${offset}, getAll: ${getAll}`);
 
-    const { adminFirestore, ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
+    const { adminFirestore, ensureFirebaseInitialized, getFirebaseDiagnostics } = await import("@/lib/firebaseAdmin.server");
     
     // Try to ensure initialization
     const initResult = await ensureFirebaseInitialized();
     if (!initResult.success || !adminFirestore) {
-      // Return empty products silently
+      // Log the error for debugging
+      logger.error("Firebase initialization failed in products route", {
+        initResult,
+        diagnostics: getFirebaseDiagnostics(),
+      });
+      
+      // In development, return error details; in production, return empty array
+      if (process.env.NODE_ENV === "development") {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: "Database unavailable",
+            message: (initResult as { success: false; error: string }).error || "Firebase not initialized",
+            diagnostics: getFirebaseDiagnostics(),
+            products: [],
+            total: 0,
+            hasMore: false,
+          },
+          { status: 503 }
+        );
+      }
+      
+      // Return empty products silently in production (for graceful degradation)
       const response = NextResponse.json(
         { 
           success: true, 
@@ -111,7 +133,24 @@ export async function GET(request: NextRequest) {
       stack: process.env.NODE_ENV === "development" ? errorStack : undefined,
     });
     
-    // Return empty products silently
+    // In development, return error details; in production, return empty array gracefully
+    if (process.env.NODE_ENV === "development") {
+      const { getFirebaseDiagnostics } = await import("@/lib/firebaseAdmin.server");
+      return NextResponse.json(
+        { 
+          success: false,
+          error: errorMessage,
+          code: errorCode,
+          diagnostics: getFirebaseDiagnostics(),
+          products: [],
+          total: 0,
+          hasMore: false,
+        },
+        { status: 500 }
+      );
+    }
+    
+    // Return empty products silently in production (for graceful degradation)
     return NextResponse.json(
       { 
         success: true,

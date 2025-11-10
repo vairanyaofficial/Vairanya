@@ -12,7 +12,9 @@
     "start": "next start",
     "lint": "next lint",
     "validate-env": "tsx scripts/validate-env.ts",
-    "postbuild": "node -e \"if (!process.env.VERCEL && process.env.NODE_ENV === 'production') { try { require('child_process').execSync('npm run validate-env', {stdio: 'inherit'}); } catch(e) { console.warn('Env validation skipped:', e.message); } }\""
+    "validate-firebase-json": "node scripts/validate-firebase-json.js",
+    "encode-firebase-json": "node scripts/encode-json-to-base64.js",
+    "postbuild": "node scripts/postbuild-check.js" 
   },
   "dependencies": {
     "@imagekit/next": "^2.1.3",

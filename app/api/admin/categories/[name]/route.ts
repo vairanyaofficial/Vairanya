@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import { requireAdminOrSuperUser } from "@/lib/admin-auth-server";
 
 const CATEGORIES_COLLECTION = "categories";
@@ -15,6 +15,15 @@ export async function DELETE(
   }
 
   try {
+    // Ensure Firebase is initialized before using adminFirestore
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 500 }
+      );
+    }
+
     const { name } = await params;
     const normalizedName = decodeURIComponent(name).trim().toLowerCase();
 
@@ -22,13 +31,6 @@ export async function DELETE(
       return NextResponse.json(
         { success: false, error: "Category name is required" },
         { status: 400 }
-      );
-    }
-
-    if (!adminFirestore) {
-      return NextResponse.json(
-        { success: false, error: "Database unavailable" },
-        { status: 500 }
       );
     }
 
@@ -68,6 +70,15 @@ export async function PUT(
   }
 
   try {
+    // Ensure Firebase is initialized before using adminFirestore
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 500 }
+      );
+    }
+
     const { name } = await params;
     const oldName = decodeURIComponent(name).trim().toLowerCase();
     const body = await request.json();
@@ -85,13 +96,6 @@ export async function PUT(
       const snapshot = await adminFirestore.collection(CATEGORIES_COLLECTION).get();
       const categories = snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => doc.id).sort();
       return NextResponse.json({ success: true, categories });
-    }
-
-    if (!adminFirestore) {
-      return NextResponse.json(
-        { success: false, error: "Database unavailable" },
-        { status: 500 }
-      );
     }
 
     // Check if old category exists

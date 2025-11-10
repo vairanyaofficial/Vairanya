@@ -37,13 +37,19 @@ export async function getCarouselSlides(activeOnly: boolean = true): Promise<Car
   await ensureInitialized();
 
   try {
+    // Add timeout to prevent hanging queries
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Firestore query timeout (10s)")), 10000)
+    );
+    
     let query = adminFirestore.collection(CAROUSEL_COLLECTION);
 
     if (activeOnly) {
       query = query.where("is_active", "==", true);
     }
 
-    const snapshot = await query.get();
+    const queryPromise = query.get();
+    const snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
 
     if (snapshot.empty) {
       return [];
@@ -52,8 +58,12 @@ export async function getCarouselSlides(activeOnly: boolean = true): Promise<Car
     const slides = snapshot.docs.map(docToCarouselSlide);
     // Sort by order in memory to avoid needing a Firestore index
     return slides.sort((a: CarouselSlide, b: CarouselSlide) => (a.order || 0) - (b.order || 0));
-  } catch (error) {
-    console.error("Error fetching carousel slides:", error);
+  } catch (error: any) {
+    console.error("Error fetching carousel slides:", {
+      message: error?.message,
+      code: error?.code,
+      name: error?.name,
+    });
     return [];
   }
 }

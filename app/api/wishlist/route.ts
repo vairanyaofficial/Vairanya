@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
-import { adminAuth } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 
 const WISHLIST_COLLECTION = "wishlist";
 
 // Helper to verify Firebase token and get user ID
 async function getUserIdFromToken(request: NextRequest): Promise<string | null> {
   try {
+    // Ensure Firebase is initialized before using adminAuth
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminAuth) {
+      return null;
+    }
+    
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) return null;
     
@@ -21,18 +26,20 @@ async function getUserIdFromToken(request: NextRequest): Promise<string | null> 
 // GET - Fetch all wishlist items for the authenticated user
 export async function GET(request: NextRequest) {
   try {
+    // Ensure Firebase is initialized
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 500 }
+      );
+    }
+    
     const userId = await getUserIdFromToken(request);
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
-      );
-    }
-
-    if (!adminFirestore) {
-      return NextResponse.json(
-        { success: false, error: "Database unavailable" },
-        { status: 500 }
       );
     }
 
@@ -65,6 +72,15 @@ export async function GET(request: NextRequest) {
 // POST - Add item to wishlist
 export async function POST(request: NextRequest) {
   try {
+    // Ensure Firebase is initialized
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 500 }
+      );
+    }
+    
     const userId = await getUserIdFromToken(request);
     if (!userId) {
       return NextResponse.json(
@@ -80,13 +96,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Product ID is required" },
         { status: 400 }
-      );
-    }
-
-    if (!adminFirestore) {
-      return NextResponse.json(
-        { success: false, error: "Database unavailable" },
-        { status: 500 }
       );
     }
 
@@ -130,6 +139,15 @@ export async function POST(request: NextRequest) {
 // DELETE - Remove item from wishlist
 export async function DELETE(request: NextRequest) {
   try {
+    // Ensure Firebase is initialized
+    const initResult = await ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 500 }
+      );
+    }
+    
     const userId = await getUserIdFromToken(request);
     if (!userId) {
       return NextResponse.json(

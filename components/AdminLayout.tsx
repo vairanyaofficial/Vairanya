@@ -86,6 +86,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           if (res.ok) {
             const data = await res.json();
+            // Check if there's an error (like server configuration error)
+            if (data.error) {
+              console.error("Admin login error:", data.error, data.message);
+              // Don't redirect on server errors - let user see the error or try again
+              return;
+            }
             if (data.user) {
               // User is registered as admin - establish session
               const adminUser = {
@@ -122,6 +128,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 return;
               }
             }
+          } else {
+            // Non-200 response - log but don't block (might be 503 service unavailable)
+            console.warn("Admin login returned non-ok status:", res.status);
           }
         } catch (err) {
           // If verification fails, treat as customer

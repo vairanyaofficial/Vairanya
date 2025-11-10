@@ -53,6 +53,7 @@ export default function AdminLoginPage() {
     setIsLoading(true);
 
     try {
+      // First, try to sign in with Google
       await signinAsAdmin();
       
       // Wait a bit for session to be set in both localStorage and sessionStorage
@@ -69,6 +70,25 @@ export default function AdminLoginPage() {
       }
       
       if (!session) {
+        // If session is not set, try to debug the issue
+        if (user) {
+          try {
+            const idToken = await user.getIdToken();
+            const debugRes = await fetch("/api/admin/debug-access", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ idToken }),
+            });
+            const debugData = await debugRes.json();
+            
+            if (debugData.debug?.recommendations) {
+              const recommendations = debugData.debug.recommendations.join("\n");
+              throw new Error(`Failed to establish admin session.\n\nDebug info:\n${recommendations}`);
+            }
+          } catch (debugErr: any) {
+            // If debug also fails, show the original error
+          }
+        }
         throw new Error("Failed to establish admin session. Please try again.");
       }
       
@@ -88,8 +108,14 @@ export default function AdminLoginPage() {
         router.replace(redirectPath);
       }
     } catch (err: any) {
-      setError(err?.message || "Sign in failed. Make sure your Google account is registered as admin.");
+      const errorMessage = err?.message || "Sign in failed. Make sure your Google account is registered as admin.";
+      setError(errorMessage);
       setIsLoading(false);
+      
+      // If error mentions not registered, show UID in error message
+      if (errorMessage.includes("not registered") && user) {
+        // Error message will be shown in the UI with UID
+      }
     }
   };
 
@@ -171,6 +197,39 @@ export default function AdminLoginPage() {
               <div className="mt-2 text-xs text-red-600">
                 If you believe you should have access, please contact a superadmin to add your account to the system.
               </div>
+              {error.includes("not registered") && user && (
+                <div className="mt-3 pt-3 border-t border-red-200">
+                  <div className="text-xs font-semibold mb-2">🔧 How to Add Yourself as Admin:</div>
+                  <div className="text-xs space-y-2">
+                    <div>
+                      <p className="font-semibold mb-1">Step 1: Copy your Firebase UID</p>
+                      <code className="block bg-red-100 px-2 py-1 rounded text-[10px] font-mono break-all select-all">
+                        {user.uid}
+                      </code>
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-1">Step 2: Open scripts/add-worker.ts</p>
+                      <p className="text-[11px] text-gray-600">Update these values:</p>
+                      <code className="block bg-red-100 px-2 py-1 rounded text-[10px] font-mono mt-1">
+                        WORKER_UID = "{user.uid}"<br/>
+                        WORKER_NAME = "Your Name"<br/>
+                        WORKER_EMAIL = "{user.email || 'your-email@example.com'}"<br/>
+                        WORKER_ROLE = "superadmin"
+                      </code>
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-1">Step 3: Run the script</p>
+                      <code className="block bg-red-100 px-2 py-1 rounded text-[10px] font-mono">
+                        npx tsx scripts/add-worker.ts
+                      </code>
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-1">Step 4: Sign in again</p>
+                      <p className="text-[11px] text-gray-600">After running the script, come back and sign in again.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

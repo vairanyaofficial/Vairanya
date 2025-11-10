@@ -2,429 +2,317 @@
 import "server-only";
 
 /**
- * Robust firebase-admin initializer for Next.js server environment.
- * - Uses modular imports to avoid some bundler surprises.
- * - Defensive: if firebase-admin is not installed or credentials invalid, logs clear errors.
- * - Supports on-demand initialization for better reliability.
+ * Firebase Admin initializer for Next.js (server-only).
+ * Supports:
+ *  - FIREBASE_SERVICE_ACCOUNT_JSON (raw JSON or base64-encoded JSON, possibly quoted)
+ *  - GOOGLE_APPLICATION_CREDENTIALS (file path / ADC)
  *
- * Requirements:
- *   npm install firebase-admin
- *
- * Environment (one of these must be valid):
- *   - FIREBASE_SERVICE_ACCOUNT_JSON  (full JSON string) OR
- *   - GOOGLE_APPLICATION_CREDENTIALS (path to JSON file) OR
- *   - default ADC (GCP env)
+ * Usage:
+ *  - Call ensureFirebaseInitialized() in API routes / server actions before using admin objects.
  */
+
+type InitResult = { success: true } | { success: false; error: string };
 
 let adminApp: any = null;
 let adminAuth: any = null;
 let adminFirestore: any = null;
-let initializationAttempted = false;
+let initializationPromise: Promise<InitResult> | null = null;
 let initializationError: Error | null = null;
-let initializationPromise: Promise<{ success: boolean; error?: string }> | null = null;
 
-// Helper function to check if error is about duplicate app
+// Common duplicate-app checks
 function isDuplicateAppError(err: any): boolean {
   if (!err) return false;
-  const message = String(err.message || '').toLowerCase();
-  const code = String(err.code || '');
+  const msg = String(err.message || "").toLowerCase();
+  const code = String(err.code || "").toLowerCase();
   return (
-    code === 'app/duplicate-app' ||
-    code === 'app/default-already-exists' ||
-    message.includes('already exists') ||
-    message.includes('duplicate app')
+    code.includes("already-exists") ||
+    code.includes("duplicate-app") ||
+    msg.includes("already exists") ||
+    msg.includes("duplicate app")
   );
 }
 
-// Initialize Firebase Admin SDK
-async function initializeFirebaseAdmin(): Promise<{ success: boolean; error?: string }> {
-  // If already initialized, return success
-  if (adminApp && adminAuth && adminFirestore) {
-    return { success: true };
-  }
-
-  // If initialization is in progress, wait for it
-  if (initializationPromise) {
-    return await initializationPromise;
-  }
-
-  // If we've already attempted and failed, return the error
-  if (initializationAttempted && initializationError) {
-    return { success: false, error: initializationError.message };
-  }
-
-  // Start initialization and store the promise
-  initializationPromise = (async () => {
-    try {
-      return await doInitializeFirebaseAdmin();
-    } finally {
-      initializationPromise = null;
+// Decode base64 safely (Node Buffer preferred)
+function safeBase64Decode(s: string): string | null {
+  try {
+    const cleaned = s.replace(/\s/g, "");
+    if (typeof Buffer !== "undefined") {
+      return Buffer.from(cleaned, "base64").toString("utf8");
+    } else if (typeof atob !== "undefined") {
+      return decodeURIComponent(escape(atob(cleaned)));
+    } else {
+      return null;
     }
-  })();
-
-  return await initializationPromise;
+  } catch {
+    return null;
+  }
 }
 
-// Actual initialization logic
-async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: string }> {
+// Normalize private_key newlines (handles "\\n" escaping)
+function normalizeServiceAccount(sa: any) {
+  if (!sa || typeof sa !== "object") return sa;
+  if (typeof sa.private_key === "string") {
+    sa.private_key = sa.private_key.replace(/\\n/g, "\n");
+  }
+  return sa;
+}
 
+// Try to parse service account from various env formats
+function parseServiceAccountJson(jsonString: string): { success: boolean; parsed?: any; error?: string; strategy?: string } {
+  if (!jsonString || !jsonString.trim()) {
+    return { success: false, error: "Empty string" };
+  }
+
+  let cleaned = jsonString.trim();
+
+  // Remove BOM
+  if (cleaned.charCodeAt(0) === 0xfeff) cleaned = cleaned.slice(1);
+
+  // If looks base64, try decode
+  const base64Regex = /^[A-Za-z0-9+/]+={0,2}$/;
+  const compact = cleaned.replace(/\s/g, "");
+  if (compact.length > 20 && base64Regex.test(compact)) {
+    const decoded = safeBase64Decode(compact);
+    if (decoded) {
+      try {
+        const parsed = JSON.parse(decoded);
+        if (parsed && parsed.type === "service_account") {
+          return { success: true, parsed: normalizeServiceAccount(parsed), strategy: "base64" };
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  // Remove wrapping quotes if present
+  const tryValues: Array<{ name: string; value: string }> = [{ name: "original", value: cleaned }];
+
+  if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+    tryValues.push({ name: "unquoted", value: cleaned.slice(1, -1) });
+  }
+
+  // Try each
+  let lastErr: any = null;
+  for (const t of tryValues) {
+    const v = t.value.trim();
+    if (!v.startsWith("{")) continue;
+    try {
+      const parsed = JSON.parse(v);
+      if (parsed && parsed.type === "service_account" && parsed.project_id && parsed.client_email && parsed.private_key) {
+        return { success: true, parsed: normalizeServiceAccount(parsed), strategy: t.name };
+      } else {
+        return { success: false, parsed, error: "JSON parsed but missing required service account fields", strategy: t.name };
+      }
+    } catch (err) {
+      lastErr = err;
+      continue;
+    }
+  }
+
+  return { success: false, error: `Failed to parse service account JSON. Last error: ${lastErr?.message || "unknown"}` };
+}
+
+// Core initialization
+async function doInitializeFirebaseAdmin(): Promise<InitResult> {
   try {
-    // Use dynamic import for better compatibility with Vercel serverless
-    // This ensures the module is properly loaded in production
     const firebaseAdminApp = await import("firebase-admin/app");
     const firebaseAdminAuth = await import("firebase-admin/auth");
     const firebaseAdminFirestore = await import("firebase-admin/firestore");
-    
+
+    if (!firebaseAdminApp) throw new Error("Missing firebase-admin/app");
     const { initializeApp, cert, getApp } = firebaseAdminApp;
     const { getAuth } = firebaseAdminAuth;
     const { getFirestore } = firebaseAdminFirestore;
 
-    // Try to get existing app first (most common case in Next.js)
+    // If app already exists, reuse
     try {
       adminApp = getApp();
-    } catch (err: any) {
-      // App doesn't exist yet, we'll initialize it below
-      if (err?.code !== 'app/no-app') {
-        // Try with explicit name
-        try {
-          adminApp = getApp('[DEFAULT]');
-        } catch {
-          // App doesn't exist, will initialize below
-        }
-      }
+    } catch {
+      adminApp = null;
     }
 
-    // Only initialize if we don't have an app yet
+    // If not initialized, try various strategies
     if (!adminApp) {
-      // Prefer JSON in env, but fall back to file if JSON is invalid
-      const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-      let useJsonEnv = false;
-      let parsed: any = null;
-      
-      if (svcJson && svcJson.trim()) {
-        try {
-          // Clean and validate JSON first
-          let cleanedJson = svcJson.trim();
-          
-          // Skip if it's just a comment or empty
-          if (cleanedJson.startsWith('#') || cleanedJson === '' || cleanedJson === '{}') {
-            console.log("ℹ️  FIREBASE_SERVICE_ACCOUNT_JSON is commented out or empty, using file-based approach");
-            useJsonEnv = false;
-          } else {
-            // Remove BOM if present
-            if (cleanedJson.charCodeAt(0) === 0xFEFF) {
-              cleanedJson = cleanedJson.slice(1);
-            }
-            
-            // Remove leading/trailing quotes if double-quoted string
-            if ((cleanedJson.startsWith('"') && cleanedJson.endsWith('"')) || 
-                (cleanedJson.startsWith("'") && cleanedJson.endsWith("'"))) {
-              cleanedJson = cleanedJson.slice(1, -1);
-              // Unescape any escaped quotes
-              cleanedJson = cleanedJson.replace(/\\"/g, '"').replace(/\\'/g, "'");
-            }
-            
-            // Check if it looks like multiline JSON (contains newlines that aren't escaped)
-            // Also check if it starts with { but seems malformed (likely multiline in .env)
-            const hasUnescapedNewlines = cleanedJson.includes('\n') || cleanedJson.includes('\r');
-            const looksLikeMultiline = hasUnescapedNewlines && !cleanedJson.match(/\\n/g);
-            
-            if (looksLikeMultiline || (cleanedJson.startsWith('{') && cleanedJson.length > 10 && !cleanedJson.includes('"type"'))) {
-              console.warn("⚠️  FIREBASE_SERVICE_ACCOUNT_JSON appears to be multiline or malformed. This is invalid for environment variables.");
-              if (process.env.VERCEL) {
-                console.error("   ❌ In Vercel, FIREBASE_SERVICE_ACCOUNT_JSON must be valid JSON on a single line.");
-                console.error("   Solution: Fix the JSON format in Vercel environment variables.");
-                useJsonEnv = false;
-              } else {
-                console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
-                console.warn("   Tip: Remove FIREBASE_SERVICE_ACCOUNT_JSON from .env to use file-based credentials");
-                useJsonEnv = false;
-              }
+      // Priority: FIREBASE_SERVICE_ACCOUNT_JSON_B64 (explicit base64) > FIREBASE_SERVICE_ACCOUNT_JSON (auto-detect) > GOOGLE_APPLICATION_CREDENTIALS
+      const svcEnvB64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64;
+      const svcEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+      const googleCreds = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+      let initialized = false;
+      let usedVar = "";
+
+      // Strategy A1: FIREBASE_SERVICE_ACCOUNT_JSON_B64 (explicit base64 - highest priority)
+      if (svcEnvB64 && svcEnvB64.trim() && !svcEnvB64.trim().startsWith("#")) {
+        const parsed = parseServiceAccountJson(svcEnvB64);
+        if (parsed.success && parsed.parsed) {
+          try {
+            adminApp = initializeApp({ credential: cert(parsed.parsed) });
+            initialized = true;
+            usedVar = "FIREBASE_SERVICE_ACCOUNT_JSON_B64";
+            console.log(`✅ Firebase Admin initialized from ${usedVar} (${parsed.strategy || "base64"})`);
+          } catch (err: any) {
+            if (isDuplicateAppError(err)) {
+              try { adminApp = getApp(); initialized = true; usedVar = "FIREBASE_SERVICE_ACCOUNT_JSON_B64"; } catch {}
             } else {
-              // Try to parse the cleaned JSON
+              console.warn(`⚠️ Failed to initialize with ${usedVar}:`, err?.message || err);
+            }
+          }
+        } else {
+          console.warn("⚠️ FIREBASE_SERVICE_ACCOUNT_JSON_B64 parse failed:", parsed.error);
+        }
+      }
+
+      // Strategy A2: FIREBASE_SERVICE_ACCOUNT_JSON (supports base64 / raw / quoted - auto-detect)
+      if (!initialized && svcEnv && svcEnv.trim() && !svcEnv.trim().startsWith("#")) {
+        const parsed = parseServiceAccountJson(svcEnv);
+        if (parsed.success && parsed.parsed) {
+          try {
+            adminApp = initializeApp({ credential: cert(parsed.parsed) });
+            initialized = true;
+            usedVar = "FIREBASE_SERVICE_ACCOUNT_JSON";
+            console.log(`✅ Firebase Admin initialized from ${usedVar} (${parsed.strategy || "auto-detect"})`);
+          } catch (err: any) {
+            if (isDuplicateAppError(err)) {
+              try { adminApp = getApp(); initialized = true; usedVar = "FIREBASE_SERVICE_ACCOUNT_JSON"; } catch {}
+            } else {
+              console.warn(`⚠️ Failed to initialize with ${usedVar}:`, err?.message || err);
+            }
+          }
+        } else {
+          console.warn("⚠️ FIREBASE_SERVICE_ACCOUNT_JSON parse failed:", parsed.error);
+        }
+      }
+
+      // Strategy B: GOOGLE_APPLICATION_CREDENTIALS / ADC
+      if (!initialized && googleCreds) {
+        try {
+          // In development, if a local file exists we can try to read/parse it
+          if (process.env.NODE_ENV === "development" && !process.env.VERCEL) {
+            const fs = await import("fs");
+            const path = await import("path");
+            const credsPath = path.resolve(process.cwd(), googleCreds.replace(/^["']|["']$/g, ""));
+            if (fs.existsSync(credsPath)) {
               try {
-                parsed = JSON.parse(cleanedJson);
-                // Double-check it's actually valid service account JSON
-                if (parsed.type === 'service_account' && parsed.project_id && parsed.private_key && parsed.client_email) {
-                  useJsonEnv = true;
-                  console.log("✅ FIREBASE_SERVICE_ACCOUNT_JSON is valid, using it for initialization");
-                } else {
-                  console.warn("⚠️  FIREBASE_SERVICE_ACCOUNT_JSON doesn't look like a valid service account JSON");
-                  if (process.env.VERCEL) {
-                    console.error("   ❌ In Vercel, FIREBASE_SERVICE_ACCOUNT_JSON must be valid service account JSON.");
-                    console.error("   Solution: Verify the JSON in Vercel environment variables.");
-                  } else {
-                    console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
-                  }
-                  useJsonEnv = false;
+                const content = fs.readFileSync(credsPath, "utf8");
+                const parsed = parseServiceAccountJson(content);
+                if (parsed.success && parsed.parsed) {
+                  adminApp = initializeApp({ credential: cert(parsed.parsed) });
+                  initialized = true;
+                  console.log("✅ Firebase Admin initialized from GOOGLE_APPLICATION_CREDENTIALS file (dev)");
                 }
-              } catch (parseErr: any) {
-                // JSON is invalid - log warning but don't fail, fall back to file
-                const preview = cleanedJson.substring(0, 50).replace(/private_key["\s:]+"[^"]*/gi, 'private_key:"[REDACTED]"');
-                console.warn("⚠️  Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON:", parseErr?.message);
-                console.warn("   JSON starts with:", preview);
-                if (process.env.VERCEL) {
-                  console.error("   ❌ In Vercel, FIREBASE_SERVICE_ACCOUNT_JSON must be valid JSON on a single line.");
-                  console.error("   💡 Solution: Fix the JSON format in Vercel environment variables.");
-                } else {
-                  console.warn("   This usually means the JSON is multiline in your .env file, which is invalid.");
-                  console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
-                  console.warn("   💡 Solution: Remove or comment out FIREBASE_SERVICE_ACCOUNT_JSON from .env");
-                }
-                useJsonEnv = false;
+              } catch (fileErr: any) {
+                console.warn("⚠️ Failed to read credentials file:", fileErr?.message || fileErr);
               }
             }
           }
-        } catch (err: any) {
-          console.warn("⚠️  Error processing FIREBASE_SERVICE_ACCOUNT_JSON:", err?.message);
-          console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
-          useJsonEnv = false;
-        }
-      }
-      
-      if (useJsonEnv && parsed) {
-        try {
 
-          // Validate required fields
-          if (!parsed.project_id || !parsed.private_key || !parsed.client_email) {
-            console.warn("⚠️  FIREBASE_SERVICE_ACCOUNT_JSON is missing required fields (project_id, private_key, client_email)");
-            console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
-            useJsonEnv = false;
-          } else {
+          // Try ADC (no explicit credential) — SDK will pick up GOOGLE_APPLICATION_CREDENTIALS if set in env in prod
+          if (!initialized) {
             try {
-              adminApp = initializeApp({
-                credential: cert(parsed),
-              });
-              console.log("✅ Firebase Admin initialized with FIREBASE_SERVICE_ACCOUNT_JSON");
-            } catch (initErr: any) {
-              // If initialization fails due to duplicate app, try to get existing
-              if (isDuplicateAppError(initErr)) {
-                try {
-                  adminApp = getApp();
-                } catch (getErr: any) {
-                  try {
-                    adminApp = getApp('[DEFAULT]');
-                  } catch {
-                    console.warn("⚠️  Firebase app initialization conflict, falling back to file-based approach");
-                    useJsonEnv = false;
-                  }
-                }
+              adminApp = initializeApp();
+              initialized = true;
+              console.log("✅ Firebase Admin initialized with Application Default Credentials (ADC)");
+            } catch (adcErr: any) {
+              if (isDuplicateAppError(adcErr)) {
+                try { adminApp = getApp(); initialized = true; } catch {}
               } else {
-                console.warn("⚠️  Failed to initialize Firebase app with FIREBASE_SERVICE_ACCOUNT_JSON:", initErr?.message);
-                console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
-                useJsonEnv = false;
+                console.warn("⚠️ ADC init failed:", adcErr?.message || adcErr);
               }
             }
           }
-        } catch (err: any) {
-          console.warn("⚠️  Unexpected error during Firebase initialization:", err?.message);
-          console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
-          useJsonEnv = false;
+        } catch (adcOuter: any) {
+          console.warn("⚠️ Error handling GOOGLE_APPLICATION_CREDENTIALS path:", adcOuter?.message || adcOuter);
         }
       }
-      
-      // If JSON env var wasn't used (or failed), try file-based approach ONLY in non-Vercel environments
-      if (!useJsonEnv) {
-        // In Vercel, we MUST use FIREBASE_SERVICE_ACCOUNT_JSON - file-based approach won't work
-        if (process.env.VERCEL) {
-          const errorMsg = "FIREBASE_SERVICE_ACCOUNT_JSON is required in Vercel. Please set it in Vercel environment variables.";
-          console.error("❌", errorMsg);
-          console.error("   Vercel serverless functions cannot access local files.");
-          console.error("   Solution: Set FIREBASE_SERVICE_ACCOUNT_JSON in Vercel Dashboard → Settings → Environment Variables");
-          initializationError = new Error(errorMsg);
-          initializationAttempted = true;
-          return { success: false, error: errorMsg };
-        }
 
-        // No JSON in env, try default initialization (only in non-Vercel environments)
+      // Fallback: try ADC without GOOGLE_APPLICATION_CREDENTIALS (less likely to work)
+      if (!adminApp) {
         try {
-          // This will pick GOOGLE_APPLICATION_CREDENTIALS or ADC
-          // But only if we're not in Vercel
           adminApp = initializeApp();
-          console.log("✅ Firebase Admin initialized with default credentials");
+          console.log("✅ Firebase Admin initialized (fallback ADC)");
         } catch (err: any) {
-          // If initialization fails due to duplicate app, try to get existing
           if (isDuplicateAppError(err)) {
-            try {
-              adminApp = getApp();
-            } catch (getErr: any) {
-              try {
-                adminApp = getApp('[DEFAULT]');
-              } catch {
-                const errorMsg = `Firebase app initialization conflict: ${err?.message}`;
-                console.error("❌", errorMsg);
-                initializationError = new Error(errorMsg);
-                initializationAttempted = true;
-                return { success: false, error: errorMsg };
-              }
-            }
-          } else {
-            // Re-throw non-duplicate errors only in non-build contexts
-            const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
-            if (!isBuildTime) {
-              // Check if we're in development and can use file-based credentials
-              const isDevelopment = process.env.NODE_ENV === 'development';
-              const hasGoogleCreds = !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
-              
-              // In development, try to use local service account file if it exists
-              // NEVER use file-based approach in Vercel
-              if (isDevelopment && !hasGoogleCreds && !process.env.VERCEL) {
-                try {
-                  const fs = await import('fs');
-                  const path = await import('path');
-                  const serviceAccountPath = path.join(process.cwd(), 'secrets', 'serviceAccountKey.json');
-                  
-                  if (fs.existsSync(serviceAccountPath)) {
-                    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-                    adminApp = initializeApp({
-                      credential: cert(serviceAccount),
-                    });
-                    console.log("✅ Firebase Admin initialized with local service account file");
-                  } else {
-                    // File doesn't exist - throw error to show helpful message
-                    throw new Error(`Service account file not found at ${serviceAccountPath}`);
-                  }
-                } catch (fileErr: any) {
-                  // If file-based approach fails, provide helpful error message
-                  const errorMsg = isDevelopment 
-                    ? `Database unavailable: ${fileErr?.message}`
-                    : `Failed to initialize Firebase app with default credentials: ${err?.message}`;
-                  console.error("❌", errorMsg);
-                  initializationError = new Error(errorMsg);
-                  initializationAttempted = true;
-                  return { success: false, error: errorMsg };
-                }
-              } else {
-                const errorMsg = `Failed to initialize Firebase app. ${process.env.VERCEL ? 'FIREBASE_SERVICE_ACCOUNT_JSON is required in Vercel.' : 'Please set FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS.'} Error: ${err?.message}`;
-                console.error("❌", errorMsg);
-                initializationError = new Error(errorMsg);
-                initializationAttempted = true;
-                return { success: false, error: errorMsg };
-              }
-            } else {
-              console.warn("⚠️ Firebase initialization error during build (this is usually safe):", err?.message);
-            }
+            try { adminApp = getApp(); } catch {}
           }
         }
       }
+
+      if (!adminApp) {
+        const message = "Firebase Admin initialization failed. Set FIREBASE_SERVICE_ACCOUNT_JSON_B64 (recommended), FIREBASE_SERVICE_ACCOUNT_JSON, or GOOGLE_APPLICATION_CREDENTIALS.";
+        initializationError = new Error(message);
+        return { success: false, error: message };
+      }
     }
 
-    // get auth + firestore instances (only if adminApp exists)
-    if (adminApp) {
-      try {
-        adminAuth = getAuth(adminApp);
-      } catch (err: any) {
-        console.error("❌ Failed to initialize Firebase Admin Auth:", err?.message);
-        adminAuth = null;
-      }
+    // Get services
+    try { adminAuth = getAuth(adminApp); } catch (e: any) { adminAuth = null; console.warn("Auth init failed", e?.message || String(e)); }
+    try { adminFirestore = getFirestore(adminApp); } catch (e: any) { adminFirestore = null; console.warn("Firestore init failed", e?.message || String(e)); }
 
-      try {
-        adminFirestore = getFirestore(adminApp);
-        if (adminFirestore) {
-        }
-      } catch (err: any) {
-        adminFirestore = null;
-      }
-    } else {
-      const errorMsg = "Firebase Admin app not initialized";
-      console.error("❌", errorMsg);
-      initializationError = new Error(errorMsg);
-      initializationAttempted = true;
-      return { success: false, error: errorMsg };
-    }
-
-    // Check if initialization was successful
     if (!adminAuth || !adminFirestore) {
-      const errorMsg = "Firebase Admin SDK partially initialized (Auth or Firestore failed)";
-      initializationError = new Error(errorMsg);
-      initializationAttempted = true;
-      return { success: false, error: errorMsg };
+      const msg = "Firebase Admin partially initialized (Auth or Firestore missing)";
+      initializationError = new Error(msg);
+      return { success: false, error: msg };
     }
 
-    initializationAttempted = true;
     return { success: true };
   } catch (err: any) {
-    // if require('firebase-admin/...') fails, show clear message
-    let errorMsg: string;
-    if (err && err.code === "MODULE_NOT_FOUND") {
-      errorMsg = "Firebase Admin SDK not found. Please run: npm install firebase-admin";
-      console.error("❌", errorMsg);
-      console.error("   This error occurs when firebase-admin is not installed or not available in the production environment.");
-      console.error("   Debugging info:");
-      console.error("   - Node version:", process.version);
-      console.error("   - Platform:", process.platform);
-      console.error("   - NODE_ENV:", process.env.NODE_ENV);
-      console.error("   - VERCEL:", process.env.VERCEL ? "true" : "false");
-      
-      // Check if package.json has firebase-admin
-      try {
-        const packageJson = require('../package.json');
-        if (packageJson.dependencies && packageJson.dependencies['firebase-admin']) {
-          console.error("   - firebase-admin is listed in package.json dependencies");
-          console.error("   - Version:", packageJson.dependencies['firebase-admin']);
-          console.error("   💡 Solution: Make sure to run 'npm install' in production before deploying");
-          console.error("   💡 If using Vercel, ensure package.json is committed and dependencies are installed");
-        } else {
-          console.error("   - firebase-admin is NOT in package.json dependencies");
-          console.error("   💡 Solution: Run 'npm install firebase-admin --save' and commit package.json");
-        }
-      } catch (pkgErr) {
-        console.error("   - Could not read package.json");
-      }
-    } else {
-      errorMsg = `Firebase Admin initialization error: ${err?.message || 'Unknown error'}`;
-      console.error("❌", errorMsg);
-      console.error("   Error code:", err?.code);
-      console.error("   Error name:", err?.name);
-      console.error("   Full error:", err);
-    }
-    initializationError = new Error(errorMsg);
-    initializationAttempted = true;
-    return { success: false, error: errorMsg };
+    const msg = err?.message ? `Firebase Admin init error: ${err.message}` : "Unknown Firebase Admin init error";
+    initializationError = new Error(msg);
+    console.error("❌", msg);
+    return { success: false, error: msg };
   }
 }
 
-// Ensure initialization function - can be called on-demand
-export async function ensureFirebaseInitialized(): Promise<{ success: boolean; error?: string }> {
-  if (adminApp && adminAuth && adminFirestore) {
-    return { success: true };
-  }
-  return await initializeFirebaseAdmin();
-}
+export async function initializeFirebaseAdmin(): Promise<InitResult> {
+  if (adminApp && adminAuth && adminFirestore) return { success: true };
+  if (initializationPromise) return initializationPromise;
 
-// Try to initialize on module load (fire-and-forget)
-initializeFirebaseAdmin().catch((err: any) => {
-  console.error("❌ Error during module load initialization:", err?.message);
-});
-
-// Detailed diagnostics function
-export function getFirebaseDiagnostics() {
-  const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  let jsonValid = false;
-  let jsonError = null;
-  
-  if (svcJson) {
+  initializationPromise = (async () => {
     try {
-      const parsed = JSON.parse(svcJson);
-      jsonValid = !!(parsed.project_id && parsed.private_key && parsed.client_email);
-      if (!jsonValid) {
-        jsonError = "JSON is valid but missing required fields (project_id, private_key, client_email)";
+      const res = await doInitializeFirebaseAdmin();
+      if (!res.success) {
+        // keep the initializationError for diagnostics
       }
-    } catch (parseErr: any) {
-      jsonError = `Invalid JSON: ${parseErr?.message}`;
+      return res;
+    } finally {
+      // allow subsequent attempts if desired (but keep initializationError)
+      initializationPromise = null;
     }
-  }
+  })();
+
+  return initializationPromise;
+}
+
+export async function ensureFirebaseInitialized(): Promise<InitResult> {
+  return initializeFirebaseAdmin();
+}
+
+export function getFirebaseDiagnostics() {
+  const svcB64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64;
+  const svc = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const googleCreds = process.env.GOOGLE_APPLICATION_CREDENTIALS || null;
+  
+  // Determine which variable is being used (priority: B64 > regular)
+  const activeVar = svcB64 ? "FIREBASE_SERVICE_ACCOUNT_JSON_B64" : (svc ? "FIREBASE_SERVICE_ACCOUNT_JSON" : null);
+  const activeValue = svcB64 || svc || null;
+  const parsedCheck = activeValue ? parseServiceAccountJson(activeValue) : { success: false };
 
   return {
     initialized: !!(adminApp && adminAuth && adminFirestore),
     hasApp: !!adminApp,
     hasAuth: !!adminAuth,
     hasFirestore: !!adminFirestore,
-    hasServiceAccountJson: !!svcJson,
-    serviceAccountJsonValid: jsonValid,
-    serviceAccountJsonError: jsonError,
-    hasGoogleAppCreds: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    authMethod: activeVar || (googleCreds ? "GOOGLE_APPLICATION_CREDENTIALS" : "none"),
+    hasServiceAccountJson: !!svc,
+    hasServiceAccountJsonB64: !!svcB64,
+    envHasServiceAccountVar: !!activeValue,
+    serviceAccountParsed: parsedCheck.success || false,
+    serviceAccountParseError: parsedCheck.success ? null : parsedCheck.error || null,
+    serviceAccountParseStrategy: parsedCheck.strategy || null,
+    hasGoogleApplicationCredentials: !!googleCreds,
     nodeEnv: process.env.NODE_ENV,
+    isVercel: !!process.env.VERCEL,
     initializationError: initializationError?.message || null,
   };
 }
