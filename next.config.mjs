@@ -125,6 +125,8 @@ const nextConfig = {
   },
 
   // Server components external packages - don't bundle these, use Node.js require
+  // This is critical for Vercel deployment - tells Next.js not to bundle these packages
+  // These packages must be installed in production node_modules
   serverExternalPackages: [
     'firebase-admin',
     'mongodb',
@@ -163,6 +165,8 @@ const nextConfig = {
         'node_modules/@opentelemetry/**/*',
       ],
     },
+    // Legacy support for Next.js 13 - ensures server components can use these packages
+    serverComponentsExternalPackages: ['firebase-admin', 'mongodb'],
   },
 };
 

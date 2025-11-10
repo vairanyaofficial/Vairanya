@@ -270,9 +270,33 @@ function initializeFirebaseAdmin(): { success: boolean; error?: string } {
     if (err && err.code === "MODULE_NOT_FOUND") {
       errorMsg = "Firebase Admin SDK not found. Please run: npm install firebase-admin";
       console.error("❌", errorMsg);
+      console.error("   This error occurs when firebase-admin is not installed or not available in the production environment.");
+      console.error("   Debugging info:");
+      console.error("   - Node version:", process.version);
+      console.error("   - Platform:", process.platform);
+      console.error("   - NODE_ENV:", process.env.NODE_ENV);
+      console.error("   - VERCEL:", process.env.VERCEL ? "true" : "false");
+      
+      // Check if package.json has firebase-admin
+      try {
+        const packageJson = require('../package.json');
+        if (packageJson.dependencies && packageJson.dependencies['firebase-admin']) {
+          console.error("   - firebase-admin is listed in package.json dependencies");
+          console.error("   - Version:", packageJson.dependencies['firebase-admin']);
+          console.error("   💡 Solution: Make sure to run 'npm install' in production before deploying");
+          console.error("   💡 If using Vercel, ensure package.json is committed and dependencies are installed");
+        } else {
+          console.error("   - firebase-admin is NOT in package.json dependencies");
+          console.error("   💡 Solution: Run 'npm install firebase-admin --save' and commit package.json");
+        }
+      } catch (pkgErr) {
+        console.error("   - Could not read package.json");
+      }
     } else {
       errorMsg = `Firebase Admin initialization error: ${err?.message || 'Unknown error'}`;
       console.error("❌", errorMsg);
+      console.error("   Error code:", err?.code);
+      console.error("   Error name:", err?.name);
       console.error("   Full error:", err);
     }
     initializationError = new Error(errorMsg);

@@ -1,0 +1,39 @@
+# Vercel ignore file - these files/directories won't be uploaded to Vercel
+# But note: package.json and node_modules ARE needed
+
+# Local development files
+.env.local
+.env*.local
+
+# Test files
+tests/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Build artifacts (Vercel will rebuild)
+.next/
+out/
+dist/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Note: secrets/ folder should NOT be ignored if you're using file-based credentials
+# But for Vercel, you should use FIREBASE_SERVICE_ACCOUNT_JSON environment variable instead
+
