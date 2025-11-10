@@ -2,6 +2,7 @@
 // MongoDB implementation for products - server-side only
 import "server-only";
 import { getMongoDB } from "@/lib/mongodb.server";
+import { ObjectId } from "mongodb";
 import type { Product } from "./products-types";
 
 const PRODUCTS_COLLECTION = "Product";  // Match MongoDB collection name (capitalized)
@@ -145,12 +146,24 @@ export async function getProductById(productId: string): Promise<Product | null>
 
   try {
     const collection = db.collection(PRODUCTS_COLLECTION);
-    const product = await collection.findOne({ 
-      $or: [
-        { _id: productId },
-        { product_id: productId }
-      ]
-    });
+    
+    // Try to convert productId to ObjectId if it's a valid ObjectId string
+    let objectIdFilter: any = { product_id: productId };
+    try {
+      // If productId is a valid ObjectId string, also search by _id
+      if (ObjectId.isValid(productId)) {
+        objectIdFilter = {
+          $or: [
+            { _id: new ObjectId(productId) },
+            { product_id: productId }
+          ]
+        };
+      }
+    } catch {
+      // If ObjectId conversion fails, just use the product_id field
+    }
+    
+    const product = await collection.findOne(objectIdFilter);
     
     if (!product) return null;
     return docToProduct(product);
@@ -227,10 +240,8 @@ export async function createProduct(product: Product): Promise<Product> {
     };
 
     const collection = db.collection(PRODUCTS_COLLECTION);
-    await collection.insertOne({
-      _id: productId,
-      ...productData,
-    });
+    // Let MongoDB auto-generate _id, use product_id as the identifier
+    await collection.insertOne(productData);
 
     return { ...product, product_id: productId, sku };
   } catch (error: any) {
@@ -250,12 +261,24 @@ export async function updateProduct(
 
   try {
     const collection = db.collection(PRODUCTS_COLLECTION);
-    const product = await collection.findOne({ 
-      $or: [
-        { _id: productId },
-        { product_id: productId }
-      ]
-    });
+    
+    // Try to convert productId to ObjectId if it's a valid ObjectId string
+    let objectIdFilter: any = { product_id: productId };
+    try {
+      // If productId is a valid ObjectId string, also search by _id
+      if (ObjectId.isValid(productId)) {
+        objectIdFilter = {
+          $or: [
+            { _id: new ObjectId(productId) },
+            { product_id: productId }
+          ]
+        };
+      }
+    } catch {
+      // If ObjectId conversion fails, just use the product_id field
+    }
+    
+    const product = await collection.findOne(objectIdFilter);
 
     if (!product) {
       throw new Error("Product not found");
@@ -270,12 +293,7 @@ export async function updateProduct(
     }
 
     await collection.updateOne(
-      { 
-        $or: [
-          { _id: productId },
-          { product_id: productId }
-        ]
-      },
+      objectIdFilter,
       {
         $set: {
           ...updates,
@@ -284,12 +302,7 @@ export async function updateProduct(
       }
     );
 
-    const updated = await collection.findOne({ 
-      $or: [
-        { _id: productId },
-        { product_id: productId }
-      ]
-    });
+    const updated = await collection.findOne(objectIdFilter);
     
     if (!updated) {
       throw new Error("Failed to retrieve updated product");
@@ -310,12 +323,24 @@ export async function deleteProduct(productId: string): Promise<void> {
 
   try {
     const collection = db.collection(PRODUCTS_COLLECTION);
-    const product = await collection.findOne({ 
-      $or: [
-        { _id: productId },
-        { product_id: productId }
-      ]
-    });
+    
+    // Try to convert productId to ObjectId if it's a valid ObjectId string
+    let objectIdFilter: any = { product_id: productId };
+    try {
+      // If productId is a valid ObjectId string, also search by _id
+      if (ObjectId.isValid(productId)) {
+        objectIdFilter = {
+          $or: [
+            { _id: new ObjectId(productId) },
+            { product_id: productId }
+          ]
+        };
+      }
+    } catch {
+      // If ObjectId conversion fails, just use the product_id field
+    }
+    
+    const product = await collection.findOne(objectIdFilter);
 
     if (!product) {
       throw new Error("Product not found");
@@ -336,12 +361,7 @@ export async function deleteProduct(productId: string): Promise<void> {
     }
 
     // Delete the product from MongoDB
-    await collection.deleteOne({ 
-      $or: [
-        { _id: productId },
-        { product_id: productId }
-      ]
-    });
+    await collection.deleteOne(objectIdFilter);
   } catch (error: any) {
     throw new Error(error.message || "Failed to delete product");
   }

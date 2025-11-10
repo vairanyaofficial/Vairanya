@@ -172,7 +172,9 @@ export async function getCustomerFromFirestore(email: string): Promise<CustomerD
       return null;
     }
     
-    return customer as CustomerData;
+    // Type assertion: MongoDB document to CustomerData
+    // We know the structure matches based on how we store it
+    return customer as unknown as CustomerData;
   } catch (error: any) {
     console.error("[Customer Sync] Error getting customer from MongoDB:", error);
     return null;

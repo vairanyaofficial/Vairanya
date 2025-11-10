@@ -84,8 +84,8 @@ export async function GET() {
             setTimeout(() => reject(new Error("MongoDB connection timeout")), 5000)
           );
           
-          // Test connection with a simple listCollections operation
-          const pingPromise = db.listCollections().limit(1).toArray();
+          // Test connection with a simple ping operation
+          const pingPromise = db.admin().ping();
           await Promise.race([pingPromise, timeoutPromise]);
           
           health.services.mongodb = "ok";

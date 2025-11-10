@@ -415,12 +415,24 @@ export async function getTaskById(taskId: string): Promise<Task | null> {
 
   try {
     const collection = db.collection(TASKS_COLLECTION);
-    const task = await collection.findOne({ 
-      $or: [
-        { _id: taskId },
-        { id: taskId }
-      ]
-    });
+    
+    // Try to convert taskId to ObjectId if it's a valid ObjectId string
+    let objectIdFilter: any = { id: taskId };
+    try {
+      // If taskId is a valid ObjectId string, also search by _id
+      if (ObjectId.isValid(taskId)) {
+        objectIdFilter = {
+          $or: [
+            { _id: new ObjectId(taskId) },
+            { id: taskId }
+          ]
+        };
+      }
+    } catch {
+      // If ObjectId conversion fails, just use the id field
+    }
+    
+    const task = await collection.findOne(objectIdFilter);
     
     if (!task) return null;
     return docToTask(task);
@@ -508,12 +520,24 @@ export async function updateTask(taskId: string, updates: Partial<Task>): Promis
 
   try {
     const collection = db.collection(TASKS_COLLECTION);
-    const task = await collection.findOne({ 
-      $or: [
-        { _id: taskId },
-        { id: taskId }
-      ]
-    });
+    
+    // Try to convert taskId to ObjectId if it's a valid ObjectId string
+    let objectIdFilter: any = { id: taskId };
+    try {
+      // If taskId is a valid ObjectId string, also search by _id
+      if (ObjectId.isValid(taskId)) {
+        objectIdFilter = {
+          $or: [
+            { _id: new ObjectId(taskId) },
+            { id: taskId }
+          ]
+        };
+      }
+    } catch {
+      // If ObjectId conversion fails, just use the id field
+    }
+    
+    const task = await collection.findOne(objectIdFilter);
 
     if (!task) {
       throw new Error("Task not found");
@@ -536,21 +560,11 @@ export async function updateTask(taskId: string, updates: Partial<Task>): Promis
     }
 
     await collection.updateOne(
-      { 
-        $or: [
-          { _id: taskId },
-          { id: taskId }
-        ]
-      },
+      objectIdFilter,
       { $set: updateData }
     );
 
-    const updated = await collection.findOne({ 
-      $or: [
-        { _id: taskId },
-        { id: taskId }
-      ]
-    });
+    const updated = await collection.findOne(objectIdFilter);
     
     if (!updated) {
       throw new Error("Failed to retrieve updated task");
@@ -571,23 +585,30 @@ export async function deleteTask(taskId: string): Promise<void> {
 
   try {
     const collection = db.collection(TASKS_COLLECTION);
-    const task = await collection.findOne({ 
-      $or: [
-        { _id: taskId },
-        { id: taskId }
-      ]
-    });
+    
+    // Try to convert taskId to ObjectId if it's a valid ObjectId string
+    let objectIdFilter: any = { id: taskId };
+    try {
+      // If taskId is a valid ObjectId string, also search by _id
+      if (ObjectId.isValid(taskId)) {
+        objectIdFilter = {
+          $or: [
+            { _id: new ObjectId(taskId) },
+            { id: taskId }
+          ]
+        };
+      }
+    } catch {
+      // If ObjectId conversion fails, just use the id field
+    }
+    
+    const task = await collection.findOne(objectIdFilter);
 
     if (!task) {
       throw new Error("Task not found");
     }
 
-    await collection.deleteOne({ 
-      $or: [
-        { _id: taskId },
-        { id: taskId }
-      ]
-    });
+    await collection.deleteOne(objectIdFilter);
   } catch (error: any) {
     throw new Error(error.message || "Failed to delete task");
   }
