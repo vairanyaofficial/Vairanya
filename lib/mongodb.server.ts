@@ -130,12 +130,29 @@ export async function initializeMongoDB(): Promise<{ success: boolean; error?: s
     try {
       console.log(`🔄 Attempting MongoDB connection to ${hostname}...`);
       
-      const mongoClient = new MongoClient(uri, {
+      // Determine if this is an Atlas connection (mongodb+srv://)
+      const isAtlasConnection = uri.startsWith('mongodb+srv://');
+      
+      // Build connection options
+      const connectionOptions: any = {
         maxPoolSize: 10,
-        serverSelectionTimeoutMS: 5000, // Reduced timeout for faster failure
+        serverSelectionTimeoutMS: 10000, // Increased to 10s for better reliability
         socketTimeoutMS: 45000,
-        connectTimeoutMS: 5000, // Reduced timeout for faster failure
-      });
+        connectTimeoutMS: 10000, // Increased to 10s for better reliability
+      };
+      
+      // For MongoDB Atlas (mongodb+srv://), TLS is required
+      // Explicitly configure TLS for better compatibility
+      if (isAtlasConnection) {
+        connectionOptions.tls = true;
+        // Allow invalid certificates only in development (not recommended for production)
+        // For production, use proper certificate validation
+        if (process.env.NODE_ENV === 'development' && process.env.MONGODB_TLS_ALLOW_INVALID_CERTS === 'true') {
+          connectionOptions.tlsAllowInvalidCertificates = true;
+        }
+      }
+      
+      const mongoClient = new MongoClient(uri, connectionOptions);
       
       await mongoClient.connect();
       client = mongoClient;
