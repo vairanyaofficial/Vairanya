@@ -15,17 +15,17 @@ export async function GET(request: NextRequest) {
 
     logger.info(`[API /api/products] Request - limit: ${limit}, offset: ${offset}, getAll: ${getAll}`);
 
-    // Check Firestore initialization before attempting to fetch
-    const { adminFirestore } = await import("@/lib/firebaseAdmin.server");
-    if (!adminFirestore) {
-      const errorMsg = "Firestore not initialized. Please check FIREBASE_SERVICE_ACCOUNT_JSON environment variable in Vercel.";
+    // Ensure Firestore initialization before attempting to fetch
+    const { adminFirestore, ensureFirebaseInitialized, getFirebaseDiagnostics } = await import("@/lib/firebaseAdmin.server");
+    
+    // Try to ensure initialization
+    const initResult = ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
+      const diagnostics = getFirebaseDiagnostics();
+      const errorMsg = initResult.error || "Firestore not initialized. Please check FIREBASE_SERVICE_ACCOUNT_JSON environment variable in Vercel.";
       logger.error("[API /api/products] " + errorMsg);
       console.error("[API /api/products] Firestore initialization check failed");
-      console.error("[API /api/products] Environment check:", {
-        hasServiceAccountJson: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
-        hasGoogleAppCreds: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
-        nodeEnv: process.env.NODE_ENV,
-      });
+      console.error("[API /api/products] Diagnostics:", diagnostics);
       
       return NextResponse.json(
         { 
@@ -35,11 +35,7 @@ export async function GET(request: NextRequest) {
           products: [],
           total: 0,
           hasMore: false,
-          debug: {
-            firestoreInitialized: false,
-            hasServiceAccountJson: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
-            hasGoogleAppCreds: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
-          }
+          debug: diagnostics
         },
         { status: 503 } // Service Unavailable
       );

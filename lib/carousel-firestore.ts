@@ -1,9 +1,17 @@
 // Carousel Firestore service - server-side only
 import "server-only";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import type { CarouselSlide } from "./carousel-types";
 
 const CAROUSEL_COLLECTION = "carousel_slides";
+
+// Helper function to ensure Firestore is initialized
+async function ensureInitialized(): Promise<void> {
+  const initResult = ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
+    throw new Error(initResult.error || "Firestore not initialized");
+  }
+}
 
 // Convert Firestore document to CarouselSlide
 function docToCarouselSlide(doc: any): CarouselSlide {
@@ -26,9 +34,7 @@ function docToCarouselSlide(doc: any): CarouselSlide {
 
 // Get all carousel slides (active only for public, all for admin)
 export async function getCarouselSlides(activeOnly: boolean = true): Promise<CarouselSlide[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     let query = adminFirestore.collection(CAROUSEL_COLLECTION);
@@ -54,9 +60,7 @@ export async function getCarouselSlides(activeOnly: boolean = true): Promise<Car
 
 // Get single carousel slide by ID
 export async function getCarouselSlideById(id: string): Promise<CarouselSlide | null> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const doc = await adminFirestore.collection(CAROUSEL_COLLECTION).doc(id).get();
@@ -74,9 +78,7 @@ export async function getCarouselSlideById(id: string): Promise<CarouselSlide | 
 
 // Create new carousel slide
 export async function createCarouselSlide(slide: Omit<CarouselSlide, "id" | "created_at" | "updated_at">): Promise<CarouselSlide> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   const now = new Date().toISOString();
   const slideData = {
@@ -92,9 +94,7 @@ export async function createCarouselSlide(slide: Omit<CarouselSlide, "id" | "cre
 
 // Update carousel slide
 export async function updateCarouselSlide(id: string, updates: Partial<CarouselSlide>): Promise<CarouselSlide> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   const updateData = {
     ...updates,
@@ -112,18 +112,14 @@ export async function updateCarouselSlide(id: string, updates: Partial<CarouselS
 
 // Delete carousel slide
 export async function deleteCarouselSlide(id: string): Promise<void> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   await adminFirestore.collection(CAROUSEL_COLLECTION).doc(id).delete();
 }
 
 // Reorder carousel slides
 export async function reorderCarouselSlides(slideOrders: { id: string; order: number }[]): Promise<void> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   const batch = adminFirestore.batch();
 

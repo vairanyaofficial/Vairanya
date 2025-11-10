@@ -1,13 +1,18 @@
 // app/api/admin/workers/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import { FieldValue } from "firebase-admin/firestore";
 
 // GET - Fetch all workers/admins
 export async function GET(req: NextRequest) {
   try {
-    if (!adminFirestore) {
-      return NextResponse.json({ error: "Firestore not initialized" }, { status: 500 });
+    // Ensure Firebase is initialized
+    const initResult = ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
+      return NextResponse.json(
+        { error: initResult.error || "Firestore not initialized" },
+        { status: 503 }
+      );
     }
 
     // Check if user is superuser (only superusers can view workers)

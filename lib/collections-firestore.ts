@@ -1,9 +1,17 @@
 // Collections Firestore service - server-side only
 import "server-only";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import type { Collection } from "./collections-types";
 
 const COLLECTIONS_COLLECTION = "collections";
+
+// Helper function to ensure Firestore is initialized
+async function ensureInitialized(): Promise<void> {
+  const initResult = ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
+    throw new Error(initResult.error || "Firestore not initialized");
+  }
+}
 
 // Convert Firestore document to Collection
 function docToCollection(doc: any): Collection {
@@ -29,9 +37,7 @@ function docToCollection(doc: any): Collection {
 
 // Get all collections
 export async function getAllCollections(): Promise<Collection[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore
@@ -53,9 +59,7 @@ export async function getAllCollections(): Promise<Collection[]> {
 
 // Get featured collections (for homepage)
 export async function getFeaturedCollections(): Promise<Collection[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore
@@ -79,9 +83,7 @@ export async function getFeaturedCollections(): Promise<Collection[]> {
 
 // Get collection by ID
 export async function getCollectionById(collectionId: string): Promise<Collection | null> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const doc = await adminFirestore.collection(COLLECTIONS_COLLECTION).doc(collectionId).get();
@@ -94,9 +96,7 @@ export async function getCollectionById(collectionId: string): Promise<Collectio
 
 // Get collection by slug
 export async function getCollectionBySlug(slug: string): Promise<Collection | null> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore
@@ -114,9 +114,7 @@ export async function getCollectionBySlug(slug: string): Promise<Collection | nu
 
 // Create new collection
 export async function createCollection(collection: Omit<Collection, "id" | "createdAt" | "updatedAt">): Promise<Collection> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     // Check if slug already exists
@@ -175,9 +173,7 @@ export async function updateCollection(
   collectionId: string,
   updates: Partial<Omit<Collection, "id" | "createdAt">>
 ): Promise<Collection> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const collectionRef = adminFirestore.collection(COLLECTIONS_COLLECTION).doc(collectionId);
@@ -209,9 +205,7 @@ export async function updateCollection(
 
 // Delete collection
 export async function deleteCollection(collectionId: string): Promise<void> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const collectionRef = adminFirestore.collection(COLLECTIONS_COLLECTION).doc(collectionId);
@@ -240,9 +234,7 @@ export async function generateCollectionId(): Promise<string> {
 
 // Get collections containing a specific product ID
 export async function getCollectionsByProductId(productId: string): Promise<Collection[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     // Firestore doesn't support array-contains queries efficiently for large arrays
@@ -270,9 +262,7 @@ export async function getCollectionsByProductId(productId: string): Promise<Coll
 
 // Get featured collections (excluding those containing a product)
 export async function getFeaturedCollectionsExcluding(productId: string, limit: number = 4): Promise<Collection[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore

@@ -1,9 +1,17 @@
 // Reviews Firestore service - server-side only
 import "server-only";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import type { Review } from "./reviews-types";
 
 const REVIEWS_COLLECTION = "reviews";
+
+// Helper function to ensure Firestore is initialized
+async function ensureInitialized(): Promise<void> {
+  const initResult = ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
+    throw new Error(initResult.error || "Firestore not initialized");
+  }
+}
 
 // Get FieldValue for serverTimestamp
 let FieldValue: any = null;
@@ -35,9 +43,7 @@ function docToReview(doc: any): Review {
 
 // Get all reviews
 export async function getAllReviews(): Promise<Review[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore
@@ -54,9 +60,7 @@ export async function getAllReviews(): Promise<Review[]> {
 
 // Get featured reviews
 export async function getFeaturedReviews(): Promise<Review[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     // Fetch all featured reviews without orderBy to avoid index requirement
@@ -80,9 +84,7 @@ export async function getFeaturedReviews(): Promise<Review[]> {
 
 // Create a new review
 export async function createReview(review: Omit<Review, "id" | "created_at" | "updated_at">): Promise<string> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const reviewData = {
@@ -104,9 +106,7 @@ export async function createReview(review: Omit<Review, "id" | "created_at" | "u
 
 // Toggle featured status
 export async function toggleFeaturedReview(reviewId: string, isFeatured: boolean): Promise<void> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     await adminFirestore
@@ -124,9 +124,7 @@ export async function toggleFeaturedReview(reviewId: string, isFeatured: boolean
 
 // Delete a review
 export async function deleteReview(reviewId: string): Promise<void> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     await adminFirestore.collection(REVIEWS_COLLECTION).doc(reviewId).delete();

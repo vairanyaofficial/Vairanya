@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllOrders, createOrder, getOrdersByStatus } from "@/lib/orders-firestore";
 import { requireAdmin } from "@/lib/admin-auth-server";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import type { Order } from "@/lib/orders-types";
 
 // GET - List all orders
@@ -15,6 +15,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Ensure Firebase is initialized
+    const initResult = ensureFirebaseInitialized();
+    if (!initResult.success || !adminFirestore) {
+      return NextResponse.json(
+        { success: false, error: initResult.error || "Firestore not initialized" },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get("status");
     const assignedTo = searchParams.get("assigned_to");

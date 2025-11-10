@@ -1,7 +1,7 @@
 // app/api/products/debug/route.ts
 // Debug endpoint for products API - helps diagnose production issues
 import { NextResponse } from "next/server";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized, getFirebaseDiagnostics } from "@/lib/firebaseAdmin.server";
 import { logger } from "@/lib/logger";
 
 export const dynamic = 'force-dynamic';
@@ -28,6 +28,24 @@ export async function GET() {
   };
 
   try {
+    // Get detailed diagnostics
+    const diagnostics = getFirebaseDiagnostics();
+    debugInfo.diagnostics = diagnostics;
+    debugInfo.firestore.initialized = diagnostics.initialized;
+    debugInfo.environment.serviceAccountJsonValid = diagnostics.serviceAccountJsonValid;
+    if (diagnostics.serviceAccountJsonError) {
+      debugInfo.environment.serviceAccountJsonError = diagnostics.serviceAccountJsonError;
+    }
+    if (diagnostics.initializationError) {
+      debugInfo.firestore.error = diagnostics.initializationError;
+    }
+
+    // Try to ensure initialization
+    const initResult = ensureFirebaseInitialized();
+    if (!initResult.success) {
+      debugInfo.firestore.error = initResult.error || "Firestore initialization failed";
+    }
+
     // Check Firestore initialization
     if (adminFirestore) {
       debugInfo.firestore.initialized = true;
@@ -48,17 +66,7 @@ export async function GET() {
         };
       }
     } else {
-      debugInfo.firestore.error = "Firestore not initialized";
-    }
-
-    // Check service account JSON validity
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-      try {
-        JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-        debugInfo.environment.serviceAccountJsonValid = true;
-      } catch (parseError) {
-        debugInfo.environment.serviceAccountJsonError = "Invalid JSON format";
-      }
+      debugInfo.firestore.error = debugInfo.firestore.error || "Firestore not initialized";
     }
 
     return NextResponse.json({

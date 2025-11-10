@@ -1,10 +1,18 @@
 // Orders Firestore service - server-side only
 import "server-only";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import type { Order, Task } from "./orders-types";
 
 const ORDERS_COLLECTION = "orders";
 const TASKS_COLLECTION = "tasks";
+
+// Helper function to ensure Firestore is initialized
+async function ensureInitialized(): Promise<void> {
+  const initResult = ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
+    throw new Error(initResult.error || "Firestore not initialized");
+  }
+}
 
 // Helper function to remove undefined values from an object
 // Firestore doesn't accept undefined values
@@ -71,9 +79,7 @@ function docToOrder(doc: any): Order {
 
 // Get all orders (admin only)
 export async function getAllOrders(): Promise<Order[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore
@@ -95,9 +101,7 @@ export async function getAllOrders(): Promise<Order[]> {
 
 // Get orders by user ID
 export async function getOrdersByUserId(userId: string): Promise<Order[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore
@@ -120,9 +124,7 @@ export async function getOrdersByUserId(userId: string): Promise<Order[]> {
 
 // Get order by ID
 export async function getOrderById(orderId: string): Promise<Order | null> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const doc = await adminFirestore.collection(ORDERS_COLLECTION).doc(orderId).get();
@@ -135,9 +137,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 
 // Get order by order number
 export async function getOrderByNumber(orderNumber: string): Promise<Order | null> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore
@@ -157,9 +157,7 @@ export async function getOrderByNumber(orderNumber: string): Promise<Order | nul
 export async function createOrder(
   order: Omit<Order, "id" | "order_number" | "created_at" | "updated_at">
 ): Promise<Order> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     // Generate order number - use timestamp for guaranteed uniqueness
@@ -204,9 +202,7 @@ export async function createOrder(
 
 // Update order
 export async function updateOrder(orderId: string, updates: Partial<Order>): Promise<Order> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const orderRef = adminFirestore.collection(ORDERS_COLLECTION).doc(orderId);
@@ -250,9 +246,7 @@ export async function updateOrder(orderId: string, updates: Partial<Order>): Pro
 
 // Get orders by status
 export async function getOrdersByStatus(status: string): Promise<Order[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore
@@ -296,9 +290,7 @@ function docToTask(doc: any): Task {
 
 // Get all tasks
 export async function getAllTasks(): Promise<Task[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore
@@ -314,9 +306,7 @@ export async function getAllTasks(): Promise<Task[]> {
 
 // Get task by ID
 export async function getTaskById(taskId: string): Promise<Task | null> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const doc = await adminFirestore.collection(TASKS_COLLECTION).doc(taskId).get();
@@ -329,9 +319,7 @@ export async function getTaskById(taskId: string): Promise<Task | null> {
 
 // Get tasks by worker
 export async function getTasksByWorker(workerUsername: string): Promise<Task[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore
@@ -354,9 +342,7 @@ export async function getTasksByWorker(workerUsername: string): Promise<Task[]> 
 
 // Get tasks by order
 export async function getTasksByOrder(orderId: string): Promise<Task[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const snapshot = await adminFirestore
@@ -381,9 +367,7 @@ export async function getTasksByOrder(orderId: string): Promise<Task[]> {
 export async function createTask(
   task: Omit<Task, "id" | "created_at" | "updated_at">
 ): Promise<Task> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const taskData = {
@@ -402,9 +386,7 @@ export async function createTask(
 
 // Update task
 export async function updateTask(taskId: string, updates: Partial<Task>): Promise<Task> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const taskRef = adminFirestore.collection(TASKS_COLLECTION).doc(taskId);
@@ -445,9 +427,7 @@ export async function updateTask(taskId: string, updates: Partial<Task>): Promis
 
 // Delete task
 export async function deleteTask(taskId: string): Promise<void> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const taskRef = adminFirestore.collection(TASKS_COLLECTION).doc(taskId);

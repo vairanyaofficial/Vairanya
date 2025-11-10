@@ -1,10 +1,18 @@
 // Offers Firestore service - server-side only
 import "server-only";
-import { adminFirestore } from "@/lib/firebaseAdmin.server";
+import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import type { Offer } from "./offers-types";
 
 const OFFERS_COLLECTION = "offers";
 const OFFER_USAGES_COLLECTION = "offer_usages";
+
+// Helper function to ensure Firestore is initialized
+async function ensureInitialized(): Promise<void> {
+  const initResult = ensureFirebaseInitialized();
+  if (!initResult.success || !adminFirestore) {
+    throw new Error(initResult.error || "Firestore not initialized");
+  }
+}
 
 // Convert Firestore document to Offer
 function docToOffer(doc: any): Offer {
@@ -44,9 +52,7 @@ function docToOffer(doc: any): Offer {
 
 // Get all offers
 export async function getAllOffers(): Promise<Offer[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     // Try with orderBy first, but fallback to unordered if index doesn't exist
@@ -81,9 +87,7 @@ export async function getAllOffers(): Promise<Offer[]> {
 
 // Get active offers (for public display)
 export async function getActiveOffers(customerEmail?: string, customerId?: string): Promise<Offer[]> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const now = new Date();
@@ -155,9 +159,7 @@ export async function getActiveOffers(customerEmail?: string, customerId?: strin
 
 // Get offer by code
 export async function getOfferByCode(code: string): Promise<Offer | null> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const normalizedCode = code.trim().toUpperCase();
@@ -179,9 +181,7 @@ export async function getOfferByCode(code: string): Promise<Offer | null> {
 
 // Get offer by ID
 export async function getOfferById(offerId: string): Promise<Offer | null> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const doc = await adminFirestore.collection(OFFERS_COLLECTION).doc(offerId).get();
@@ -196,9 +196,7 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
 export async function createOffer(
   offer: Omit<Offer, "id" | "created_at" | "updated_at" | "used_count">
 ): Promise<Offer> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     // Remove undefined values from offer data (Firestore doesn't accept undefined)
@@ -257,9 +255,7 @@ export async function createOffer(
 
 // Update offer
 export async function updateOffer(offerId: string, updates: Partial<Offer>): Promise<Offer> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const offerRef = adminFirestore.collection(OFFERS_COLLECTION).doc(offerId);
@@ -295,9 +291,7 @@ export async function updateOffer(offerId: string, updates: Partial<Offer>): Pro
 
 // Delete offer
 export async function deleteOffer(offerId: string): Promise<void> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const offerRef = adminFirestore.collection(OFFERS_COLLECTION).doc(offerId);
@@ -387,9 +381,7 @@ export async function incrementOfferUsage(
   customerEmail?: string,
   customerId?: string
 ): Promise<void> {
-  if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
-  }
+  await ensureInitialized();
 
   try {
     const offerRef = adminFirestore.collection(OFFERS_COLLECTION).doc(offerId);
