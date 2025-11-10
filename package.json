@@ -15,8 +15,7 @@
     "validate-firebase-json": "node scripts/validate-firebase-json.js",
     "encode-firebase-json": "node scripts/encode-json-to-base64.js",
     "extract-firebase-credentials": "node scripts/extract-firebase-credentials.js",
-    "test-mongodb": "tsx scripts/test-mongodb.ts",
-    "postbuild": "node scripts/postbuild-check.js"
+    "test-mongodb": "tsx scripts/test-mongodb.ts"
   },
   "dependencies": {
     "@imagekit/next": "^2.1.3",

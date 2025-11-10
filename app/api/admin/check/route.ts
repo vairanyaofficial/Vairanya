@@ -2,15 +2,17 @@
 // Lightweight endpoint to check if a user is an admin/worker
 // Returns 200 with status, never 403, to avoid console errors for regular customers
 import { NextResponse } from "next/server";
-import { adminAuth, adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import { adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import { initializeMongoDB } from "@/lib/mongodb.server";
+import { getAdminByUid } from "@/lib/admins-mongodb";
 
 export async function POST(req: Request) {
   try {
-    // Ensure Firebase is initialized before using adminAuth/adminFirestore
+    // Ensure Firebase is initialized (for token verification)
     // If initialization fails, return false (not admin) instead of error to allow login flow
     try {
       const initResult = await ensureFirebaseInitialized();
-      if (!initResult.success || !adminAuth || !adminFirestore) {
+      if (!initResult.success || !adminAuth) {
         console.warn("Firebase not initialized in admin/check, returning isAdmin: false");
         return NextResponse.json({ 
           isAdmin: false
@@ -21,6 +23,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ 
         isAdmin: false
       }, { status: 200 }); // Return 200 to avoid blocking login
+    }
+
+    // Initialize MongoDB (fail silently if not available)
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      console.warn("MongoDB not initialized in admin/check, returning isAdmin: false");
+      return NextResponse.json({ 
+        isAdmin: false
+      }, { status: 200 });
     }
 
     const body = await req.json().catch(() => ({}));
@@ -49,25 +60,18 @@ export async function POST(req: Request) {
       }, { status: 200 });
     }
 
-    // Check if user exists in admins collection
+    // Check if user exists in MongoDB admins collection
     try {
-      const adminDocSnap = await adminFirestore.collection("admins").doc(uid).get();
+      const adminData = await getAdminByUid(uid);
       
-      if (!adminDocSnap.exists) {
+      if (!adminData) {
         // User is not an admin - return success with isAdmin: false
         return NextResponse.json({ 
           isAdmin: false 
         }, { status: 200 });
       }
 
-      const adminData = adminDocSnap.data();
-      if (!adminData) {
-        return NextResponse.json({ 
-          isAdmin: false 
-        }, { status: 200 });
-      }
-
-      // Map Firestore role to system role (same mapping as /api/admin/login)
+      // Map MongoDB role to system role (same mapping as /api/admin/login)
       // superadmin -> superuser (full access)
       // admin -> admin (limited access, no workers management)
       // worker -> worker (very limited access)
@@ -90,6 +94,7 @@ export async function POST(req: Request) {
       }, { status: 200 });
     } catch (err) {
       // Database error - assume not admin
+      console.error("Error checking admin in MongoDB:", err);
       return NextResponse.json({ 
         isAdmin: false 
       }, { status: 200 });

@@ -1,8 +1,14 @@
 // app/api/admin/login/route.ts
 import { NextResponse } from "next/server";
-import { adminAuth, adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import { adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import { initializeMongoDB } from "@/lib/mongodb.server";
+import { getAdminByUid } from "@/lib/admins-mongodb";
 import { logger } from "@/lib/logger";
 import { rateLimiters } from "@/lib/rate-limit";
+
+// Mark route as dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
@@ -24,24 +30,33 @@ export async function POST(req: Request) {
       );
     }
 
-    // Ensure Firebase Admin is properly initialized
-    // For login, we need Firebase to work, but handle errors gracefully
+    // Ensure Firebase Admin is properly initialized (for token verification)
     let initResult;
     try {
       initResult = await ensureFirebaseInitialized();
-      if (!initResult.success || !adminAuth || !adminFirestore) {
+      if (!initResult.success || !adminAuth) {
         const errorMessage = initResult.success ? "Unknown error" : (initResult as { success: false; error: string }).error;
         logger.error("Firebase Admin not initialized", { error: errorMessage });
         return NextResponse.json({ 
           error: "Server configuration error", 
           message: "Authentication service is temporarily unavailable. Please try again later." 
-        }, { status: 503 }); // Use 503 (Service Unavailable) instead of 500
+        }, { status: 503 });
       }
     } catch (initError: any) {
       logger.error("Firebase initialization exception in admin/login", initError);
       return NextResponse.json({ 
         error: "Server configuration error", 
         message: "Authentication service is temporarily unavailable. Please try again later." 
+      }, { status: 503 });
+    }
+
+    // Initialize MongoDB for admin role checking
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      logger.error("MongoDB initialization failed in admin/login", { error: mongoInit.error });
+      return NextResponse.json({ 
+        error: "Database unavailable", 
+        message: "Admin database is temporarily unavailable. Please try again later." 
       }, { status: 503 });
     }
 
@@ -81,16 +96,17 @@ export async function POST(req: Request) {
     const uid = decoded?.uid;
     if (!uid) return NextResponse.json({ error: "Token missing uid", decoded }, { status: 401 });
 
-    // read admin doc from Firestore
-    let adminDocSnap;
+    // Read admin from MongoDB
+    let adminData;
     try {
-      adminDocSnap = await adminFirestore.collection("admins").doc(uid).get();
+      adminData = await getAdminByUid(uid);
     } catch (err: any) {
-      return NextResponse.json({ error: "Firestore read failed", message: String(err?.message || err) }, { status: 500 });
+      logger.error("MongoDB read failed in admin/login", { error: err?.message || err });
+      return NextResponse.json({ error: "Database read failed", message: String(err?.message || err) }, { status: 500 });
     }
 
     // SECURITY: User must be manually added by superadmin - no auto-creation
-    if (!adminDocSnap.exists) {
+    if (!adminData) {
       // Only log as security warning if this is an actual login attempt (not just a check)
       // Check if this is a customer login check (has X-Check-Only header)
       const isCheckOnly = req.headers.get("X-Check-Only") === "true";
@@ -108,12 +124,7 @@ export async function POST(req: Request) {
       }, { status: 403 });
     }
 
-    const adminData = adminDocSnap.data();
-    if (!adminData) {
-      return NextResponse.json({ error: "Admin data not found" }, { status: 403 });
-    }
-
-    // Map Firestore role to system role
+    // Map MongoDB role to system role
     // superadmin -> superuser (full access)
     // admin -> admin (limited access, no workers management)
     // worker -> worker (very limited access)
@@ -136,7 +147,7 @@ export async function POST(req: Request) {
     if (process.env.NODE_ENV === "development") {
       logger.info("Admin login successful", {
         uid: uid.substring(0, 8) + "...",
-        firestoreRole: adminData.role,
+        mongoRole: adminData.role,
         mappedRole: role,
         email: decoded.email || "N/A",
       });
@@ -145,10 +156,10 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       user: user,
-      // Include original Firestore role in response for debugging (only in development)
+      // Include original MongoDB role in response for debugging (only in development)
       ...(process.env.NODE_ENV === "development" && {
         debug: {
-          firestoreRole: adminData.role,
+          mongoRole: adminData.role,
           mappedRole: role,
         },
       }),
