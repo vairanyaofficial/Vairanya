@@ -38,16 +38,23 @@ export async function generateMetadata({
     ? product.description.substring(0, 157).trim() + "..."
     : product.description;
 
+  // Filter valid images - product.images should already be filtered by docToProduct
+  // but we'll filter again here to be safe
+  const validImages = (product.images || []).filter((img: string) => 
+    img && typeof img === 'string' && img.trim() !== '' && 
+    img.trim() !== 'undefined' && img.trim() !== 'null'
+  );
+
   // Get primary image URL
-  const primaryImage = product.images && product.images.length > 0
-    ? product.images[0].startsWith("http")
-      ? product.images[0]
-      : `${baseUrl}${product.images[0]}`
+  const primaryImage = validImages.length > 0
+    ? validImages[0].startsWith("http")
+      ? validImages[0]
+      : `${baseUrl}${validImages[0]}`
     : `${baseUrl}/images/hero-jewelry.jpg`;
 
-  // Get all image URLs for OpenGraph
-  const ogImages = product.images && product.images.length > 0
-    ? product.images.map((img) =>
+  // Get all image URLs for OpenGraph (only valid images)
+  const ogImages = validImages.length > 0
+    ? validImages.map((img: string) =>
         img.startsWith("http") ? img : `${baseUrl}${img}`
       )
     : [`${baseUrl}/images/hero-jewelry.jpg`];
@@ -109,9 +116,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
   // JSON-LD structured data
   const baseUrl = "https://vairanya.in";
   const productUrl = `${baseUrl}/products/${product.slug}`;
-  const productImages = product.images.map((img) =>
-    img.startsWith("http") ? img : `${baseUrl}${img}`
+  // Filter valid images for structured data
+  const validImages = (product.images || []).filter((img: string) => 
+    img && typeof img === 'string' && img.trim() !== '' && 
+    img.trim() !== 'undefined' && img.trim() !== 'null'
   );
+  const productImages = validImages.length > 0
+    ? validImages.map((img: string) =>
+        img.startsWith("http") ? img : `${baseUrl}${img}`
+      )
+    : [`${baseUrl}/images/hero-jewelry.jpg`];
 
   // Capitalize category for breadcrumb
   const categoryName = product.category.charAt(0).toUpperCase() + product.category.slice(1);
@@ -227,7 +241,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 lg:gap-12 mb-8 md:mb-16">
           {/* Image Gallery */}
           <div className="order-1">
-            <ImageGallery images={product.images} productTitle={product.title} />
+            <ImageGallery 
+              images={product.images || []} 
+              productTitle={product.title} 
+            />
           </div>
 
           {/* Product Details */}

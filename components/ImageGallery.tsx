@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Image } from "@imagekit/next";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ZoomIn, ZoomOut, X, Maximize2 } from "lucide-react";
+import { getFallbackImageUrl, filterValidImageUrls } from "@/lib/imagekit-utils";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 interface ImageGalleryProps {
   images: string[];
@@ -20,8 +21,14 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
   const imageRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Ensure we have at least one image
-  const displayImages = images.length > 0 ? images : ["/images/ring-1.jpg"];
+  // Filter and validate images - remove invalid/empty URLs first
+  const validImages = filterValidImageUrls(images);
+  
+  // Ensure we have at least one image with validated URLs
+  // Only use fallback if no valid images exist
+  const displayImages = validImages.length > 0 
+    ? validImages
+    : [getFallbackImageUrl()];
 
   // Reset zoom when image changes or modal closes
   useEffect(() => {
@@ -127,7 +134,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
       <div className="space-y-3 md:space-y-4">
         {/* Main Image */}
         <div className="relative aspect-square w-full overflow-hidden rounded-lg md:rounded-lg bg-gray-100 dark:bg-[#1a1a1a]">
-          <Image
+          <OptimizedImage
             src={displayImages[selectedImage]}
             alt={`${productTitle} - Image ${selectedImage + 1}`}
             fill
@@ -136,12 +143,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
             priority
             quality={90}
             sizes="(max-width: 768px) 100vw, 50vw"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              if (target.src !== "/images/ring-1.jpg") {
-                target.src = "/images/ring-1.jpg";
-              }
-            }}
+            transformation={[{
+              format: 'auto',
+            }]}
+            objectFit="cover"
           />
           <button
             onClick={() => setZoomOpen(true)}
@@ -165,7 +170,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
                     : "border-transparent dark:border-white/10 active:border-gray-300 dark:active:border-white/30 md:hover:border-gray-300 dark:md:hover:border-white/30"
                 }`}
               >
-                <Image
+                <OptimizedImage
                   src={img}
                   alt={`${productTitle} thumbnail ${index + 1}`}
                   fill
@@ -173,12 +178,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
                   quality={75}
                   loading="lazy"
                   sizes="(max-width: 768px) 25vw, 12.5vw"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    if (target.src !== "/images/ring-1.jpg") {
-                      target.src = "/images/ring-1.jpg";
-                    }
-                  }}
+                  transformation={[{
+                    format: 'auto',
+                  }]}
+                  objectFit="cover"
                 />
               </button>
             ))}
@@ -257,14 +260,18 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
                   display: 'block',
                   userSelect: 'none',
                   WebkitUserSelect: 'none',
+                  objectFit: 'contain',
                 }}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  if (target.src !== "/images/ring-1.jpg") {
-                    target.src = "/images/ring-1.jpg";
+                  const fallbackUrl = getFallbackImageUrl();
+                  // Only set fallback if not already using it
+                  if (!target.src.includes('ring-1.jpg') && !target.src.includes(fallbackUrl)) {
+                    target.src = fallbackUrl;
                   }
                 }}
                 draggable={false}
+                loading="eager"
               />
             </div>
           </div>

@@ -12,6 +12,25 @@ function docToProduct(doc: any): Product {
   const docData = data || doc;
   const docId = doc.id || docData.product_id;
   
+  // Filter and validate images - remove empty/invalid URLs
+  let images: string[] = [];
+  if (Array.isArray(docData.images)) {
+    // Filter out invalid/empty image URLs
+    images = docData.images.filter((img: any) => {
+      if (!img || typeof img !== 'string') return false;
+      const trimmed = img.trim();
+      return trimmed !== '' && 
+             trimmed !== 'undefined' && 
+             trimmed !== 'null' &&
+             trimmed.toLowerCase() !== 'none';
+    });
+  } else if (docData.imageUrl && typeof docData.imageUrl === 'string') {
+    const trimmed = docData.imageUrl.trim();
+    if (trimmed !== '' && trimmed !== 'undefined' && trimmed !== 'null') {
+      images = [docData.imageUrl];
+    }
+  }
+  
   return {
     product_id: docId,
     sku: docData.sku || "",
@@ -22,7 +41,7 @@ function docToProduct(doc: any): Product {
     stock_qty: docData.stock_qty || 0,
     weight: docData.weight || null,
     metal_finish: docData.metal_finish || "gold",
-    images: Array.isArray(docData.images) ? docData.images : (docData.imageUrl ? [docData.imageUrl] : []),
+    images: images,
     description: docData.description || "",
     short_description: docData.short_description || "",
     tags: Array.isArray(docData.tags) ? docData.tags : [],

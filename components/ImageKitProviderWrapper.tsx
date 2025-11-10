@@ -8,14 +8,13 @@ interface ImageKitProviderWrapperProps {
 }
 
 export function ImageKitProviderWrapper({ children, urlEndpoint }: ImageKitProviderWrapperProps) {
-  // Use provided credentials or fallback to defaults
-  const imagekitUrlEndpoint = urlEndpoint || "https://ik.imagekit.io/zjax0fbrm";
+  // Use provided urlEndpoint or fallback to default
+  // In Next.js, NEXT_PUBLIC_* env vars are embedded at build time
+  const imagekitUrlEndpoint = urlEndpoint || process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/zjax0fbrm";
 
-  // Only render provider if urlEndpoint is provided
-  if (!imagekitUrlEndpoint) {
-    return <>{children}</>;
-  }
-
+  // Always render provider with endpoint (even if it's fallback)
+  // This ensures ImageKit Image component works for ImageKit URLs
+  // For non-ImageKit URLs, the OptimizedImage component will use Next.js Image
   return (
     <ImageKitProvider 
       urlEndpoint={imagekitUrlEndpoint}
