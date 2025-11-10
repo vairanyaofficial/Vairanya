@@ -131,9 +131,15 @@ async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: 
             
             if (looksLikeMultiline || (cleanedJson.startsWith('{') && cleanedJson.length > 10 && !cleanedJson.includes('"type"'))) {
               console.warn("⚠️  FIREBASE_SERVICE_ACCOUNT_JSON appears to be multiline or malformed. This is invalid for environment variables.");
-              console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
-              console.warn("   Tip: Remove FIREBASE_SERVICE_ACCOUNT_JSON from .env to use file-based credentials");
-              useJsonEnv = false;
+              if (process.env.VERCEL) {
+                console.error("   ❌ In Vercel, FIREBASE_SERVICE_ACCOUNT_JSON must be valid JSON on a single line.");
+                console.error("   Solution: Fix the JSON format in Vercel environment variables.");
+                useJsonEnv = false;
+              } else {
+                console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
+                console.warn("   Tip: Remove FIREBASE_SERVICE_ACCOUNT_JSON from .env to use file-based credentials");
+                useJsonEnv = false;
+              }
             } else {
               // Try to parse the cleaned JSON
               try {
@@ -144,7 +150,12 @@ async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: 
                   console.log("✅ FIREBASE_SERVICE_ACCOUNT_JSON is valid, using it for initialization");
                 } else {
                   console.warn("⚠️  FIREBASE_SERVICE_ACCOUNT_JSON doesn't look like a valid service account JSON");
-                  console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
+                  if (process.env.VERCEL) {
+                    console.error("   ❌ In Vercel, FIREBASE_SERVICE_ACCOUNT_JSON must be valid service account JSON.");
+                    console.error("   Solution: Verify the JSON in Vercel environment variables.");
+                  } else {
+                    console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
+                  }
                   useJsonEnv = false;
                 }
               } catch (parseErr: any) {
@@ -152,9 +163,14 @@ async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: 
                 const preview = cleanedJson.substring(0, 50).replace(/private_key["\s:]+"[^"]*/gi, 'private_key:"[REDACTED]"');
                 console.warn("⚠️  Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON:", parseErr?.message);
                 console.warn("   JSON starts with:", preview);
-                console.warn("   This usually means the JSON is multiline in your .env file, which is invalid.");
-                console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
-                console.warn("   💡 Solution: Remove or comment out FIREBASE_SERVICE_ACCOUNT_JSON from .env");
+                if (process.env.VERCEL) {
+                  console.error("   ❌ In Vercel, FIREBASE_SERVICE_ACCOUNT_JSON must be valid JSON on a single line.");
+                  console.error("   💡 Solution: Fix the JSON format in Vercel environment variables.");
+                } else {
+                  console.warn("   This usually means the JSON is multiline in your .env file, which is invalid.");
+                  console.warn("   Falling back to file-based approach using GOOGLE_APPLICATION_CREDENTIALS");
+                  console.warn("   💡 Solution: Remove or comment out FIREBASE_SERVICE_ACCOUNT_JSON from .env");
+                }
                 useJsonEnv = false;
               }
             }
@@ -207,11 +223,23 @@ async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: 
         }
       }
       
-      // If JSON env var wasn't used (or failed), try file-based approach
+      // If JSON env var wasn't used (or failed), try file-based approach ONLY in non-Vercel environments
       if (!useJsonEnv) {
-        // No JSON in env, try default initialization
+        // In Vercel, we MUST use FIREBASE_SERVICE_ACCOUNT_JSON - file-based approach won't work
+        if (process.env.VERCEL) {
+          const errorMsg = "FIREBASE_SERVICE_ACCOUNT_JSON is required in Vercel. Please set it in Vercel environment variables.";
+          console.error("❌", errorMsg);
+          console.error("   Vercel serverless functions cannot access local files.");
+          console.error("   Solution: Set FIREBASE_SERVICE_ACCOUNT_JSON in Vercel Dashboard → Settings → Environment Variables");
+          initializationError = new Error(errorMsg);
+          initializationAttempted = true;
+          return { success: false, error: errorMsg };
+        }
+
+        // No JSON in env, try default initialization (only in non-Vercel environments)
         try {
           // This will pick GOOGLE_APPLICATION_CREDENTIALS or ADC
+          // But only if we're not in Vercel
           adminApp = initializeApp();
           console.log("✅ Firebase Admin initialized with default credentials");
         } catch (err: any) {
@@ -238,8 +266,9 @@ async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: 
               const isDevelopment = process.env.NODE_ENV === 'development';
               const hasGoogleCreds = !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
               
-              if (isDevelopment && !hasGoogleCreds) {
-                // In development, try to use local service account file if it exists
+              // In development, try to use local service account file if it exists
+              // NEVER use file-based approach in Vercel
+              if (isDevelopment && !hasGoogleCreds && !process.env.VERCEL) {
                 try {
                   const fs = await import('fs');
                   const path = await import('path');
@@ -252,7 +281,7 @@ async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: 
                     });
                     console.log("✅ Firebase Admin initialized with local service account file");
                   } else {
-                    // File doesn't exist, but that's okay - we'll use default initialization
+                    // File doesn't exist - throw error to show helpful message
                     throw new Error(`Service account file not found at ${serviceAccountPath}`);
                   }
                 } catch (fileErr: any) {
@@ -266,7 +295,7 @@ async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: 
                   return { success: false, error: errorMsg };
                 }
               } else {
-                const errorMsg = `Failed to initialize Firebase app with default credentials: ${err?.message}`;
+                const errorMsg = `Failed to initialize Firebase app. ${process.env.VERCEL ? 'FIREBASE_SERVICE_ACCOUNT_JSON is required in Vercel.' : 'Please set FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS.'} Error: ${err?.message}`;
                 console.error("❌", errorMsg);
                 initializationError = new Error(errorMsg);
                 initializationAttempted = true;

@@ -158,18 +158,25 @@ const nextConfig = {
       ],
     },
     // Include firebase-admin and its dependencies in serverless bundles for Vercel
+    // This ensures all required files are included in the serverless function bundle
     outputFileTracingIncludes: {
-      '/api/**': [
+      '*': [
         'node_modules/firebase-admin/**/*',
         'node_modules/@firebase/**/*',
         'node_modules/google-gax/**/*',
         'node_modules/protobufjs/**/*',
         'node_modules/google-auth-library/**/*',
         'node_modules/gtoken/**/*',
+        'node_modules/jwa/**/*',
+        'node_modules/jws/**/*',
+        'node_modules/lru-cache/**/*',
+        'node_modules/yallist/**/*',
+        'node_modules/ecdsa-sig-formatter/**/*',
+        'node_modules/safe-buffer/**/*',
       ],
     },
-    // Keep these as external packages - Vercel will install them from node_modules
-    // But we also include them in outputFileTracingIncludes to ensure they're available
+    // Mark firebase-admin as external - Vercel will include it from node_modules
+    // This is better for serverless functions as it reduces bundle size
     serverComponentsExternalPackages: ['firebase-admin', 'mongodb'],
   },
 };
