@@ -70,20 +70,60 @@ export function getFallbackImageUrl(): string {
 }
 
 /**
+ * Check if an image URL is valid and not empty
+ */
+export function isValidImageUrl(url: string | undefined | null): boolean {
+  if (!url || typeof url !== 'string') return false;
+  
+  const cleanUrl = url.trim();
+  
+  // Empty strings are invalid
+  if (cleanUrl === '') return false;
+  
+  // Check for common invalid patterns
+  if (
+    cleanUrl === 'undefined' ||
+    cleanUrl === 'null' ||
+    cleanUrl === 'NaN' ||
+    cleanUrl.toLowerCase() === 'none' ||
+    cleanUrl.startsWith('data:') // Skip data URIs for now
+  ) {
+    return false;
+  }
+  
+  // Valid URLs must start with http://, https://, or /
+  // Or be ImageKit URLs
+  if (
+    cleanUrl.startsWith('http://') ||
+    cleanUrl.startsWith('https://') ||
+    cleanUrl.startsWith('/') ||
+    isImageKitUrl(cleanUrl)
+  ) {
+    return true;
+  }
+  
+  // Relative paths without protocol might be valid if they look like file paths
+  if (!cleanUrl.includes('://') && !cleanUrl.startsWith('/')) {
+    // Check if it looks like a valid file path
+    const validPathPattern = /^[a-zA-Z0-9_\-./]+\.(jpg|jpeg|png|gif|webp|avif|svg)$/i;
+    if (validPathPattern.test(cleanUrl)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
  * Validate image URL and return a valid URL or fallback
  */
 export function validateImageUrl(url: string | undefined | null): string {
-  if (!url || typeof url !== 'string' || url.trim() === '') {
+  if (!isValidImageUrl(url)) {
     return getFallbackImageUrl();
   }
   
   // Clean up the URL
-  const cleanUrl = url.trim();
-  
-  // Handle empty strings after trim
-  if (cleanUrl === '') {
-    return getFallbackImageUrl();
-  }
+  const cleanUrl = url!.trim();
   
   // Return valid URLs (http, https, or absolute paths starting with /)
   if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://') || cleanUrl.startsWith('/')) {
@@ -91,12 +131,36 @@ export function validateImageUrl(url: string | undefined | null): string {
   }
   
   // If it's a relative path without leading slash, add it
-  if (cleanUrl.startsWith('images/') || (!cleanUrl.includes('://') && !cleanUrl.startsWith('/'))) {
+  if (!cleanUrl.includes('://') && !cleanUrl.startsWith('/')) {
     return `/${cleanUrl}`;
   }
   
   // Default fallback for invalid URLs
   return getFallbackImageUrl();
+}
+
+/**
+ * Filter and validate an array of image URLs
+ * Returns only valid image URLs, filtering out invalid/empty ones
+ */
+export function filterValidImageUrls(urls: (string | undefined | null)[]): string[] {
+  if (!Array.isArray(urls)) return [];
+  
+  const validUrls: string[] = [];
+  const seenUrls = new Set<string>();
+  
+  for (const url of urls) {
+    if (isValidImageUrl(url)) {
+      const validatedUrl = validateImageUrl(url);
+      // Avoid duplicates
+      if (!seenUrls.has(validatedUrl)) {
+        seenUrls.add(validatedUrl);
+        validUrls.push(validatedUrl);
+      }
+    }
+  }
+  
+  return validUrls;
 }
 
 /**

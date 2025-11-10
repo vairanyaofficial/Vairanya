@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Image } from "@imagekit/next";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ZoomIn, ZoomOut, X, Maximize2 } from "lucide-react";
-import { validateImageUrl, getFallbackImageUrl } from "@/lib/imagekit-utils";
+import { validateImageUrl, getFallbackImageUrl, filterValidImageUrls } from "@/lib/imagekit-utils";
 
 interface ImageGalleryProps {
   images: string[];
@@ -21,9 +21,13 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
   const imageRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Filter and validate images - remove invalid/empty URLs first
+  const validImages = filterValidImageUrls(images);
+  
   // Ensure we have at least one image with validated URLs
-  const displayImages = images.length > 0 
-    ? images.map(img => validateImageUrl(img))
+  // Only use fallback if no valid images exist
+  const displayImages = validImages.length > 0 
+    ? validImages
     : [getFallbackImageUrl()];
 
   // Reset zoom when image changes or modal closes
@@ -268,15 +272,18 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
                   display: 'block',
                   userSelect: 'none',
                   WebkitUserSelect: 'none',
+                  objectFit: 'contain',
                 }}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   const fallbackUrl = getFallbackImageUrl();
-                  if (!target.src.includes(fallbackUrl.split('/').pop() || '')) {
+                  // Only set fallback if not already using it
+                  if (!target.src.includes('ring-1.jpg') && !target.src.includes(fallbackUrl)) {
                     target.src = fallbackUrl;
                   }
                 }}
                 draggable={false}
+                loading="eager"
               />
             </div>
           </div>

@@ -124,6 +124,12 @@ const nextConfig = {
     ];
   },
 
+  // Server components external packages - don't bundle these, use Node.js require
+  serverExternalPackages: [
+    'firebase-admin',
+    'mongodb',
+  ],
+
   // Disable/adjust fallbacks for client bundle
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -153,6 +159,8 @@ const nextConfig = {
         'playwright.config.ts',
         'playwright-report/**/*',
         'test-results/**/*',
+        // Exclude OpenTelemetry packages from tracing
+        'node_modules/@opentelemetry/**/*',
       ],
     },
   },

@@ -9,7 +9,7 @@ import { useWishlist } from "@/lib/wishlist-context";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/ToastProvider";
 import { Heart, Bell, ShoppingBag } from "lucide-react";
-import { validateImageUrl, getFallbackImageUrl } from "@/lib/imagekit-utils";
+import { validateImageUrl, getFallbackImageUrl, filterValidImageUrls } from "@/lib/imagekit-utils";
 
 type Props = {
   product: Product;
@@ -72,7 +72,10 @@ const ProductCard: React.FC<Props> = ({ product, priority = false }) => {
         {/* Image Container - Mobile Optimized */}
         <div className="relative aspect-square bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-black/20 dark:to-black/20 overflow-hidden backdrop-blur-sm">
           <Image
-            src={validateImageUrl(product.images?.[0])}
+            src={(() => {
+              const validImages = filterValidImageUrls(product.images || []);
+              return validImages.length > 0 ? validImages[0] : getFallbackImageUrl();
+            })()}
             alt={product.title}
             fill
             className="object-contain p-1.5 sm:p-2 md:p-3 group-active:scale-105 md:group-hover:scale-105 transition-transform duration-300"
@@ -86,7 +89,8 @@ const ProductCard: React.FC<Props> = ({ product, priority = false }) => {
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               const fallbackUrl = getFallbackImageUrl();
-              if (!target.src.includes(fallbackUrl.split('/').pop() || '')) {
+              // Only set fallback if not already using it
+              if (!target.src.includes('ring-1.jpg') && !target.src.includes(fallbackUrl)) {
                 target.src = fallbackUrl;
               }
             }}
