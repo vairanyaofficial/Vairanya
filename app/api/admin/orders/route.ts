@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Ensure Firebase is initialized
-    const initResult = ensureFirebaseInitialized();
+    const initResult = await ensureFirebaseInitialized();
     if (!initResult.success || !adminFirestore) {
       return NextResponse.json(
         { success: false, error: initResult.error || "Firestore not initialized" },

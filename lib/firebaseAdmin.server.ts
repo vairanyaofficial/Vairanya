@@ -21,6 +21,7 @@ let adminAuth: any = null;
 let adminFirestore: any = null;
 let initializationAttempted = false;
 let initializationError: Error | null = null;
+let initializationPromise: Promise<{ success: boolean; error?: string }> | null = null;
 
 // Helper function to check if error is about duplicate app
 function isDuplicateAppError(err: any): boolean {
@@ -36,10 +37,15 @@ function isDuplicateAppError(err: any): boolean {
 }
 
 // Initialize Firebase Admin SDK
-function initializeFirebaseAdmin(): { success: boolean; error?: string } {
+async function initializeFirebaseAdmin(): Promise<{ success: boolean; error?: string }> {
   // If already initialized, return success
   if (adminApp && adminAuth && adminFirestore) {
     return { success: true };
+  }
+
+  // If initialization is in progress, wait for it
+  if (initializationPromise) {
+    return await initializationPromise;
   }
 
   // If we've already attempted and failed, return the error
@@ -47,14 +53,31 @@ function initializeFirebaseAdmin(): { success: boolean; error?: string } {
     return { success: false, error: initializationError.message };
   }
 
+  // Start initialization and store the promise
+  initializationPromise = (async () => {
+    try {
+      return await doInitializeFirebaseAdmin();
+    } finally {
+      initializationPromise = null;
+    }
+  })();
+
+  return await initializationPromise;
+}
+
+// Actual initialization logic
+async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: string }> {
+
   try {
-    // Try dynamic import so we can catch MODULE_NOT_FOUND
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { initializeApp, cert, getApp } = require("firebase-admin/app");
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { getAuth } = require("firebase-admin/auth");
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { getFirestore } = require("firebase-admin/firestore");
+    // Use dynamic import for better compatibility with Vercel serverless
+    // This ensures the module is properly loaded in production
+    const firebaseAdminApp = await import("firebase-admin/app");
+    const firebaseAdminAuth = await import("firebase-admin/auth");
+    const firebaseAdminFirestore = await import("firebase-admin/firestore");
+    
+    const { initializeApp, cert, getApp } = firebaseAdminApp;
+    const { getAuth } = firebaseAdminAuth;
+    const { getFirestore } = firebaseAdminFirestore;
 
     // Try to get existing app first (most common case in Next.js)
     try {
@@ -211,11 +234,44 @@ function initializeFirebaseAdmin(): { success: boolean; error?: string } {
             // Re-throw non-duplicate errors only in non-build contexts
             const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
             if (!isBuildTime) {
-              const errorMsg = `Failed to initialize Firebase app with default credentials: ${err?.message}`;
-              console.error("❌", errorMsg);
-              initializationError = new Error(errorMsg);
-              initializationAttempted = true;
-              return { success: false, error: errorMsg };
+              // Check if we're in development and can use file-based credentials
+              const isDevelopment = process.env.NODE_ENV === 'development';
+              const hasGoogleCreds = !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
+              
+              if (isDevelopment && !hasGoogleCreds) {
+                // In development, try to use local service account file if it exists
+                try {
+                  const fs = await import('fs');
+                  const path = await import('path');
+                  const serviceAccountPath = path.join(process.cwd(), 'secrets', 'serviceAccountKey.json');
+                  
+                  if (fs.existsSync(serviceAccountPath)) {
+                    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+                    adminApp = initializeApp({
+                      credential: cert(serviceAccount),
+                    });
+                    console.log("✅ Firebase Admin initialized with local service account file");
+                  } else {
+                    // File doesn't exist, but that's okay - we'll use default initialization
+                    throw new Error(`Service account file not found at ${serviceAccountPath}`);
+                  }
+                } catch (fileErr: any) {
+                  // If file-based approach fails, provide helpful error message
+                  const errorMsg = isDevelopment 
+                    ? `Firestore not initialized. For localhost: Ensure secrets/serviceAccountKey.json exists or set GOOGLE_APPLICATION_CREDENTIALS. For production: Set FIREBASE_SERVICE_ACCOUNT_JSON in Vercel. Error: ${fileErr?.message}`
+                    : `Failed to initialize Firebase app with default credentials: ${err?.message}`;
+                  console.error("❌", errorMsg);
+                  initializationError = new Error(errorMsg);
+                  initializationAttempted = true;
+                  return { success: false, error: errorMsg };
+                }
+              } else {
+                const errorMsg = `Failed to initialize Firebase app with default credentials: ${err?.message}`;
+                console.error("❌", errorMsg);
+                initializationError = new Error(errorMsg);
+                initializationAttempted = true;
+                return { success: false, error: errorMsg };
+              }
             } else {
               console.warn("⚠️ Firebase initialization error during build (this is usually safe):", err?.message);
             }
@@ -306,19 +362,17 @@ function initializeFirebaseAdmin(): { success: boolean; error?: string } {
 }
 
 // Ensure initialization function - can be called on-demand
-export function ensureFirebaseInitialized(): { success: boolean; error?: string } {
+export async function ensureFirebaseInitialized(): Promise<{ success: boolean; error?: string }> {
   if (adminApp && adminAuth && adminFirestore) {
     return { success: true };
   }
-  return initializeFirebaseAdmin();
+  return await initializeFirebaseAdmin();
 }
 
-// Try to initialize on module load
-try {
-  initializeFirebaseAdmin();
-} catch (err: any) {
+// Try to initialize on module load (fire-and-forget)
+initializeFirebaseAdmin().catch((err: any) => {
   console.error("❌ Error during module load initialization:", err?.message);
-}
+});
 
 // Detailed diagnostics function
 export function getFirebaseDiagnostics() {

@@ -166,6 +166,11 @@ export default function Page() {
       .then((data) => {
         if (data.success && data.collections) {
           setFeaturedCollections(data.collections);
+        } else if (data.debug?.firestoreError) {
+          // Firestore initialization error - log but don't show to user
+          console.warn("Collections API: Firestore not initialized. This is expected if running locally without credentials.");
+          console.warn("For localhost: Create secrets/serviceAccountKey.json");
+          console.warn("For production: Set FIREBASE_SERVICE_ACCOUNT_JSON in Vercel");
         }
         setIsLoadingCollections(false);
       })

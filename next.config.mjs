@@ -157,7 +157,19 @@ const nextConfig = {
         'node_modules/@opentelemetry/**/*',
       ],
     },
-    // Legacy support for Next.js 13 - ensures server components can use these packages
+    // Include firebase-admin and its dependencies in serverless bundles for Vercel
+    outputFileTracingIncludes: {
+      '/api/**': [
+        'node_modules/firebase-admin/**/*',
+        'node_modules/@firebase/**/*',
+        'node_modules/google-gax/**/*',
+        'node_modules/protobufjs/**/*',
+        'node_modules/google-auth-library/**/*',
+        'node_modules/gtoken/**/*',
+      ],
+    },
+    // Keep these as external packages - Vercel will install them from node_modules
+    // But we also include them in outputFileTracingIncludes to ensure they're available
     serverComponentsExternalPackages: ['firebase-admin', 'mongodb'],
   },
 };

@@ -7,7 +7,7 @@ const REVIEWS_COLLECTION = "reviews";
 
 // Helper function to ensure Firestore is initialized
 async function ensureInitialized(): Promise<void> {
-  const initResult = ensureFirebaseInitialized();
+  const initResult = await ensureFirebaseInitialized();
   if (!initResult.success || !adminFirestore) {
     throw new Error(initResult.error || "Firestore not initialized");
   }

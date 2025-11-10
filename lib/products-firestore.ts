@@ -58,7 +58,7 @@ function docToProduct(doc: any): Product {
 export async function getAllProducts(): Promise<Product[]> {
   // Ensure Firebase is initialized
   const { ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
-  const initResult = ensureFirebaseInitialized();
+  const initResult = await ensureFirebaseInitialized();
   
   if (!initResult.success || !adminFirestore) {
     const errorMsg = initResult.error || "Firestore not initialized. Please check FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS environment variables.";

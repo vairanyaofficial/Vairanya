@@ -41,7 +41,7 @@ export async function GET() {
     }
 
     // Try to ensure initialization
-    const initResult = ensureFirebaseInitialized();
+    const initResult = await ensureFirebaseInitialized();
     if (!initResult.success) {
       debugInfo.firestore.error = initResult.error || "Firestore initialization failed";
     }

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const { adminFirestore, ensureFirebaseInitialized, getFirebaseDiagnostics } = await import("@/lib/firebaseAdmin.server");
     
     // Try to ensure initialization
-    const initResult = ensureFirebaseInitialized();
+    const initResult = await ensureFirebaseInitialized();
     if (!initResult.success || !adminFirestore) {
       const diagnostics = getFirebaseDiagnostics();
       const errorMsg = initResult.error || "Firestore not initialized. Please check FIREBASE_SERVICE_ACCOUNT_JSON environment variable in Vercel.";

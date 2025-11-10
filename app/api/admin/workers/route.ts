@@ -7,7 +7,7 @@ import { FieldValue } from "firebase-admin/firestore";
 export async function GET(req: NextRequest) {
   try {
     // Ensure Firebase is initialized
-    const initResult = ensureFirebaseInitialized();
+    const initResult = await ensureFirebaseInitialized();
     if (!initResult.success || !adminFirestore) {
       return NextResponse.json(
         { error: initResult.error || "Firestore not initialized" },

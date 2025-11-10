@@ -7,7 +7,7 @@ const CAROUSEL_COLLECTION = "carousel_slides";
 
 // Helper function to ensure Firestore is initialized
 async function ensureInitialized(): Promise<void> {
-  const initResult = ensureFirebaseInitialized();
+  const initResult = await ensureFirebaseInitialized();
   if (!initResult.success || !adminFirestore) {
     throw new Error(initResult.error || "Firestore not initialized");
   }
