@@ -8,6 +8,7 @@ import HorizontalSlider from "./HorizontalSlider";
 import type { Product } from "@/lib/products-types";
 import type { Collection } from "@/lib/collections-types";
 import { ProductSliderSkeleton } from "@/components/SkeletonLoader";
+import { validateImageUrl } from "@/lib/imagekit-utils";
 
 interface ProductSuggestionsProps {
   product: Product;
@@ -147,11 +148,16 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
                 {collection.image ? (
                   <div className="absolute inset-0">
                     <Image
-                      src={collection.image}
+                      src={validateImageUrl(collection.image)}
                       alt={collection.name}
                       fill
                       className="object-cover opacity-70 group-hover:opacity-90 transition-opacity"
                       sizes="(max-width: 768px) 50vw, 25vw"
+                      quality={80}
+                      loading="lazy"
+                      transformation={[{
+                        format: 'auto',
+                      }]}
                     />
                   </div>
                 ) : (
@@ -185,11 +191,16 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
                 {categoryImage ? (
                   <div className="absolute inset-0">
                     <Image
-                      src={categoryImage}
+                      src={validateImageUrl(categoryImage)}
                       alt={category}
                       fill
                       className="object-cover opacity-40 group-hover:opacity-60 transition-opacity"
                       sizes="(max-width: 768px) 50vw, 20vw"
+                      quality={80}
+                      loading="lazy"
+                      transformation={[{
+                        format: 'auto',
+                      }]}
                     />
                   </div>
                 ) : (
@@ -221,11 +232,16 @@ export default function ProductSuggestions({ product }: ProductSuggestionsProps)
                 {collection.image ? (
                   <div className="absolute inset-0">
                     <Image
-                      src={collection.image}
+                      src={validateImageUrl(collection.image)}
                       alt={collection.name}
                       fill
                       className="object-cover opacity-70 group-hover:opacity-90 transition-opacity"
                       sizes="(max-width: 768px) 50vw, 25vw"
+                      quality={80}
+                      loading="lazy"
+                      transformation={[{
+                        format: 'auto',
+                      }]}
                     />
                   </div>
                 ) : (

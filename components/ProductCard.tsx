@@ -9,6 +9,7 @@ import { useWishlist } from "@/lib/wishlist-context";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/ToastProvider";
 import { Heart, Bell, ShoppingBag } from "lucide-react";
+import { validateImageUrl, getFallbackImageUrl } from "@/lib/imagekit-utils";
 
 type Props = {
   product: Product;
@@ -71,7 +72,7 @@ const ProductCard: React.FC<Props> = ({ product, priority = false }) => {
         {/* Image Container - Mobile Optimized */}
         <div className="relative aspect-square bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-black/20 dark:to-black/20 overflow-hidden backdrop-blur-sm">
           <Image
-            src={product.images[0] || "/images/ring-1.jpg"}
+            src={validateImageUrl(product.images?.[0])}
             alt={product.title}
             fill
             className="object-contain p-1.5 sm:p-2 md:p-3 group-active:scale-105 md:group-hover:scale-105 transition-transform duration-300"
@@ -79,10 +80,14 @@ const ProductCard: React.FC<Props> = ({ product, priority = false }) => {
             quality={85}
             priority={priority}
             loading={priority ? undefined : "lazy"}
+            transformation={[{
+              format: 'auto',
+            }]}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              if (target.src !== "/images/ring-1.jpg") {
-                target.src = "/images/ring-1.jpg";
+              const fallbackUrl = getFallbackImageUrl();
+              if (!target.src.includes(fallbackUrl.split('/').pop() || '')) {
+                target.src = fallbackUrl;
               }
             }}
           />

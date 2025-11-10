@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/components/AuthProvider";
 import { X, Plus, Minus, ShoppingBag } from "lucide-react";
+import { validateImageUrl, getFallbackImageUrl } from "@/lib/imagekit-utils";
 
 interface CartProps {
   open: boolean;
@@ -113,10 +114,22 @@ const Cart: React.FC<CartProps> = ({ open, onOpenChange }) => {
                     className="relative h-24 w-24 md:h-20 md:w-20 flex-shrink-0 overflow-hidden rounded-xl md:rounded-md glass-card backdrop-blur-md"
                   >
                     <Image
-                      src={item.images[0] || "/images/ring-1.jpg"}
+                      src={validateImageUrl(item.images?.[0])}
                       alt={item.title}
                       fill
                       className="object-cover"
+                      quality={80}
+                      loading="lazy"
+                      transformation={[{
+                        format: 'auto',
+                      }]}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        const fallbackUrl = getFallbackImageUrl();
+                        if (!target.src.includes(fallbackUrl.split('/').pop() || '')) {
+                          target.src = fallbackUrl;
+                        }
+                      }}
                     />
                   </Link>
                   <div className="flex flex-1 flex-col min-w-0">

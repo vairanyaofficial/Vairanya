@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Image } from "@imagekit/next";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ZoomIn, ZoomOut, X, Maximize2 } from "lucide-react";
+import { validateImageUrl, getFallbackImageUrl } from "@/lib/imagekit-utils";
 
 interface ImageGalleryProps {
   images: string[];
@@ -20,8 +21,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
   const imageRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Ensure we have at least one image
-  const displayImages = images.length > 0 ? images : ["/images/ring-1.jpg"];
+  // Ensure we have at least one image with validated URLs
+  const displayImages = images.length > 0 
+    ? images.map(img => validateImageUrl(img))
+    : [getFallbackImageUrl()];
 
   // Reset zoom when image changes or modal closes
   useEffect(() => {
@@ -136,10 +139,14 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
             priority
             quality={90}
             sizes="(max-width: 768px) 100vw, 50vw"
+            transformation={[{
+              format: 'auto',
+            }]}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              if (target.src !== "/images/ring-1.jpg") {
-                target.src = "/images/ring-1.jpg";
+              const fallbackUrl = getFallbackImageUrl();
+              if (!target.src.includes(fallbackUrl.split('/').pop() || '')) {
+                target.src = fallbackUrl;
               }
             }}
           />
@@ -173,10 +180,14 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
                   quality={75}
                   loading="lazy"
                   sizes="(max-width: 768px) 25vw, 12.5vw"
+                  transformation={[{
+                    format: 'auto',
+                  }]}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    if (target.src !== "/images/ring-1.jpg") {
-                      target.src = "/images/ring-1.jpg";
+                    const fallbackUrl = getFallbackImageUrl();
+                    if (!target.src.includes(fallbackUrl.split('/').pop() || '')) {
+                      target.src = fallbackUrl;
                     }
                   }}
                 />
@@ -260,8 +271,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productTitle }) => 
                 }}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  if (target.src !== "/images/ring-1.jpg") {
-                    target.src = "/images/ring-1.jpg";
+                  const fallbackUrl = getFallbackImageUrl();
+                  if (!target.src.includes(fallbackUrl.split('/').pop() || '')) {
+                    target.src = fallbackUrl;
                   }
                 }}
                 draggable={false}

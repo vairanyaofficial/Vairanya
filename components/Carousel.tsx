@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { CarouselSlide } from "@/lib/carousel-types";
 import { CarouselSkeleton } from "./SkeletonLoader";
+import { validateImageUrl, getFallbackImageUrl } from "@/lib/imagekit-utils";
 
 interface CarouselProps {
   slides: CarouselSlide[];
@@ -38,7 +39,7 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
       slides.forEach((slide, index) => {
         if (slide?.image_url) {
           const img = new window.Image();
-          img.src = slide.image_url;
+          img.src = validateImageUrl(slide.image_url);
           img.onload = () => {
             setImageLoaded((prev) => {
               const newState = [...prev];
@@ -184,7 +185,7 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
               <div className="relative w-full h-full bg-gray-200 dark:bg-gray-900">
                 {isVisible && (
                   <Image
-                    src={slide.image_url}
+                    src={validateImageUrl(slide.image_url)}
                     alt={slide.title || `Carousel slide ${index + 1}`}
                     fill
                     className="object-cover"
@@ -192,9 +193,17 @@ export default function Carousel({ slides, autoPlay = true, interval = 5000 }: C
                     sizes="100vw"
                     quality={90}
                     loading={index <= 1 ? undefined : "lazy"}
+                    transformation={[{
+                      format: 'auto',
+                    }]}
                     onLoad={() => handleImageLoad(index)}
                     onError={(e) => {
                       console.error("Carousel image failed to load:", slide.image_url, index);
+                      const target = e.target as HTMLImageElement;
+                      const fallbackUrl = getFallbackImageUrl();
+                      if (!target.src.includes(fallbackUrl.split('/').pop() || '')) {
+                        target.src = fallbackUrl;
+                      }
                       handleImageLoad(index);
                     }}
                   />
