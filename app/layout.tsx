@@ -8,6 +8,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ImageKitProviderWrapper } from "@/components/ImageKitProviderWrapper";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const playfair = Playfair_Display({
   variable: "--font-serif",
