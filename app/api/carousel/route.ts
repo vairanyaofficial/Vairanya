@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCarouselSlides } from "@/lib/carousel-mongodb";
 import { initializeMongoDB } from "@/lib/mongodb.server";
 
+// Mark route as dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Simple in-memory cache for carousel (60 second TTL)
 let carouselCache: { active: any[]; all: any[]; timestamp: number } | null = null;
 const CACHE_TTL = 60 * 1000; // 60 seconds

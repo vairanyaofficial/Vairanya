@@ -136,19 +136,36 @@ export async function initializeMongoDB(): Promise<{ success: boolean; error?: s
       // Build connection options
       const connectionOptions: any = {
         maxPoolSize: 10,
-        serverSelectionTimeoutMS: 10000, // Increased to 10s for better reliability
+        serverSelectionTimeoutMS: 15000, // Increased to 15s for better reliability
         socketTimeoutMS: 45000,
-        connectTimeoutMS: 10000, // Increased to 10s for better reliability
+        connectTimeoutMS: 15000, // Increased to 15s for better reliability
+        retryWrites: true,
+        retryReads: true,
+        // Add heartbeat to keep connection alive
+        heartbeatFrequencyMS: 10000,
       };
       
       // For MongoDB Atlas (mongodb+srv://), TLS is required
       // Explicitly configure TLS for better compatibility
       if (isAtlasConnection) {
         connectionOptions.tls = true;
-        // Allow invalid certificates only in development (not recommended for production)
-        // For production, use proper certificate validation
-        if (process.env.NODE_ENV === 'development' && process.env.MONGODB_TLS_ALLOW_INVALID_CERTS === 'true') {
-          connectionOptions.tlsAllowInvalidCertificates = true;
+        // For production, ensure proper TLS configuration
+        // SSL alert number 80 (internal error) often indicates:
+        // 1. Cluster is paused/unavailable
+        // 2. TLS handshake failure
+        // 3. Network interruption
+        
+        // In production, we want strict certificate validation
+        // But we can add options to help with connection stability
+        if (process.env.NODE_ENV === 'production') {
+          // Production: Use default certificate validation (secure)
+          // MongoDB Atlas uses valid certificates, so we should validate them
+          connectionOptions.tlsAllowInvalidCertificates = false;
+        } else {
+          // Development: Allow invalid certificates only if explicitly enabled
+          if (process.env.MONGODB_TLS_ALLOW_INVALID_CERTS === 'true') {
+            connectionOptions.tlsAllowInvalidCertificates = true;
+          }
         }
       }
       
@@ -195,12 +212,32 @@ export async function initializeMongoDB(): Promise<{ success: boolean; error?: s
         console.error(`   Connection attempts will be cached for 5 minutes to avoid repeated failures.`);
       } else if (errorMessage.includes("SSL") || errorMessage.includes("TLS") || errorMessage.includes("alert") || errorMessage.includes("tlsv1")) {
         console.error(`❌ MongoDB SSL/TLS connection error for hostname: ${hostname}`);
-        console.error(`   This usually means:`);
-        console.error(`   1. The MongoDB Atlas cluster is paused or shut down`);
-        console.error(`   2. The cluster needs to be resumed from MongoDB Atlas dashboard`);
-        console.error(`   3. SSL certificate issues or network interruption`);
+        
+        // Check for specific SSL alert number 80 (internal error)
+        const isAlert80 = errorMessage.includes("alert number 80") || errorMessage.includes("SSL alert number 80");
+        
+        if (isAlert80) {
+          console.error(`   ⚠️  SSL Alert Number 80 (Internal Error) detected!`);
+          console.error(`   This specific error usually indicates:`);
+          console.error(`   1. 🔴 MongoDB Atlas cluster is PAUSED - Check and resume in Atlas dashboard`);
+          console.error(`   2. 🔴 Network Access IP whitelist issue - Add Vercel IPs or 0.0.0.0/0`);
+          console.error(`   3. 🔴 Cluster is shutting down or unavailable`);
+          console.error(`   4. 🔴 TLS handshake failure due to server-side issue`);
+          console.error(`   `);
+          console.error(`   📋 Action Items:`);
+          console.error(`   → Go to https://cloud.mongodb.com and check cluster status`);
+          console.error(`   → Verify cluster is RUNNING (not paused)`);
+          console.error(`   → Check Network Access → IP Access List`);
+          console.error(`   → Ensure Vercel deployment IPs are whitelisted`);
+          console.error(`   → Try: Add 0.0.0.0/0 temporarily for testing (then restrict)`);
+        } else {
+          console.error(`   This usually means:`);
+          console.error(`   1. The MongoDB Atlas cluster is paused or shut down`);
+          console.error(`   2. The cluster needs to be resumed from MongoDB Atlas dashboard`);
+          console.error(`   3. SSL certificate issues or network interruption`);
+        }
+        
         console.error(`   Error details: ${errorMessage}`);
-        console.error(`   Please check your MongoDB Atlas cluster status and resume it if paused.`);
         console.error(`   To disable MongoDB entirely, set MONGODB_DISABLED=true`);
         console.error(`   Connection attempts will be cached for 5 minutes to avoid repeated failures.`);
       } else {

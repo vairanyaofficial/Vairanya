@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOrdersByUserId } from "@/lib/orders-mongodb";
 import { initializeMongoDB } from "@/lib/mongodb.server";
 
+// Mark route as dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     // Initialize MongoDB connection

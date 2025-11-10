@@ -7,6 +7,10 @@ import {
   removeFromWishlist,
 } from "@/lib/wishlist-mongodb";
 
+// Mark route as dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Helper to verify Firebase token and get user ID
 async function getUserIdFromToken(request: NextRequest): Promise<string | null> {
   try {
