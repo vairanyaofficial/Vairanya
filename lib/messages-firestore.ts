@@ -27,7 +27,7 @@ function docToMessage(doc: any): ContactMessage {
 // Get all messages
 export async function getAllMessages(): Promise<ContactMessage[]> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -50,7 +50,7 @@ export async function getAllMessages(): Promise<ContactMessage[]> {
 // Get unread messages count
 export async function getUnreadMessagesCount(): Promise<number> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -69,7 +69,7 @@ export async function getUnreadMessagesCount(): Promise<number> {
 // Get message by ID
 export async function getMessageById(id: string): Promise<ContactMessage | null> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -89,7 +89,7 @@ export async function createMessage(
   message: Omit<ContactMessage, "id" | "is_read" | "created_at" | "updated_at">
 ): Promise<ContactMessage> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -117,7 +117,7 @@ export async function updateMessage(
   updates: Partial<Pick<ContactMessage, "is_read">>
 ): Promise<ContactMessage> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -140,7 +140,7 @@ export async function updateMessage(
 // Delete message
 export async function deleteMessage(id: string): Promise<void> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {

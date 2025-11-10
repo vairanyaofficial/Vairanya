@@ -287,7 +287,7 @@ async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: 
                 } catch (fileErr: any) {
                   // If file-based approach fails, provide helpful error message
                   const errorMsg = isDevelopment 
-                    ? `Firestore not initialized. For localhost: Ensure secrets/serviceAccountKey.json exists or set GOOGLE_APPLICATION_CREDENTIALS. For production: Set FIREBASE_SERVICE_ACCOUNT_JSON in Vercel. Error: ${fileErr?.message}`
+                    ? `Database unavailable: ${fileErr?.message}`
                     : `Failed to initialize Firebase app with default credentials: ${err?.message}`;
                   console.error("❌", errorMsg);
                   initializationError = new Error(errorMsg);
@@ -321,11 +321,8 @@ async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: 
       try {
         adminFirestore = getFirestore(adminApp);
         if (adminFirestore) {
-          console.log("✅ Firebase Firestore initialized successfully");
         }
       } catch (err: any) {
-        console.error("❌ Failed to initialize Firebase Admin Firestore:", err?.message);
-        console.error("   Error details:", err);
         adminFirestore = null;
       }
     } else {
@@ -339,9 +336,6 @@ async function doInitializeFirebaseAdmin(): Promise<{ success: boolean; error?: 
     // Check if initialization was successful
     if (!adminAuth || !adminFirestore) {
       const errorMsg = "Firebase Admin SDK partially initialized (Auth or Firestore failed)";
-      console.error("❌", errorMsg);
-      console.error("   Auth initialized:", !!adminAuth);
-      console.error("   Firestore initialized:", !!adminFirestore);
       initializationError = new Error(errorMsg);
       initializationAttempted = true;
       return { success: false, error: errorMsg };

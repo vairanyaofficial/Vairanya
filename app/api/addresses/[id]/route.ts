@@ -48,7 +48,7 @@ export async function PUT(
 
     if (!adminFirestore) {
       return NextResponse.json(
-        { success: false, error: "Firestore not initialized" },
+        { success: false, error: "Database unavailable" },
         { status: 500 }
       );
     }
@@ -140,7 +140,7 @@ export async function DELETE(
 
     if (!adminFirestore) {
       return NextResponse.json(
-        { success: false, error: "Firestore not initialized" },
+        { success: false, error: "Database unavailable" },
         { status: 500 }
       );
     }

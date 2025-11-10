@@ -5,6 +5,12 @@
 .env.local
 .env*.local
 
+# Secrets folder - not supported in Vercel (use FIREBASE_SERVICE_ACCOUNT_JSON env var instead)
+/secrets/
+/secrets/**
+**/secrets/
+**/serviceAccountKey.json
+
 # Test files
 tests/
 **/*.test.ts
@@ -33,7 +39,4 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Note: secrets/ folder should NOT be ignored if you're using file-based credentials
-# But for Vercel, you should use FIREBASE_SERVICE_ACCOUNT_JSON environment variable instead
 

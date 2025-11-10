@@ -33,7 +33,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
     if (!adminFirestore) {
-      logger.error("Firebase Admin Firestore not initialized");
       return NextResponse.json({ 
         error: "Server configuration error", 
         message: "Database service is not properly configured. Please contact support." 

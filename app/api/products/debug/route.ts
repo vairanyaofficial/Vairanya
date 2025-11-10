@@ -66,7 +66,7 @@ export async function GET() {
         };
       }
     } else {
-      debugInfo.firestore.error = debugInfo.firestore.error || "Firestore not initialized";
+      debugInfo.firestore.error = debugInfo.firestore.error || "Database unavailable";
     }
 
     return NextResponse.json({

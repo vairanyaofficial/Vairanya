@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const initResult = await ensureFirebaseInitialized();
     if (!initResult.success || !adminFirestore) {
       return NextResponse.json(
-        { error: initResult.error || "Firestore not initialized" },
+        { error: "Database unavailable" },
         { status: 503 }
       );
     }
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     if (!adminFirestore) {
-      return NextResponse.json({ error: "Firestore not initialized" }, { status: 500 });
+      return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
     }
 
     // Check if user is superuser

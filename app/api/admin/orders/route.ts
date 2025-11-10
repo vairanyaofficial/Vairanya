@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const initResult = await ensureFirebaseInitialized();
     if (!initResult.success || !adminFirestore) {
       return NextResponse.json(
-        { success: false, error: initResult.error || "Firestore not initialized" },
+        { success: false, error: "Database unavailable" },
         { status: 503 }
       );
     }

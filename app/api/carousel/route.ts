@@ -1,12 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCarouselSlides } from "@/lib/carousel-firestore";
 
+// Simple in-memory cache for carousel (60 second TTL)
+let carouselCache: { active: any[]; all: any[]; timestamp: number } | null = null;
+const CACHE_TTL = 60 * 1000; // 60 seconds
+
 // GET - Get all active carousel slides (public endpoint)
 export async function GET(request: NextRequest) {
   try {
     const activeOnly = request.nextUrl.searchParams.get("all") !== "true";
+    
+    // Check cache first
+    const now = Date.now();
+    if (carouselCache && (now - carouselCache.timestamp) < CACHE_TTL) {
+      const slides = activeOnly ? carouselCache.active : carouselCache.all;
+      const response = NextResponse.json({ success: true, slides }, { status: 200 });
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+      response.headers.set('X-Cache', 'HIT');
+      return response;
+    }
+    
     const slides = await getCarouselSlides(activeOnly);
-    return NextResponse.json({ success: true, slides }, { status: 200 });
+    
+    // Update cache
+    if (activeOnly) {
+      carouselCache = { 
+        active: slides, 
+        all: carouselCache?.all || [], 
+        timestamp: now 
+      };
+    } else {
+      carouselCache = { 
+        active: carouselCache?.active || [], 
+        all: slides, 
+        timestamp: now 
+      };
+    }
+    
+    const response = NextResponse.json({ success: true, slides }, { status: 200 });
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    return response;
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || "Failed to fetch carousel slides" },

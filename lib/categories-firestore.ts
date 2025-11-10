@@ -7,7 +7,7 @@ const CATEGORIES_COLLECTION = "categories";
 // Get all categories
 export async function getAllCategories(): Promise<string[]> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -34,7 +34,7 @@ export async function getAllCategories(): Promise<string[]> {
 // Add new category
 export async function addCategory(categoryName: string): Promise<string[]> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {

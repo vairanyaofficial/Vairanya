@@ -6,10 +6,27 @@ import { getFeaturedCollections, getAllCollections } from "@/lib/collections-fir
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+// Simple in-memory cache for collections (60 second TTL)
+let collectionsCache: { featured: any[]; all: any[]; timestamp: number } | null = null;
+const CACHE_TTL = 60 * 1000; // 60 seconds
+
 // GET - Get collections (public endpoint)
 export async function GET(request: NextRequest) {
   try {
     const featured = request.nextUrl.searchParams.get("featured"); // ?featured=true to get only featured collections
+
+    // Check cache first
+    const now = Date.now();
+    if (collectionsCache && (now - collectionsCache.timestamp) < CACHE_TTL) {
+      const collections = featured === "true" ? collectionsCache.featured : collectionsCache.all;
+      const response = NextResponse.json({
+        success: true,
+        collections,
+      });
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+      response.headers.set('X-Cache', 'HIT');
+      return response;
+    }
 
     let collections;
     if (featured === "true") {
@@ -18,31 +35,43 @@ export async function GET(request: NextRequest) {
       collections = await getAllCollections();
     }
     
-    return NextResponse.json({
+    // Update cache
+    if (featured === "true") {
+      collectionsCache = { 
+        featured: collections, 
+        all: collectionsCache?.all || [], 
+        timestamp: now 
+      };
+    } else {
+      collectionsCache = { 
+        featured: collectionsCache?.featured || [], 
+        all: collections, 
+        timestamp: now 
+      };
+    }
+    
+    const response = NextResponse.json({
       success: true,
       collections,
     });
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    return response;
   } catch (error: any) {
     console.error("Error in collections API:", error);
     const errorMessage = String(error?.message || error);
     
     // Check if it's a Firestore initialization error
-    const isFirestoreError = errorMessage.includes("Firestore not initialized") || 
+    const isFirestoreError = errorMessage.includes("Database unavailable") || 
                              errorMessage.includes("Firebase");
     
+    // Return success with empty array instead of error to prevent frontend issues
     return NextResponse.json(
       {
-        success: false,
-        error: "Failed to fetch collections",
-        message: errorMessage,
+        success: true,
         collections: [], // Return empty array on error
-        debug: {
-          firestoreError: isFirestoreError,
-          hasServiceAccountJson: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
-          hasGoogleAppCreds: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
-        }
+        error: isFirestoreError ? "Database unavailable" : "Failed to fetch collections",
       },
-      { status: isFirestoreError ? 503 : 500 }
+      { status: 200 }
     );
   }
 }

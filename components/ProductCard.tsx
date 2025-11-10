@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React from "react";
+import React, { useMemo } from "react";
 import type { Product } from "@/lib/products-types";
 import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/wishlist-context";
@@ -16,13 +16,19 @@ type Props = {
   priority?: boolean; // For above-the-fold images
 };
 
-const ProductCard: React.FC<Props> = ({ product, priority = false }) => {
+const ProductCard: React.FC<Props> = React.memo(({ product, priority = false }) => {
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { user } = useAuth();
   const { showWarning, showSuccess } = useToast();
   const inWishlist = isInWishlist(product.product_id);
   const isOutOfStock = product.stock_qty === 0;
+
+  // Memoize image URL to avoid recalculating on every render
+  const imageUrl = useMemo(() => {
+    const validImages = filterValidImageUrls(product.images || []);
+    return validImages.length > 0 ? validImages[0] : getFallbackImageUrl();
+  }, [product.images]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -72,19 +78,17 @@ const ProductCard: React.FC<Props> = ({ product, priority = false }) => {
         {/* Image Container - Mobile Optimized */}
         <div className="relative aspect-square bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-black/20 dark:to-black/20 overflow-hidden backdrop-blur-sm">
           <OptimizedImage
-            src={(() => {
-              const validImages = filterValidImageUrls(product.images || []);
-              return validImages.length > 0 ? validImages[0] : getFallbackImageUrl();
-            })()}
+            src={imageUrl}
             alt={product.title}
             fill
             className="object-contain p-1.5 sm:p-2 md:p-3 group-active:scale-105 md:group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            quality={85}
+            quality={priority ? 80 : 70}
             priority={priority}
             loading={priority ? undefined : "lazy"}
             transformation={[{
               format: 'auto',
+              quality: priority ? 80 : 70,
             }]}
             objectFit="contain"
           />
@@ -148,6 +152,17 @@ const ProductCard: React.FC<Props> = ({ product, priority = false }) => {
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  return (
+    prevProps.product.product_id === nextProps.product.product_id &&
+    prevProps.product.stock_qty === nextProps.product.stock_qty &&
+    prevProps.product.price === nextProps.product.price &&
+    prevProps.product.images?.length === nextProps.product.images?.length &&
+    prevProps.priority === nextProps.priority
+  );
+});
+
+ProductCard.displayName = 'ProductCard';
 
 export default ProductCard;

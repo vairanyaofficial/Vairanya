@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
     logger.error("Error creating order", error);
     
     // Check if it's a Firebase/Firestore initialization error
-    if (error.message && error.message.includes("Firestore not initialized")) {
+    if (error.message && error.message.includes("Database unavailable")) {
       return NextResponse.json(
         {
           success: false,

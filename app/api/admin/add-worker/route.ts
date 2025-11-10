@@ -7,7 +7,7 @@ import { FieldValue } from "firebase-admin/firestore";
 export async function POST(req: NextRequest) {
   try {
     if (!adminFirestore) {
-      return NextResponse.json({ error: "Firestore not initialized" }, { status: 500 });
+      return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
     }
 
     // Check if user is superuser (for security)

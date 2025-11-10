@@ -9,7 +9,7 @@ const CUSTOMERS_COLLECTION = "customers";
 // Get all unique customers from orders and customers collection
 export async function getAllCustomers(): Promise<Customer[]> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -75,7 +75,7 @@ export async function getAllCustomers(): Promise<Customer[]> {
 // Get customer by email
 export async function getCustomerByEmail(email: string): Promise<Customer | null> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -89,7 +89,7 @@ export async function getCustomerByEmail(email: string): Promise<Customer | null
 // Get customer by user ID
 export async function getCustomerByUserId(userId: string): Promise<Customer | null> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {

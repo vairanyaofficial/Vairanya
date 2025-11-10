@@ -86,131 +86,167 @@ export default function Page() {
   const [isLoadingOffers, setIsLoadingOffers] = useState(true);
   const [isLoadingReviews, setIsLoadingReviews] = useState(true);
 
-  // Function to fetch featured reviews
-  const fetchReviews = () => {
+  // Function to fetch reviews (used as callback for ReviewForm)
+  const fetchReviews = useCallback(async () => {
     setIsLoadingReviews(true);
-    fetch("/api/reviews/featured")
-      .then((res) => res.json())
-      .then((data) => {
+    try {
+      const res = await fetch("/api/reviews/featured");
+      if (res.ok) {
+        const data = await res.json();
         if (data.success && data.reviews) {
           setReviews(data.reviews);
         }
-        setIsLoadingReviews(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load reviews:", err);
-        setIsLoadingReviews(false);
-      });
-  };
+      }
+    } catch (err) {
+      console.error("Failed to load reviews:", err);
+    } finally {
+      setIsLoadingReviews(false);
+    }
+  }, []);
 
   useEffect(() => {
-    // Fetch all products from public API endpoint
-    setIsLoadingProducts(true);
-    fetch("/api/products")
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`API returned ${res.status}: ${res.statusText}`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (data.success && Array.isArray(data.products)) {
-          setAllProducts(data.products);
-          // Products are already sorted by createdAt desc from API
-          // Show the 4 most recent products (newest first)
-          // This ensures newly added products appear on homepage
-          setFeaturedProducts(data.products.slice(0, 4));
-        setIsLoadingProducts(false);
-        } else {
-          // API returned success: false or invalid data, try fallback
-          console.warn("API returned unsuccessful response, trying fallback:", data.error || "Unknown error");
-          throw new Error(data.error || "API returned unsuccessful response");
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to fetch products from API:", error);
-        console.error("Error details:", {
-          message: error?.message,
-          stack: error?.stack,
-        });
-        
-        // Log error for production debugging
-        if (process.env.NODE_ENV === "production") {
-          console.error("Production error - Products API failed. Check:");
-          console.error("1. Firestore initialization in Vercel logs");
-          console.error("2. FIREBASE_SERVICE_ACCOUNT_JSON environment variable");
-          console.error("3. Visit /api/products/debug for diagnostics");
-        }
-        
-        // Fallback to static import
-        import("@/lib/products").then((mod) => {
-          console.warn("Using fallback static products");
-          setAllProducts(mod.products);
-          const staticNew = mod.products.filter((p: Product) => p.is_new);
-          if (staticNew.length > 0) {
-            setFeaturedProducts(staticNew.slice(0, 4));
-          } else {
-            setFeaturedProducts(mod.products.slice(0, 4));
+    // Set a timeout to ensure loading states are cleared even if APIs hang
+    const timeoutId = setTimeout(() => {
+      setIsLoadingProducts(false);
+      setIsLoadingCollections(false);
+      setIsLoadingOffers(false);
+      setIsLoadingCarousel(false);
+      setIsLoadingReviews(false);
+    }, 10000); // 10 second timeout
+
+    // Parallel fetch all APIs for better performance
+    const fetchAllData = async () => {
+      try {
+        // Set all loading states to true
+        setIsLoadingProducts(true);
+        setIsLoadingCollections(true);
+        setIsLoadingOffers(true);
+        setIsLoadingCarousel(true);
+        setIsLoadingReviews(true);
+
+        // Fetch all APIs in parallel - limit products to 20 for faster initial load
+        const [productsRes, collectionsRes, offersRes, carouselRes, reviewsRes] = await Promise.allSettled([
+          fetch("/api/products?limit=20"),
+          fetch("/api/collections?featured=true"),
+          fetch("/api/offers"),
+          fetch("/api/carousel"),
+          fetch("/api/reviews/featured")
+        ]);
+
+        // Process products - always set state to trigger re-render
+        if (productsRes.status === 'fulfilled' && productsRes.value.ok) {
+          try {
+            const productsData = await productsRes.value.json();
+            if (productsData.success && Array.isArray(productsData.products)) {
+              // Always set products to trigger component re-render
+              setAllProducts(productsData.products);
+              if (productsData.products.length > 0) {
+                setFeaturedProducts(productsData.products.slice(0, 4));
+                console.log("✅ Products loaded:", productsData.products.length);
+              } else {
+                setFeaturedProducts([]);
+                console.warn("⚠️ Products array is empty");
+              }
+            } else {
+              console.warn("⚠️ Products API returned invalid data:", productsData);
+              setAllProducts([]);
+              setFeaturedProducts([]);
+            }
+          } catch (e) {
+            console.error("❌ Error parsing products data:", e);
+            setAllProducts([]);
+            setFeaturedProducts([]);
           }
-          setIsLoadingProducts(false);
-        }).catch((fallbackError) => {
-          console.error("Fallback also failed:", fallbackError);
-          setIsLoadingProducts(false);
-        });
-      });
+        } else {
+          if (productsRes.status === 'rejected') {
+            console.error("❌ Products API rejected:", productsRes.reason);
+          } else if (productsRes.status === 'fulfilled' && !productsRes.value.ok) {
+            console.error("❌ Products API error:", productsRes.value.status);
+          }
+          // Set empty arrays on error to trigger re-render
+          setAllProducts([]);
+          setFeaturedProducts([]);
+        }
+        setIsLoadingProducts(false);
 
-    // Fetch featured collections
-    setIsLoadingCollections(true);
-    fetch("/api/collections?featured=true")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.collections) {
-          setFeaturedCollections(data.collections);
-        } else if (data.debug?.firestoreError) {
-          // Firestore initialization error - log but don't show to user
-          console.warn("Collections API: Firestore not initialized. This is expected if running locally without credentials.");
-          console.warn("For localhost: Create secrets/serviceAccountKey.json");
-          console.warn("For production: Set FIREBASE_SERVICE_ACCOUNT_JSON in Vercel");
+        // Process collections - always try to parse response regardless of status
+        if (collectionsRes.status === 'fulfilled') {
+          try {
+            const collectionsData = await collectionsRes.value.json();
+            // Check for collections array regardless of success flag or status code
+            if (collectionsData && Array.isArray(collectionsData.collections)) {
+              setFeaturedCollections(collectionsData.collections);
+              console.log("✅ Collections loaded:", collectionsData.collections.length);
+            } else {
+              console.warn("⚠️ Collections API returned no collections array:", collectionsData);
+            }
+          } catch (e) {
+            console.error("❌ Error parsing collections data:", e);
+          }
+        } else if (collectionsRes.status === 'rejected') {
+          console.error("❌ Collections API rejected:", collectionsRes.reason);
         }
         setIsLoadingCollections(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load collections:", err);
+
+        // Process offers
+        if (offersRes.status === 'fulfilled' && offersRes.value.ok) {
+          try {
+            const offersData = await offersRes.value.json();
+            if (offersData.success && offersData.offers) {
+              setOffers(offersData.offers.slice(0, 3));
+            }
+          } catch (e) {
+            console.error("Error parsing offers data:", e);
+          }
+        }
+        setIsLoadingOffers(false);
+
+        // Process carousel
+        if (carouselRes.status === 'fulfilled' && carouselRes.value.ok) {
+          try {
+            const carouselData = await carouselRes.value.json();
+            if (carouselData.success && carouselData.slides) {
+              setCarouselSlides(carouselData.slides);
+            }
+          } catch (e) {
+            console.error("Error parsing carousel data:", e);
+          }
+        }
+        setIsLoadingCarousel(false);
+
+        // Process reviews
+        if (reviewsRes.status === 'fulfilled' && reviewsRes.value.ok) {
+          try {
+            const reviewsData = await reviewsRes.value.json();
+            if (reviewsData.success && reviewsData.reviews) {
+              setReviews(reviewsData.reviews);
+            }
+          } catch (e) {
+            console.error("Error parsing reviews data:", e);
+          }
+        }
+        setIsLoadingReviews(false);
+
+        // Clear timeout if everything loaded successfully
+        clearTimeout(timeoutId);
+      } catch (error) {
+        // Handle any unexpected errors
+        console.error("Error fetching data:", error);
+        setIsLoadingProducts(false);
         setIsLoadingCollections(false);
-      });
-
-    // Fetch active offers
-    setIsLoadingOffers(true);
-    fetch("/api/offers")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.offers) {
-          setOffers(data.offers.slice(0, 3)); // Show max 3 offers
-        }
         setIsLoadingOffers(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load offers:", err);
-        setIsLoadingOffers(false);
-      });
-
-    // Fetch carousel slides
-    setIsLoadingCarousel(true);
-    fetch("/api/carousel")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.slides) {
-          setCarouselSlides(data.slides);
-        }
         setIsLoadingCarousel(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load carousel:", err);
-        setIsLoadingCarousel(false);
-      });
+        setIsLoadingReviews(false);
+        clearTimeout(timeoutId);
+      }
+    };
 
-    // Fetch featured reviews
-    fetchReviews();
+    fetchAllData();
+
+    // Cleanup timeout on unmount
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // Create stable render functions using useCallback to avoid SSR serialization issues
@@ -300,7 +336,7 @@ export default function Page() {
       ) : null}
 
       {/* Featured Collections */}
-      {isLoadingCollections ? (
+      {(isLoadingCollections || isLoadingProducts) ? (
         <section className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-12 py-4 md:py-6 lg:py-8">
           <CollectionBannerSkeleton />
           <ProductSliderSkeleton count={4} />
@@ -308,11 +344,14 @@ export default function Page() {
       ) : featuredCollections.length > 0 ? (
         <>
           {featuredCollections.map((collection) => {
-            const collectionProducts = collection.product_ids
-              .map((productId) => allProducts.find((p) => p.product_id === productId))
-              .filter((p): p is Product => p !== undefined);
+            const collectionProducts = allProducts.length > 0
+              ? collection.product_ids
+                  .map((productId) => allProducts.find((p) => p.product_id === productId))
+                  .filter((p): p is Product => p !== undefined)
+              : [];
 
-            if (collectionProducts.length === 0) return null;
+            // Don't hide collection if products haven't loaded yet - show empty state instead
+            // if (collectionProducts.length === 0) return null;
 
             return (
               <section key={collection.id} className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-12 py-3 md:py-6 lg:py-8">
@@ -353,20 +392,20 @@ export default function Page() {
         </>
       ) : null}
 
-      {/* Featured Collection (Fallback - New Products) */}
+      {/* Featured Products - Always show when products are loaded */}
       {isLoadingProducts ? (
-        <section id="collection" className="max-w-7xl mx-auto px-2 md:px-10 lg:px-12 py-3 md:py-8">
+        <section id="featured-products" className="max-w-7xl mx-auto px-2 md:px-10 lg:px-12 py-3 md:py-8">
           <div className="text-center mb-3 md:mb-5">
             <div className="h-6 sm:h-8 w-48 sm:w-64 bg-gray-200 rounded mx-auto mb-2 animate-pulse"></div>
             <div className="h-3 sm:h-4 w-64 sm:w-96 bg-gray-200 rounded mx-auto animate-pulse"></div>
           </div>
           <ProductSliderSkeleton count={4} />
         </section>
-      ) : featuredProducts.length > 0 && featuredCollections.length === 0 ? (
-        <section id="collection" className="max-w-7xl mx-auto px-2 md:px-10 lg:px-12 py-3 md:py-8">
+      ) : featuredProducts.length > 0 ? (
+        <section id="featured-products" className="max-w-7xl mx-auto px-2 md:px-10 lg:px-12 py-3 md:py-8">
           <div className="text-center mb-3 md:mb-5">
-            <h2 className="font-serif text-lg md:text-3xl font-light mb-1 md:mb-1.5 tracking-tight">Featured Collection</h2>
-            <p className="text-xs md:text-base text-gray-600 max-w-2xl mx-auto px-2">Discover our handpicked selection of timeless pieces</p>
+            <h2 className="font-serif text-lg md:text-3xl font-light mb-1 md:mb-1.5 tracking-tight text-gray-900 dark:text-white">Featured Products</h2>
+            <p className="text-xs md:text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto px-2">Discover our handpicked selection of timeless pieces</p>
           </div>
           <HorizontalSlider
             items={featuredProducts}
@@ -516,3 +555,4 @@ export default function Page() {
     </>
   );
 }
+

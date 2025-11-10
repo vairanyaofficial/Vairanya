@@ -10,7 +10,7 @@ const TASKS_COLLECTION = "tasks";
 async function ensureInitialized(): Promise<void> {
   const initResult = await ensureFirebaseInitialized();
   if (!initResult.success || !adminFirestore) {
-    throw new Error(initResult.error || "Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 }
 
@@ -193,8 +193,8 @@ export async function createOrder(
     if (error.code === 7 || error.code === "PERMISSION_DENIED") {
       throw new Error("Permission denied. Please check Firebase Admin configuration and Firestore security rules.");
     }
-    if (error.message && error.message.includes("Firestore not initialized")) {
-      throw new Error("Firestore not initialized. Please check Firebase Admin setup.");
+    if (error.message && error.message.includes("Database unavailable")) {
+      throw new Error("Database unavailable");
     }
     throw new Error(error.message || "Failed to create order");
   }

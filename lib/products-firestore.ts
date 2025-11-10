@@ -61,25 +61,7 @@ export async function getAllProducts(): Promise<Product[]> {
   const initResult = await ensureFirebaseInitialized();
   
   if (!initResult.success || !adminFirestore) {
-    const errorMsg = initResult.error || "Firestore not initialized. Please check FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS environment variables.";
-    console.error("[getAllProducts]", errorMsg);
-    console.error("[getAllProducts] Environment check:", {
-      hasServiceAccountJson: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
-      hasGoogleAppCreds: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
-      nodeEnv: process.env.NODE_ENV,
-      isVercel: !!process.env.VERCEL,
-    });
-    
-    // In production, provide more helpful error message
-    if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-      throw new Error(
-        "Firestore not initialized in production. " +
-        "Please verify FIREBASE_SERVICE_ACCOUNT_JSON is set correctly in Vercel environment variables. " +
-        "Visit /api/products/debug for detailed diagnostics."
-      );
-    }
-    
-    throw new Error(errorMsg);
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -137,7 +119,7 @@ export async function getAllProducts(): Promise<Product[]> {
 // Get product by ID
 export async function getProductById(productId: string): Promise<Product | null> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -152,7 +134,7 @@ export async function getProductById(productId: string): Promise<Product | null>
 // Get product by slug
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -172,7 +154,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 // Create new product
 export async function createProduct(product: Product): Promise<Product> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -232,7 +214,7 @@ export async function updateProduct(
   updates: Partial<Product>
 ): Promise<Product> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -266,7 +248,7 @@ export async function updateProduct(
 // Delete product
 export async function deleteProduct(productId: string): Promise<void> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -329,7 +311,7 @@ export async function generateSKU(category: string): Promise<string> {
 // Get products by category (optimized query)
 export async function getProductsByCategory(category: string, limit: number = 8, excludeProductId?: string): Promise<Product[]> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -355,7 +337,7 @@ export async function getProductsByCategory(category: string, limit: number = 8,
 // Get products by metal finish (optimized query)
 export async function getProductsByMetalFinish(metalFinish: string, limit: number = 8, excludeProductId?: string): Promise<Product[]> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {

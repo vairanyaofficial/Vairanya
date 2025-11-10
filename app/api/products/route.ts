@@ -6,6 +6,10 @@ import { logger } from "@/lib/logger";
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+// Simple in-memory cache for products (60 second TTL)
+let productsCache: { data: any[]; timestamp: number } | null = null;
+const CACHE_TTL = 60 * 1000; // 60 seconds
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -15,45 +19,59 @@ export async function GET(request: NextRequest) {
 
     logger.info(`[API /api/products] Request - limit: ${limit}, offset: ${offset}, getAll: ${getAll}`);
 
-    // Ensure Firestore initialization before attempting to fetch
-    const { adminFirestore, ensureFirebaseInitialized, getFirebaseDiagnostics } = await import("@/lib/firebaseAdmin.server");
+    const { adminFirestore, ensureFirebaseInitialized } = await import("@/lib/firebaseAdmin.server");
     
     // Try to ensure initialization
     const initResult = await ensureFirebaseInitialized();
     if (!initResult.success || !adminFirestore) {
-      const diagnostics = getFirebaseDiagnostics();
-      const errorMsg = initResult.error || "Firestore not initialized. Please check FIREBASE_SERVICE_ACCOUNT_JSON environment variable in Vercel.";
-      logger.error("[API /api/products] " + errorMsg);
-      console.error("[API /api/products] Firestore initialization check failed");
-      console.error("[API /api/products] Diagnostics:", diagnostics);
-      
-      return NextResponse.json(
+      // Return empty products silently
+      const response = NextResponse.json(
         { 
-          success: false, 
-          error: errorMsg,
-          errorCode: "FIRESTORE_NOT_INITIALIZED",
+          success: true, 
           products: [],
           total: 0,
           hasMore: false,
-          debug: diagnostics
         },
-        { status: 503 } // Service Unavailable
+        { status: 200 }
       );
+      response.headers.set('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30');
+      return response;
+    }
+
+    // Check cache first (only for non-paginated requests)
+    const now = Date.now();
+    if (getAll && productsCache && (now - productsCache.timestamp) < CACHE_TTL) {
+      const allProducts = productsCache.data;
+      const response = NextResponse.json({ 
+        success: true, 
+        products: allProducts, 
+        total: allProducts.length 
+      });
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+      response.headers.set('X-Cache', 'HIT');
+      return response;
     }
 
     // Fetch products from Firestore
     const allProducts = await getAllProducts();
+    
+    // Update cache for getAll requests
+    if (getAll) {
+      productsCache = { data: allProducts, timestamp: now };
+    }
     
     logger.info(`[API /api/products] Fetched ${allProducts.length} total products from Firestore`);
     
     // If requesting all products (for max price calculation), return all
     if (getAll) {
       logger.info(`[API /api/products] Returning all ${allProducts.length} products`);
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         success: true, 
         products: allProducts, 
         total: allProducts.length 
       });
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+      return response;
     }
 
     // Paginate products
@@ -62,7 +80,7 @@ export async function GET(request: NextRequest) {
     
     logger.info(`[API /api/products] Returning ${paginatedProducts.length} products (offset: ${offset}, limit: ${limit}, total: ${allProducts.length}, hasMore: ${hasMore})`);
     
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       products: paginatedProducts,
       total: allProducts.length,
@@ -70,6 +88,8 @@ export async function GET(request: NextRequest) {
       offset,
       limit
     });
+    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
+    return response;
   } catch (error: any) {
     // Enhanced error logging for production debugging
     const errorMessage = error?.message || "Unknown error";
@@ -91,26 +111,15 @@ export async function GET(request: NextRequest) {
       stack: process.env.NODE_ENV === "development" ? errorStack : undefined,
     });
     
-    // Check if it's a Firestore initialization error
-    const isFirestoreError = errorMessage.includes("Firestore not initialized") || 
-                             errorMessage.includes("Firebase") ||
-                             errorCode.includes("FIRESTORE");
-    
+    // Return empty products silently
     return NextResponse.json(
       { 
-        success: false, 
-        error: errorMessage,
-        errorCode: isFirestoreError ? "FIRESTORE_ERROR" : errorCode,
-        products: [], // Return empty array on error
+        success: true,
+        products: [],
         total: 0,
         hasMore: false,
-        debug: {
-          firestoreError: isFirestoreError,
-          hasServiceAccountJson: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
-          hasGoogleAppCreds: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
-        }
       },
-      { status: isFirestoreError ? 503 : 500 }
+      { status: 200 }
     );
   }
 }

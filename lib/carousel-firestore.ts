@@ -9,7 +9,7 @@ const CAROUSEL_COLLECTION = "carousel_slides";
 async function ensureInitialized(): Promise<void> {
   const initResult = await ensureFirebaseInitialized();
   if (!initResult.success || !adminFirestore) {
-    throw new Error(initResult.error || "Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 }
 

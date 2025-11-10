@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     if (!adminFirestore) {
       return NextResponse.json(
-        { success: false, error: "Firestore not initialized" },
+        { success: false, error: "Database unavailable" },
         { status: 500 }
       );
     }
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     if (!adminFirestore) {
       return NextResponse.json(
-        { success: false, error: "Firestore not initialized" },
+        { success: false, error: "Database unavailable" },
         { status: 500 }
       );
     }
@@ -150,7 +150,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!adminFirestore) {
       return NextResponse.json(
-        { success: false, error: "Firestore not initialized" },
+        { success: false, error: "Database unavailable" },
         { status: 500 }
       );
     }

@@ -22,7 +22,6 @@ export async function syncCustomerToFirestore(
   userId?: string
 ): Promise<void> {
   if (!adminFirestore) {
-    console.error("Firestore not initialized - cannot sync customer");
     return;
   }
 
@@ -80,7 +79,6 @@ export async function syncCustomerToFirestore(
       await customerRef.set(cleanData);
     }
   } catch (error: any) {
-    console.error("Error syncing customer to Firestore:", error);
     // Don't throw - allow registration/login to continue even if sync fails
     // Just log the error
   }
@@ -89,7 +87,7 @@ export async function syncCustomerToFirestore(
 // Get customer from Firestore
 export async function getCustomerFromFirestore(email: string): Promise<CustomerData | null> {
   if (!adminFirestore) {
-    throw new Error("Firestore not initialized");
+    throw new Error("Database unavailable");
   }
 
   try {
@@ -99,7 +97,6 @@ export async function getCustomerFromFirestore(email: string): Promise<CustomerD
     }
     return customerDoc.data() as CustomerData;
   } catch (error) {
-    console.error("Error getting customer from Firestore:", error);
     return null;
   }
 }

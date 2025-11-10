@@ -14,7 +14,7 @@ export async function PATCH(
 ) {
   try {
     if (!adminFirestore) {
-      return NextResponse.json({ error: "Firestore not initialized" }, { status: 500 });
+      return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
     }
 
     // Check if user is superuser
@@ -149,7 +149,7 @@ export async function DELETE(
 ) {
   try {
     if (!adminFirestore) {
-      return NextResponse.json({ error: "Firestore not initialized" }, { status: 500 });
+      return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
     }
 
     // Check if user is superuser
