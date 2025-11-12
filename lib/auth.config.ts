@@ -6,6 +6,25 @@ import { initializeMongoDB } from "@/lib/mongodb.server";
 import { getMongoDB } from "@/lib/mongodb.server";
 import bcrypt from "bcryptjs";
 
+// Get the base URL for NextAuth
+// In production, use NEXTAUTH_URL from env, otherwise try to detect from request
+function getBaseUrl(): string {
+  // If NEXTAUTH_URL is explicitly set, use it
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL;
+  }
+  
+  // In production, try to detect from VERCEL_URL or other platform URLs
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Fallback to localhost for development
+  return process.env.NODE_ENV === "production" 
+    ? "https://www.vairanya.in"
+    : "http://localhost:3000";
+}
+
 // Check if Google OAuth is configured
 const hasGoogleOAuth = 
   process.env.GOOGLE_CLIENT_ID && 
@@ -14,6 +33,10 @@ const hasGoogleOAuth =
   process.env.GOOGLE_CLIENT_SECRET.trim() !== "";
 
 export const authOptions: NextAuthConfig = {
+  // Set the base URL for callbacks
+  basePath: "/api/auth",
+  // Trust the host header in production (for platforms like Vercel)
+  trustHost: true,
   providers: [
     // Only include Google provider if credentials are configured
     ...(hasGoogleOAuth ? [
