@@ -107,10 +107,10 @@ const Header: React.FC = () => {
                         {user ? (
                           <div className="mb-3 pb-3 border-b border-gray-200 dark:border-[#1a1a1a]">
                             <div className="flex items-center gap-2 mb-2 p-1.5 rounded-md bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10">
-                              {user.photoURL ? (
+                              {user.image ? (
                                 <img
-                                  src={user.photoURL}
-                                  alt={user.displayName || "User"}
+                                  src={user.image}
+                                  alt={user.name || "User"}
                                   width={28}
                                   height={28}
                                   className="w-7 h-7 rounded-full border border-white dark:border-[#1a1a1a] shadow-sm object-cover bg-gray-100 dark:bg-gray-800"
@@ -124,19 +124,19 @@ const Header: React.FC = () => {
                                     if (parent && !parent.querySelector('.user-fallback')) {
                                       const fallback = document.createElement('div');
                                       fallback.className = 'user-fallback w-7 h-7 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C19B2E] flex items-center justify-center text-white font-semibold text-xs shadow-sm';
-                                      fallback.textContent = user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U";
+                                      fallback.textContent = user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U";
                                       parent.appendChild(fallback);
                                     }
                                   }}
                                 />
                               ) : (
                                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C19B2E] flex items-center justify-center text-white font-semibold text-xs shadow-sm">
-                                  {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
+                                  {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
                                 </div>
                               )}
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
-                                  {user.displayName || "User"}
+                                  {user.name || "User"}
                                 </p>
                                 <p className="text-[10px] text-gray-500 dark:text-gray-500 truncate">{user.email}</p>
                               </div>
@@ -378,10 +378,10 @@ const Header: React.FC = () => {
                       className="flex items-center gap-1 sm:gap-1.5 px-1 sm:px-1.5 py-1 text-gray-700 dark:text-gray-400 hover:opacity-80 transition-all rounded-lg hover:bg-gray-50 dark:hover:bg-[#1a1a1a] touch-manipulation"
                       aria-label="Account menu"
                     >
-                      {user.photoURL ? (
+                      {user.image ? (
                         <img
-                          src={user.photoURL}
-                          alt={user.displayName || "User"}
+                          src={user.image}
+                          alt={user.name || "User"}
                           width={28}
                           height={28}
                           className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border border-gray-200 hover:border-[#D4AF37] transition-colors object-cover bg-gray-100 dark:bg-gray-800"
@@ -395,14 +395,14 @@ const Header: React.FC = () => {
                             if (parent && !parent.querySelector('.user-fallback')) {
                               const fallback = document.createElement('div');
                               fallback.className = 'user-fallback w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C19B2E] flex items-center justify-center text-white font-semibold text-xs';
-                              fallback.textContent = user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U";
+                               fallback.textContent = user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U";
                               parent.appendChild(fallback);
                             }
                           }}
                         />
                       ) : (
                         <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C19B2E] flex items-center justify-center text-white font-semibold text-xs">
-                          {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
+                          {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
                         </div>
                       )}
                     </button>

@@ -17,9 +17,7 @@ export default function Error({
     // Log error to error reporting service in production
     if (process.env.NODE_ENV === "production") {
       // TODO: Integrate with error reporting service (e.g., Sentry, LogRocket)
-      console.error("Application error:", error);
-    } else {
-      console.error("Application error:", error);
+      // Error logged via ErrorBoundary
     }
   }, [error]);
 

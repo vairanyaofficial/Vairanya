@@ -1,8 +1,8 @@
 // app/api/admin/login/route.ts
 import { NextResponse } from "next/server";
-import { adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import { auth } from "@/lib/auth";
 import { initializeMongoDB } from "@/lib/mongodb.server";
-import { getAdminByUid } from "@/lib/admins-mongodb";
+import { getMongoDB } from "@/lib/mongodb.server";
 import { logger } from "@/lib/logger";
 import { rateLimiters } from "@/lib/rate-limit";
 
@@ -30,24 +30,25 @@ export async function POST(req: Request) {
       );
     }
 
-    // Ensure Firebase Admin is properly initialized (for token verification)
-    let initResult;
-    try {
-      initResult = await ensureFirebaseInitialized();
-      if (!initResult.success || !adminAuth) {
-        const errorMessage = initResult.success ? "Unknown error" : (initResult as { success: false; error: string }).error;
-        logger.error("Firebase Admin not initialized", { error: errorMessage });
-        return NextResponse.json({ 
-          error: "Server configuration error", 
-          message: "Authentication service is temporarily unavailable. Please try again later." 
-        }, { status: 503 });
-      }
-    } catch (initError: any) {
-      logger.error("Firebase initialization exception in admin/login", initError);
+    // Get NextAuth session
+    const session = await auth();
+    
+    // Log session status for debugging (only in development)
+    if (process.env.NODE_ENV === "development") {
+      logger.info("Admin login attempt", {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        hasEmail: !!session?.user?.email,
+        email: session?.user?.email || "none",
+        userId: session?.user?.id || "none",
+      });
+    }
+    
+    if (!session?.user?.email) {
       return NextResponse.json({ 
-        error: "Server configuration error", 
-        message: "Authentication service is temporarily unavailable. Please try again later." 
-      }, { status: 503 });
+        error: "Not authenticated", 
+        message: "Please sign in with Google first. Make sure you complete the Google OAuth flow." 
+      }, { status: 401 });
     }
 
     // Initialize MongoDB for admin role checking
@@ -60,67 +61,39 @@ export async function POST(req: Request) {
       }, { status: 503 });
     }
 
-    const body = await req.json().catch((e) => ({ __parseError: String(e) }));
-    if (!body || !body.idToken) return NextResponse.json({ error: "Missing idToken", body }, { status: 400 });
-
-    // verify idToken
-    let decoded: any;
-    try {
-      decoded = await adminAuth.verifyIdToken(body.idToken);
-    } catch (err: any) {
-      // Log detailed error for debugging (remove sensitive info in production)
-      const errorMessage = err?.message || String(err);
-      logger.error("Admin login verifyIdToken error", err, {
-        errorCode: err?.code,
-        hasToken: !!body.idToken,
-        tokenLength: body.idToken?.length,
-      });
-      
-      // Provide more helpful error messages
-      let userMessage = "Authentication failed";
-      if (errorMessage.includes("auth/id-token-expired")) {
-        userMessage = "Your session has expired. Please sign in again.";
-      } else if (errorMessage.includes("auth/argument-error")) {
-        userMessage = "Invalid authentication token. Please try signing in again.";
-      } else if (errorMessage.includes("auth/id-token-revoked")) {
-        userMessage = "Your session was revoked. Please sign in again.";
-      }
-      
+    const db = getMongoDB();
+    if (!db) {
       return NextResponse.json({ 
-        error: "verifyIdToken failed", 
-        message: userMessage,
-        details: process.env.NODE_ENV === "development" ? errorMessage : undefined
-      }, { status: 401 });
+        error: "Database unavailable", 
+        message: "Admin database is temporarily unavailable. Please try again later." 
+      }, { status: 503 });
     }
 
-    const uid = decoded?.uid;
-    if (!uid) return NextResponse.json({ error: "Token missing uid", decoded }, { status: 401 });
-
-    // Read admin from MongoDB
-    let adminData;
-    try {
-      adminData = await getAdminByUid(uid);
-    } catch (err: any) {
-      logger.error("MongoDB read failed in admin/login", { error: err?.message || err });
-      return NextResponse.json({ error: "Database read failed", message: String(err?.message || err) }, { status: 500 });
+    // Find admin by email (case-insensitive)
+    // MongoDB doesn't support case-insensitive queries by default, so we'll search with regex
+    const userEmail = session.user.email?.toLowerCase().trim();
+    const adminData = await db.collection("Admin").findOne({
+      email: { $regex: new RegExp(`^${userEmail}$`, "i") },
+    });
+    
+    // Log for debugging (only in development)
+    if (process.env.NODE_ENV === "development") {
+      logger.info("Admin login check", {
+        userEmail: session.user.email,
+        normalizedEmail: userEmail,
+        adminFound: !!adminData,
+        adminEmail: adminData?.email,
+      });
     }
 
     // SECURITY: User must be manually added by superadmin - no auto-creation
     if (!adminData) {
-      // Only log as security warning if this is an actual login attempt (not just a check)
-      // Check if this is a customer login check (has X-Check-Only header)
-      const isCheckOnly = req.headers.get("X-Check-Only") === "true";
-      
-      if (!isCheckOnly) {
-        // Log failed login attempt for security monitoring (without sensitive data)
-        logger.warn("Unauthorized admin login attempt", {
-          uid: uid.substring(0, 8) + "...",
-          email: decoded.email || "N/A",
-        });
-      }
+      logger.warn("Unauthorized admin login attempt", {
+        email: session.user.email,
+      });
       
       return NextResponse.json({ 
-        error: "Access denied. Your account is not registered as an admin. Please contact a superadmin to grant you access." 
+        error: "Access denied. Your account is not registered as an organizer (worker, admin, or superadmin). Please contact a superadmin to add your account to the system." 
       }, { status: 403 });
     }
 
@@ -138,18 +111,17 @@ export async function POST(req: Request) {
 
     // Return user object for client
     const user = {
-      username: uid, // Use UID as username
+      username: adminData.uid || session.user.id || session.user.email,
       role: role, // Mapped role: "superuser", "admin", or "worker"
-      name: decoded.name || adminData.name || decoded.email?.split("@")[0] || "Admin",
+      name: adminData.name || session.user.name || session.user.email?.split("@")[0] || "Admin",
     };
 
     // Log for debugging (only in development)
     if (process.env.NODE_ENV === "development") {
       logger.info("Admin login successful", {
-        uid: uid.substring(0, 8) + "...",
+        email: session.user.email,
         mongoRole: adminData.role,
         mappedRole: role,
-        email: decoded.email || "N/A",
       });
     }
 
@@ -165,6 +137,7 @@ export async function POST(req: Request) {
       }),
     });
   } catch (err: any) {
+    logger.error("Admin login error", { error: err?.message || String(err) });
     return NextResponse.json({ error: "Unexpected server error", message: String(err?.message || err) }, { status: 500 });
   }
 }

@@ -1,150 +1,35 @@
-// Messages Firestore service - server-side only
+// Messages MongoDB service - server-side only
+// This file maintains backward compatibility by re-exporting MongoDB functions
 import "server-only";
-import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import * as messagesMongo from "./messages-mongodb";
 import type { ContactMessage } from "./messages-types";
 
-const MESSAGES_COLLECTION = "contact_messages";
-
-// Helper function to ensure Firestore is initialized
-async function ensureInitialized(): Promise<void> {
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-}
-
-// Convert Firestore document to ContactMessage
-function docToMessage(doc: any): ContactMessage {
-  const data = doc.data();
-  return {
-    id: doc.id,
-    name: data.name || "",
-    email: data.email || "",
-    phone: data.phone || undefined,
-    message: data.message || "",
-    is_read: data.is_read !== undefined ? data.is_read : false,
-    created_at: data.created_at 
-      ? (typeof data.created_at === 'string' ? data.created_at : data.created_at.toDate?.()?.toISOString() || new Date().toISOString())
-      : new Date().toISOString(),
-    updated_at: data.updated_at 
-      ? (typeof data.updated_at === 'string' ? data.updated_at : data.updated_at.toDate?.()?.toISOString() || new Date().toISOString())
-      : new Date().toISOString(),
-  };
-}
-
-// Get all messages
+// Re-export all MongoDB functions
 export async function getAllMessages(): Promise<ContactMessage[]> {
-  await ensureInitialized();
-
-  try {
-    const snapshot = await adminFirestore!
-      .collection(MESSAGES_COLLECTION)
-      .orderBy("created_at", "desc")
-      .get();
-
-    if (snapshot.empty) {
-      return [];
-    }
-
-    return snapshot.docs.map(docToMessage);
-  } catch (error) {
-    console.error("Error fetching messages:", error);
-    return [];
-  }
+  return messagesMongo.getAllMessages();
 }
 
-// Get unread messages count
 export async function getUnreadMessagesCount(): Promise<number> {
-  await ensureInitialized();
-
-  try {
-    const snapshot = await adminFirestore!
-      .collection(MESSAGES_COLLECTION)
-      .where("is_read", "==", false)
-      .get();
-
-    return snapshot.size;
-  } catch (error: any) {
-    console.error("Error fetching unread messages count:", error);
-    // For query errors, return 0 as a safe fallback
-    // Initialization errors are thrown before this try-catch, so they propagate to the caller
-    return 0;
-  }
+  return messagesMongo.getUnreadMessagesCount();
 }
 
-// Get message by ID
 export async function getMessageById(id: string): Promise<ContactMessage | null> {
-  await ensureInitialized();
-
-  try {
-    const doc = await adminFirestore!.collection(MESSAGES_COLLECTION).doc(id).get();
-    if (!doc.exists) {
-      return null;
-    }
-    return docToMessage(doc);
-  } catch (error) {
-    console.error("Error fetching message:", error);
-    return null;
-  }
+  return messagesMongo.getMessageById(id);
 }
 
-// Create new message
 export async function createMessage(
-  message: Omit<ContactMessage, "id" | "is_read" | "created_at" | "updated_at">
+  message: Omit<ContactMessage, "id" | "created_at" | "updated_at">
 ): Promise<ContactMessage> {
-  await ensureInitialized();
-
-  try {
-    const messageData = {
-      name: message.name,
-      email: message.email,
-      phone: message.phone || null,
-      message: message.message,
-      is_read: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    const docRef = await adminFirestore!.collection(MESSAGES_COLLECTION).add(messageData);
-    const doc = await docRef.get();
-    return docToMessage(doc);
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to create message");
-  }
+  return messagesMongo.createMessage(message);
 }
 
-// Update message (mark as read/unread)
 export async function updateMessage(
   id: string,
-  updates: Partial<Pick<ContactMessage, "is_read">>
+  updates: Partial<Omit<ContactMessage, "id" | "created_at">>
 ): Promise<ContactMessage> {
-  await ensureInitialized();
-
-  try {
-    const updateData: any = {
-      updated_at: new Date().toISOString(),
-    };
-
-    if (updates.is_read !== undefined) {
-      updateData.is_read = updates.is_read;
-    }
-
-    await adminFirestore!.collection(MESSAGES_COLLECTION).doc(id).update(updateData);
-    const updatedDoc = await adminFirestore!.collection(MESSAGES_COLLECTION).doc(id).get();
-    return docToMessage(updatedDoc);
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to update message");
-  }
+  return messagesMongo.updateMessage(id, updates);
 }
 
-// Delete message
 export async function deleteMessage(id: string): Promise<void> {
-  await ensureInitialized();
-
-  try {
-    await adminFirestore!.collection(MESSAGES_COLLECTION).doc(id).delete();
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to delete message");
-  }
+  return messagesMongo.deleteMessage(id);
 }
-

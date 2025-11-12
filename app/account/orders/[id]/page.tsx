@@ -24,12 +24,7 @@ export default function OrderDetailPage() {
   const fetchAddresses = async () => {
     if (!user) return;
     try {
-      const token = await user.getIdToken();
-      if (!token) return;
-
-      const response = await fetch("/api/addresses", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch("/api/addresses");
       const data = await response.json();
       if (data.success && data.addresses) {
         setAddresses(data.addresses || []);
@@ -49,7 +44,7 @@ export default function OrderDetailPage() {
       
       if (data.success && data.order) {
         // Verify order belongs to user
-        if (data.order.user_id !== user.uid) {
+        if (data.order.user_id !== (user.id || user.uid)) {
           router.push("/account");
           return;
         }
@@ -80,13 +75,11 @@ export default function OrderDetailPage() {
 
     try {
       setIsCancelling(true);
-      const token = await user.getIdToken();
       
       const response = await fetch(`/api/orders/${order.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({ action: "cancel" }),
       });
@@ -145,12 +138,6 @@ export default function OrderDetailPage() {
 
     try {
       setIsSavingAddress(true);
-      const token = await user.getIdToken();
-      if (!token) {
-        showToast("Authentication required");
-        setIsSavingAddress(false);
-        return;
-      }
 
       const addressData = {
         name: order.shipping_address.name,
@@ -167,7 +154,6 @@ export default function OrderDetailPage() {
       const response = await fetch("/api/addresses", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(addressData),

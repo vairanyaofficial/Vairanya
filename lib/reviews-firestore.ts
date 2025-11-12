@@ -1,159 +1,38 @@
-// Reviews Firestore service - server-side only
+// Reviews MongoDB service - server-side only
+// This file maintains backward compatibility by re-exporting MongoDB functions
 import "server-only";
-import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import * as reviewsMongo from "./reviews-mongodb";
 import type { Review } from "./reviews-types";
 
-const REVIEWS_COLLECTION = "reviews";
-
-// Helper function to ensure Firestore is initialized
-async function ensureInitialized(): Promise<void> {
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
+// Re-export all MongoDB functions
+export async function getAllReviews(): Promise<Review[]> {
+  return reviewsMongo.getAllReviews();
 }
 
-// Get FieldValue for serverTimestamp
-let FieldValue: any = null;
-try {
-  const firestoreModule = require("firebase-admin/firestore");
-  FieldValue = firestoreModule.FieldValue;
-} catch (err) {
-  // Fallback to regular timestamp if FieldValue not available
+export async function getFeaturedReviews(limit: number = 10): Promise<Review[]> {
+  return reviewsMongo.getFeaturedReviews(limit);
 }
 
-// Convert Firestore document to Review
-function docToReview(doc: any): Review {
-  const data = doc.data();
+export async function createReview(review: Omit<Review, "id" | "created_at" | "updated_at">): Promise<Review> {
+  const reviewId = await reviewsMongo.createReview(review);
+  // createReview returns the ID, so we need to construct the Review object
+  // Since we just created it, we know the data
   return {
-    id: doc.id,
-    customer_name: data.customer_name || "",
-    customer_email: data.customer_email || undefined,
-    rating: data.rating || 5,
-    review_text: data.review_text || "",
-    is_featured: data.is_featured || false,
-    created_at: data.created_at 
-      ? (typeof data.created_at === 'string' ? data.created_at : data.created_at.toDate?.()?.toISOString() || new Date().toISOString())
-      : (data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()),
-    updated_at: data.updated_at 
-      ? (typeof data.updated_at === 'string' ? data.updated_at : data.updated_at.toDate?.()?.toISOString() || undefined)
-      : (data.updatedAt?.toDate?.()?.toISOString() || undefined),
+    id: reviewId,
+    customer_name: review.customer_name,
+    customer_email: review.customer_email,
+    rating: review.rating,
+    review_text: review.review_text,
+    is_featured: false,
+    created_at: new Date().toISOString(),
+    updated_at: undefined,
   };
 }
 
-// Get all reviews
-export async function getAllReviews(): Promise<Review[]> {
-  await ensureInitialized();
-
-  try {
-    // Add timeout to prevent hanging queries
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("Firestore query timeout (10s)")), 10000)
-    );
-    
-    const queryPromise = adminFirestore
-      .collection(REVIEWS_COLLECTION)
-      .orderBy("created_at", "desc")
-      .get();
-    
-    const snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
-
-    return snapshot.docs.map(docToReview);
-  } catch (error: any) {
-    console.error("Error fetching reviews:", {
-      message: error?.message,
-      code: error?.code,
-      name: error?.name,
-    });
-    // Return empty array instead of throwing to prevent app crashes
-    return [];
-  }
-}
-
-// Get featured reviews
-export async function getFeaturedReviews(): Promise<Review[]> {
-  await ensureInitialized();
-
-  try {
-    // Add timeout to prevent hanging queries
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("Firestore query timeout (10s)")), 10000)
-    );
-    
-    // Fetch all featured reviews without orderBy to avoid index requirement
-    const queryPromise = adminFirestore
-      .collection(REVIEWS_COLLECTION)
-      .where("is_featured", "==", true)
-      .get();
-    
-    const snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
-
-    // Sort in memory by created_at descending
-    const reviews = snapshot.docs.map(docToReview);
-    return reviews.sort((a: Review, b: Review) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return dateB - dateA; // Descending order
-    });
-  } catch (error: any) {
-    console.error("Error fetching featured reviews:", {
-      message: error?.message,
-      code: error?.code,
-      name: error?.name,
-    });
-    return [];
-  }
-}
-
-// Create a new review
-export async function createReview(review: Omit<Review, "id" | "created_at" | "updated_at">): Promise<string> {
-  await ensureInitialized();
-
-  try {
-    const reviewData = {
-      customer_name: review.customer_name,
-      customer_email: review.customer_email || null,
-      rating: review.rating,
-      review_text: review.review_text,
-      is_featured: false,
-      created_at: FieldValue ? FieldValue.serverTimestamp() : new Date().toISOString(),
-    };
-
-    const docRef = await adminFirestore.collection(REVIEWS_COLLECTION).add(reviewData);
-    return docRef.id;
-  } catch (error) {
-    console.error("Error creating review:", error);
-    throw error;
-  }
-}
-
-// Toggle featured status
 export async function toggleFeaturedReview(reviewId: string, isFeatured: boolean): Promise<void> {
-  await ensureInitialized();
-
-  try {
-    await adminFirestore
-      .collection(REVIEWS_COLLECTION)
-      .doc(reviewId)
-      .update({
-        is_featured: isFeatured,
-        updated_at: FieldValue ? FieldValue.serverTimestamp() : new Date().toISOString(),
-      });
-  } catch (error) {
-    console.error("Error updating review:", error);
-    throw error;
-  }
+  return reviewsMongo.toggleFeaturedReview(reviewId, isFeatured);
 }
 
-// Delete a review
 export async function deleteReview(reviewId: string): Promise<void> {
-  await ensureInitialized();
-
-  try {
-    await adminFirestore.collection(REVIEWS_COLLECTION).doc(reviewId).delete();
-  } catch (error) {
-    console.error("Error deleting review:", error);
-    throw error;
-  }
+  return reviewsMongo.deleteReview(reviewId);
 }
-

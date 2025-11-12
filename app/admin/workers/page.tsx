@@ -32,7 +32,6 @@ export default function WorkersPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
   const [formData, setFormData] = useState({
-    uid: "",
     name: "",
     email: "",
     role: "worker",
@@ -42,56 +41,94 @@ export default function WorkersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState<"all" | "worker" | "admin" | "superadmin">("all");
 
+  const loadWorkersWithOrdersRef = React.useRef({ current: false });
+  
   useEffect(() => {
     if (!isSuperUser()) {
       return;
     }
     
+    let refreshInterval: NodeJS.Timeout | null = null;
+    let focusTimeout: NodeJS.Timeout | null = null;
+    
     // Initial load
     loadWorkers();
     loadWorkersWithOrders(true); // Show loading on initial load
     
-    // Auto-refresh every 3 seconds for real-time updates
-    const refreshInterval = setInterval(() => {
-      if (isSuperUser() && document.visibilityState === 'visible') {
-        loadWorkersWithOrders(false); // Silent refresh - no loading indicator
-      }
-    }, 3000); // 3 seconds
+    // Function to start polling interval
+    const startInterval = () => {
+      if (refreshInterval) clearInterval(refreshInterval);
+      // Auto-refresh every 60 seconds (reduced from 3 seconds to minimize server load)
+      refreshInterval = setInterval(() => {
+        if (isSuperUser() && document.visibilityState === 'visible' && !loadWorkersWithOrdersRef.current.current) {
+          loadWorkersWithOrders(false); // Silent refresh - no loading indicator
+        }
+      }, 60000); // 60 seconds - significantly reduced server load
+    };
     
-    // Refresh when page comes into focus
+    // Refresh when page comes into focus (debounced)
     const handleFocus = () => {
-      if (isSuperUser()) {
-        loadWorkers();
-        loadWorkersWithOrders(true); // Show loading when manually refreshing
-      }
+      if (focusTimeout) clearTimeout(focusTimeout);
+      focusTimeout = setTimeout(() => {
+        if (isSuperUser() && !loadWorkersWithOrdersRef.current.current) {
+          loadWorkers();
+          loadWorkersWithOrders(true); // Show loading when manually refreshing
+        }
+      }, 1000); // Debounce focus events
     };
     
     // Refresh when page becomes visible
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isSuperUser()) {
-        loadWorkers();
-        loadWorkersWithOrders(true); // Show loading when tab becomes visible
+        if (!loadWorkersWithOrdersRef.current.current) {
+          loadWorkers();
+          loadWorkersWithOrders(true); // Show loading when tab becomes visible
+        }
+        if (!refreshInterval) {
+          startInterval();
+        }
+      } else {
+        // Page is hidden, stop polling
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+          refreshInterval = null;
+        }
       }
     };
+    
+    // Start interval
+    startInterval();
     
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
-      clearInterval(refreshInterval);
+      if (refreshInterval) clearInterval(refreshInterval);
+      if (focusTimeout) clearTimeout(focusTimeout);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
-
+  
   const loadWorkersWithOrders = async (showLoading = false) => {
+    // Prevent multiple simultaneous requests
+    if (loadWorkersWithOrdersRef.current.current) {
+      return;
+    }
+    
     try {
+      loadWorkersWithOrdersRef.current.current = true;
       if (showLoading) {
         setIsLoading(true);
       }
       
       const sessionData = getAdminSession();
-      if (!sessionData) return;
+      if (!sessionData) {
+        if (showLoading) {
+          setError("Not authenticated");
+        }
+        return;
+      }
 
       // Get all workers
       const workersRes = await fetch("/api/admin/workers", {
@@ -99,15 +136,23 @@ export default function WorkersPage() {
       });
       const workersData = await workersRes.json();
       
-      if (!workersData.success) return;
+      if (!workersRes.ok || !workersData.success) {
+        const errorMsg = workersData.error || workersData.message || "Failed to load workers";
+        if (showLoading) {
+          setError(errorMsg);
+        }
+        setWorkersWithOrders([]);
+        return;
+      }
 
       // Filter only workers (not admins/superadmins)
       const workerList = workersData.workers.filter((w: Worker) => w.role === "worker");
 
       // For each worker, fetch their orders and tasks
+      // Note: These API calls now use cache, so multiple workers won't cause multiple DB queries
       const workersWithOrdersData: WorkerWithOrders[] = await Promise.all(
         workerList.map(async (worker: Worker) => {
-          // Fetch orders assigned to this worker
+          // Fetch orders assigned to this worker (uses cache if available)
           const ordersRes = await fetch(`/api/admin/orders?assigned_to=${worker.uid}`, {
             headers: { "x-admin-username": sessionData.username },
           });
@@ -137,9 +182,17 @@ export default function WorkersPage() {
       );
 
       setWorkersWithOrders(workersWithOrdersData);
-    } catch (err) {
-      console.error("Error loading workers with orders:", err);
+      if (showLoading) {
+        setError(""); // Clear error on success
+      }
+    } catch (err: any) {
+      const errorMsg = err?.message || "Failed to load workers with orders";
+      if (showLoading) {
+        setError(errorMsg);
+      }
+      setWorkersWithOrders([]);
     } finally {
+      loadWorkersWithOrdersRef.current.current = false;
       if (showLoading) {
         setIsLoading(false);
       }
@@ -200,21 +253,39 @@ export default function WorkersPage() {
   const loadWorkers = async () => {
     try {
       setIsLoading(true);
+      setError(""); // Clear previous errors
       const sessionData = getAdminSession();
-      if (!sessionData) return;
+      if (!sessionData) {
+        setError("Not authenticated");
+        return;
+      }
 
       const res = await fetch("/api/admin/workers", {
         headers: { "x-admin-username": sessionData.username },
       });
 
       const data = await res.json();
-      if (data.success) {
-        setWorkers(data.workers);
-      } else {
-        setError(data.error || "Failed to load workers");
+      
+      if (!res.ok) {
+        // Handle HTTP error status codes
+        const errorMsg = data.error || data.message || `Failed to load workers (${res.status})`;
+        setError(errorMsg);
+        setWorkers([]);
+        return;
       }
-    } catch (err) {
-      setError("Failed to load workers");
+
+      if (data.success && data.workers) {
+        setWorkers(data.workers);
+        setError(""); // Clear error on success
+      } else {
+        const errorMsg = data.error || data.message || "Failed to load workers";
+        setError(errorMsg);
+        setWorkers([]);
+      }
+    } catch (err: any) {
+      const errorMsg = err?.message || "Failed to load workers: Network error";
+      setError(errorMsg);
+      setWorkers([]);
     } finally {
       setIsLoading(false);
     }
@@ -231,9 +302,8 @@ export default function WorkersPage() {
 
       // Ensure role is exactly what was selected (superadmin, admin, or worker)
       const requestBody = {
-        uid: formData.uid.trim(),
         name: formData.name.trim(),
-        email: formData.email.trim(),
+        email: formData.email.trim().toLowerCase(),
         role: formData.role, // Keep exact role value from dropdown
       };
 
@@ -252,7 +322,7 @@ export default function WorkersPage() {
       if (data.success) {
         setSuccess("Worker added successfully!");
         setShowAddModal(false);
-        setFormData({ uid: "", name: "", email: "", role: "worker" });
+        setFormData({ name: "", email: "", role: "worker" });
         await loadWorkers();
         await loadWorkersWithOrders();
         setTimeout(() => setSuccess(""), 3000);
@@ -261,7 +331,6 @@ export default function WorkersPage() {
       }
     } catch (err) {
       setError("Failed to add worker");
-      console.error("Error adding worker:", err);
     }
   };
 
@@ -300,7 +369,7 @@ export default function WorkersPage() {
       };
 
 
-      const res = await fetch(`/api/admin/workers/${editingWorker.uid}`, {
+      const res = await fetch(`/api/admin/workers/${encodeURIComponent(editingWorker.email)}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -321,7 +390,7 @@ export default function WorkersPage() {
         setSuccess("Worker updated successfully!");
         setShowEditModal(false);
         setEditingWorker(null);
-        setFormData({ uid: "", name: "", email: "", role: "worker" });
+        setFormData({ name: "", email: "", role: "worker" });
         await loadWorkers();
         await loadWorkersWithOrders();
         setTimeout(() => setSuccess(""), 3000);
@@ -332,11 +401,10 @@ export default function WorkersPage() {
     } catch (err: any) {
       const errorMessage = err.message || err.toString() || "Unknown error occurred";
       setError(`Failed to update worker: ${errorMessage}`);
-      console.error("Error updating worker:", err);
     }
   };
 
-  const handleDeleteWorker = async (uid: string) => {
+  const handleDeleteWorker = async (email: string) => {
     if (!confirm("Are you sure you want to delete this worker?")) {
       return;
     }
@@ -348,7 +416,7 @@ export default function WorkersPage() {
       const sessionData = getAdminSession();
       if (!sessionData) return;
 
-      const res = await fetch(`/api/admin/workers/${uid}`, {
+      const res = await fetch(`/api/admin/workers/${encodeURIComponent(email)}`, {
         method: "DELETE",
         headers: { "x-admin-username": sessionData.username },
       });
@@ -372,7 +440,6 @@ export default function WorkersPage() {
     // Ensure we use the exact role from Firestore (superadmin, admin, or worker)
     const role = worker.role || "worker";
     setFormData({
-      uid: worker.uid,
       name: worker.name,
       email: worker.email,
       role: role, // Use exact role from Firestore
@@ -470,7 +537,7 @@ export default function WorkersPage() {
           <Button
             onClick={() => {
               setShowAddModal(true);
-              setFormData({ uid: "", name: "", email: "", role: "worker" });
+              setFormData({ name: "", email: "", role: "worker" });
               setError("");
             }}
             size="sm"
@@ -610,7 +677,7 @@ export default function WorkersPage() {
                           </Button>
                           {worker.uid !== session?.username && (
                             <Button
-                              onClick={() => handleDeleteWorker(worker.uid)}
+                              onClick={() => handleDeleteWorker(worker.email)}
                               variant="outline"
                               size="sm"
                               className="h-7 w-7 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
@@ -736,18 +803,18 @@ export default function WorkersPage() {
               <form onSubmit={handleAddWorker} className="p-3 md:p-4 space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Firebase UID <span className="text-red-500">*</span>
+                    Email <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="text"
+                    type="email"
                     required
-                    value={formData.uid}
-                    onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
-                    placeholder="Enter Firebase UID"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="Enter email address"
                     className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                   <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
-                    Get this from Firebase Authentication console
+                    User must sign in with this email to access admin/worker panel
                   </p>
                 </div>
                 <div>
@@ -760,16 +827,6 @@ export default function WorkersPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter worker name"
-                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Enter email (optional)"
                     className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
@@ -828,16 +885,6 @@ export default function WorkersPage() {
               </div>
               <form onSubmit={handleEditWorker} className="p-3 md:p-4 space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">UID</label>
-                  <input
-                    type="text"
-                    value={editingWorker.uid}
-                    disabled
-                    className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md bg-gray-50 dark:bg-[#1a1a1a] text-gray-500 dark:text-gray-400"
-                  />
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">UID cannot be changed</p>
-                </div>
-                <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
@@ -851,14 +898,19 @@ export default function WorkersPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Email <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="email"
+                    required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Enter email (optional)"
+                    placeholder="Enter email address"
                     className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    disabled
                   />
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Email cannot be changed</p>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -868,13 +920,13 @@ export default function WorkersPage() {
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     className="w-full px-2 py-1.5 text-sm border dark:border-white/10 border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D4AF37] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white"
-                    disabled={editingWorker.uid === session?.username}
+                    disabled={editingWorker.email === session?.username || editingWorker.uid === session?.username}
                   >
                     <option value="worker">Worker</option>
                     <option value="admin">Admin</option>
                     <option value="superadmin">Super Admin</option>
                   </select>
-                  {editingWorker.uid === session?.username && (
+                  {(editingWorker.email === session?.username || editingWorker.uid === session?.username) && (
                     <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">You cannot change your own role</p>
                   )}
                 </div>

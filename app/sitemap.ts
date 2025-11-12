@@ -59,30 +59,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Product pages - try to get actual dates from Firestore
+  // Product pages - get actual dates from MongoDB
   try {
     const products = await getAllProducts();
     
-    // Import Firestore to get document update times if available
+    // Get product timestamps from MongoDB if available
     let productPages: MetadataRoute.Sitemap = [];
     
     try {
-      // Try to get products with timestamps from Firestore
-      const { adminFirestore } = await import("@/lib/firebaseAdmin.server");
-      if (adminFirestore) {
-        const snapshot = await adminFirestore.collection("products").get();
+      const { getMongoDB } = await import("@/lib/mongodb.server");
+      const db = getMongoDB();
+      
+      if (db) {
+        const productDocs = await db.collection("Product").find({}).toArray();
         interface ProductTimestamps {
           updatedAt: Date | null;
           createdAt: Date | null;
         }
         const productMap = new Map<string, ProductTimestamps>(
-          snapshot.docs.map((doc: any) => {
-            const data = doc.data();
+          productDocs.map((doc: any) => {
             return [
-              data.slug || doc.id,
+              doc.slug || doc._id?.toString(),
               {
-                updatedAt: data.updatedAt?.toDate?.() || data.createdAt?.toDate?.() || null,
-                createdAt: data.createdAt?.toDate?.() || null,
+                updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : null,
+                createdAt: doc.createdAt ? new Date(doc.createdAt) : null,
               },
             ];
           })
@@ -109,8 +109,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }));
       }
     } catch (error) {
-      // Fallback: use current date if Firestore access fails
-      console.warn("Could not fetch product timestamps, using current date:", error);
+      // Fallback: use current date if MongoDB access fails
       productPages = products.map((product) => ({
         url: `${baseUrl}/products/${product.slug}`,
         lastModified: now,

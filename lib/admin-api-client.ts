@@ -1,23 +1,48 @@
-// Client-side helper for making authenticated admin API requests
+// lib/admin-api-client.ts
+// Utility functions for making authenticated admin API requests
+
 import { getAdminSession } from "./admin-auth";
 
-export async function authenticatedFetch(
+export interface AdminHeaders {
+  "x-admin-username": string;
+  "x-admin-role": string;
+}
+
+/**
+ * Get admin authentication headers for API requests
+ * Returns null if no admin session exists
+ */
+export function getAdminHeaders(): AdminHeaders | null {
+  const session = getAdminSession();
+  if (!session) {
+    return null;
+  }
+  
+  return {
+    "x-admin-username": session.username,
+    "x-admin-role": session.role,
+  };
+}
+
+/**
+ * Make an authenticated admin API request
+ * Automatically includes admin headers
+ */
+export async function adminFetch(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const session = getAdminSession();
-  
-  if (!session) {
-    throw new Error("Not authenticated");
+  const headers = getAdminHeaders();
+  if (!headers) {
+    throw new Error("No admin session found");
   }
-
-  const headers = new Headers(options.headers);
-  headers.set("x-admin-username", session.username);
-  headers.set("x-admin-role", session.role); // Include role for server-side verification
   
   return fetch(url, {
     ...options,
-    headers,
+    headers: {
+      ...headers,
+      ...options.headers,
+    },
   });
 }
 

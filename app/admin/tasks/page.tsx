@@ -52,58 +52,16 @@ export default function TasksPage() {
   });
   const session = getAdminSession();
   const { showError, showSuccess, showWarning } = useToast();
-
-  useEffect(() => {
-    // Initial load
-    loadTasks(true); // Show loading on initial load
-    if (isSuperUser()) {
-      loadOrders();
-      loadWorkers();
+  const loadTasksRef = React.useRef(false);
+  
+  const loadTasks = async (showLoading = false) => {
+    // Prevent multiple simultaneous requests
+    if (loadTasksRef.current) {
+      return;
     }
     
-    // Auto-refresh every 3 seconds for real-time updates
-    const refreshInterval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        loadTasks(false); // Silent refresh - no loading indicator
-      }
-    }, 3000); // 3 seconds
-    
-    // Refresh when page comes into focus
-    const handleFocus = () => {
-      loadTasks(true); // Show loading when manually refreshing
-      if (isSuperUser()) {
-        loadOrders();
-        loadWorkers();
-      }
-    };
-    
-    // Refresh when page becomes visible
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        loadTasks(true); // Show loading when tab becomes visible
-        if (isSuperUser()) {
-          loadOrders();
-          loadWorkers();
-        }
-      }
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      clearInterval(refreshInterval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    filterTasks();
-  }, [tasks, searchTerm, statusFilter, workerFilter]);
-
-  const loadTasks = async (showLoading = false) => {
     try {
+      loadTasksRef.current = true;
       if (showLoading) {
         setIsLoading(true);
       }
@@ -124,7 +82,9 @@ export default function TasksPage() {
         setTasks(data.tasks);
       }
     } catch (err) {
+      // Error loading tasks
     } finally {
+      loadTasksRef.current = false;
       if (showLoading) {
         setIsLoading(false);
       }

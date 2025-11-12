@@ -26,7 +26,7 @@ export default function MessagesPage() {
     }
 
     if (!isAdminAuthenticated()) {
-      router.replace("/login?mode=admin");
+      router.replace("/login");
       return;
     }
 
@@ -54,12 +54,9 @@ export default function MessagesPage() {
       const data = await response.json();
       if (data.success) {
         setMessages(data.messages || []);
-        console.log(`[Admin Messages] Loaded ${data.messages?.length || 0} messages`);
-      } else {
-        console.error(`[Admin Messages] Failed to load messages:`, data.error);
       }
     } catch (error: any) {
-      console.error("[Admin Messages] Error loading messages:", error);
+      // Error loading messages
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +93,7 @@ export default function MessagesPage() {
         }
       }
     } catch (error) {
-      console.error("Error updating message status:", error);
+      // Error updating message status
     }
   };
 
@@ -124,7 +121,7 @@ export default function MessagesPage() {
         }
       }
     } catch (error) {
-      console.error("Error deleting message:", error);
+      // Error deleting message
     }
   };
 

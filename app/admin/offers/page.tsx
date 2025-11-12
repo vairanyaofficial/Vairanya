@@ -74,7 +74,7 @@ function OffersPageContent() {
     }
     
     if (!isAdminAuthenticated()) {
-      router.replace("/login?mode=admin");
+      router.replace("/login");
       return;
     }
     
@@ -153,7 +153,6 @@ function OffersPageContent() {
         setOffers(data.offers);
       }
     } catch (err) {
-      console.error("Failed to load offers:", err);
       showError("Failed to load offers");
     } finally {
       setIsLoading(false);
@@ -177,7 +176,6 @@ function OffersPageContent() {
         setFilteredCustomers(data.customers);
       }
     } catch (err) {
-      console.error("Failed to load customers:", err);
       showError("Failed to load customers");
     }
   };
@@ -278,11 +276,9 @@ function OffersPageContent() {
         loadOffers();
       } else {
         const errorMsg = data.message || data.error || "Failed to save offer";
-        console.error("Offer save error:", errorMsg);
         showError(errorMsg);
       }
     } catch (err: any) {
-      console.error("Offer save exception:", err);
       showError(err?.message || "Failed to save offer");
     }
   };

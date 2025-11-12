@@ -3,6 +3,7 @@ import { getAllOrders, createOrder, getOrdersByStatus } from "@/lib/orders-mongo
 import { requireAdmin } from "@/lib/admin-auth-server";
 import type { Order } from "@/lib/orders-types";
 import { initializeMongoDB } from "@/lib/mongodb.server";
+import { getOrdersCache, setOrdersCache, clearOrdersCache, isCacheValid } from "@/lib/orders-cache";
 
 // GET - List all orders
 export async function GET(request: NextRequest) {
@@ -29,23 +30,60 @@ export async function GET(request: NextRequest) {
     const assignedTo = searchParams.get("assigned_to");
     const limitParam = searchParams.get("limit");
     const limit = limitParam ? parseInt(limitParam, 10) : undefined;
+    const skipCache = searchParams.get("skipCache") === "true"; // Allow bypassing cache if needed
+
+    // Check cache first - we can use cache for all queries since we filter in memory
+    // Only skip cache if explicitly requested
+    if (!skipCache && isCacheValid()) {
+      const cachedData = getOrdersCache();
+      if (cachedData) {
+        let cachedOrders = [...cachedData.data];
+        
+        // Apply filters to cached data
+        if (statusParam) {
+          const statuses = statusParam.split(",");
+          cachedOrders = cachedOrders.filter((o) => statuses.includes(o.status));
+        }
+        
+        // Filter by assigned worker
+        if (assignedTo) {
+          cachedOrders = cachedOrders.filter((o) => o.assigned_to === assignedTo);
+        }
+        
+        if (limit) {
+          cachedOrders = cachedOrders.slice(0, limit);
+        }
+        
+        // Sort by created_at desc
+        cachedOrders.sort((a, b) => {
+          const dateA = new Date(a.created_at).getTime();
+          const dateB = new Date(b.created_at).getTime();
+          return dateB - dateA;
+        });
+        
+        const response = NextResponse.json({ success: true, orders: cachedOrders });
+        response.headers.set('Cache-Control', 'private, s-maxage=30, stale-while-revalidate=60');
+        response.headers.set('X-Cache', 'HIT');
+        return response;
+      }
+      // If cache was cleared or invalid, fall through to fetch from DB
+    }
 
     // Get all orders from MongoDB
     let orders: Order[] = await getAllOrders();
     
-    console.log(`[Admin Orders API] Retrieved ${orders.length} orders from MongoDB`);
+    // Update cache
+    setOrdersCache(orders);
 
     // Filter by status (can be comma-separated)
     if (statusParam) {
       const statuses = statusParam.split(",");
       orders = orders.filter((o) => statuses.includes(o.status));
-      console.log(`[Admin Orders API] Filtered by status (${statusParam}): ${orders.length} orders`);
     }
 
     // Filter by assigned worker
     if (assignedTo) {
       orders = orders.filter((o) => o.assigned_to === assignedTo);
-      console.log(`[Admin Orders API] Filtered by assigned_to (${assignedTo}): ${orders.length} orders`);
     }
 
     // Apply limit
@@ -60,10 +98,11 @@ export async function GET(request: NextRequest) {
       return dateB - dateA;
     });
 
-    console.log(`[Admin Orders API] Returning ${orders.length} orders`);
-    return NextResponse.json({ success: true, orders });
+    const response = NextResponse.json({ success: true, orders });
+    response.headers.set('Cache-Control', 'private, s-maxage=30, stale-while-revalidate=60');
+    response.headers.set('X-Cache', 'MISS');
+    return response;
   } catch (error: any) {
-    console.error("[Admin Orders API] Error fetching orders:", error);
     return NextResponse.json(
       { success: false, error: error.message || "Failed to fetch orders" },
       { status: 500 }
@@ -103,6 +142,10 @@ export async function POST(request: NextRequest) {
     }
 
     const newOrder = await createOrder(order);
+    
+    // Invalidate orders cache since new order was created
+    clearOrdersCache();
+    
     return NextResponse.json({ success: true, order: newOrder }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json(

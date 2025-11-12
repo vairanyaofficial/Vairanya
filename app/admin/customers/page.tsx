@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Users, Mail, Phone, ShoppingBag, DollarSign, Calendar, Search, ArrowLeft, X, MapPin, Eye } from "lucide-react";
+import { Users, Mail, Phone, ShoppingBag, TrendingUp, Calendar, Search, ArrowLeft, X, MapPin, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAdminSession, isAdminAuthenticated } from "@/lib/admin-auth";
 import { useAuth } from "@/components/AuthProvider";
@@ -25,7 +25,7 @@ export default function CustomersPage() {
     }
     
     if (!isAdminAuthenticated()) {
-      router.replace("/login?mode=admin");
+      router.replace("/login");
       return;
     }
     
@@ -61,12 +61,9 @@ export default function CustomersPage() {
       const data = await res.json();
       if (data.success) {
         setCustomers(data.customers || []);
-        console.log(`[Admin Customers] Loaded ${data.customers?.length || 0} customers`);
-      } else {
-        console.error(`[Admin Customers] Failed to load customers:`, data.error || data.message);
       }
     } catch (err: any) {
-      console.error("[Admin Customers] Error loading customers:", err);
+      // Error loading customers
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +128,7 @@ export default function CustomersPage() {
           <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-2 md:p-3 border dark:border-white/10">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-[10px] md:text-xs font-medium text-gray-700 dark:text-gray-300">Revenue</h3>
-              <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-green-600 dark:text-green-500" />
+              <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-green-600 dark:text-green-500" />
             </div>
             <p className="text-sm md:text-base font-bold text-gray-900 dark:text-white">
               ₹{customers.reduce((sum, c) => sum + c.total_spent, 0).toLocaleString()}
@@ -187,7 +184,7 @@ export default function CustomersPage() {
                             <span>{customer.total_orders}</span>
                           </div>
                           <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-                            <DollarSign className="h-3 w-3 text-green-600 dark:text-green-500" />
+                            <TrendingUp className="h-3 w-3 text-green-600 dark:text-green-500" />
                             <span>₹{customer.total_spent.toLocaleString()}</span>
                           </div>
                         </div>
@@ -307,7 +304,7 @@ export default function CustomersPage() {
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-1">
-                        <DollarSign className="h-4 w-4 text-green-600 dark:text-green-500" />
+                        <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-500" />
                         <span className="text-xs text-gray-500 dark:text-gray-400">Total Spent</span>
                       </div>
                       <p className="text-lg font-bold text-gray-900 dark:text-white">

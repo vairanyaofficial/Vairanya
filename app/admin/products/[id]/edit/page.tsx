@@ -20,7 +20,7 @@ export default function EditProductPage() {
     const session = getAdminSession();
     if (!session) {
       showError("Not authenticated");
-      router.push("/login?mode=admin");
+      router.push("/login");
       return;
     }
 

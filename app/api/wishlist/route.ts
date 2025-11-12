@@ -1,35 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
 import { initializeMongoDB } from "@/lib/mongodb.server";
 import {
   getWishlistByUserId,
   addToWishlist,
   removeFromWishlist,
 } from "@/lib/wishlist-mongodb";
+import { getUserIdFromSession } from "@/lib/auth-helpers";
 
 // Mark route as dynamic to prevent static generation
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-// Helper to verify Firebase token and get user ID
-async function getUserIdFromToken(request: NextRequest): Promise<string | null> {
-  try {
-    // Ensure Firebase is initialized before using adminAuth
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminAuth) {
-      return null;
-    }
-    
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) return null;
-    
-    const token = authHeader.substring(7);
-    const decoded = await adminAuth.verifyIdToken(token);
-    return decoded.uid;
-  } catch {
-    return null;
-  }
-}
 
 // GET - Fetch all wishlist items for the authenticated user
 export async function GET(request: NextRequest) {
@@ -48,7 +28,7 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const userId = await getUserIdFromToken(request);
+    const userId = await getUserIdFromSession(request);
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
@@ -89,7 +69,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const userId = await getUserIdFromToken(request);
+    const userId = await getUserIdFromSession(request);
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
@@ -143,7 +123,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
     
-    const userId = await getUserIdFromToken(request);
+    const userId = await getUserIdFromSession(request);
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },

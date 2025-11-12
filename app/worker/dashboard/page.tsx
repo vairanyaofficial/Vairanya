@@ -25,19 +25,76 @@ export default function WorkerDashboardPage() {
   const session = getAdminSession();
   const { showToast } = useToast();
 
+  const loadAssignedOrdersRef = React.useRef(false);
+  
   useEffect(() => {
     loadAssignedOrders();
     
-    // Auto-refresh every 60 seconds (increased from 30 seconds for better performance)
-    const interval = setInterval(() => {
-      loadAssignedOrders();
-    }, 60000);
+    let refreshInterval: NodeJS.Timeout | null = null;
+    let focusTimeout: NodeJS.Timeout | null = null;
     
-    return () => clearInterval(interval);
+    // Function to start polling interval
+    const startInterval = () => {
+      if (refreshInterval) clearInterval(refreshInterval);
+      // Auto-refresh every 90 seconds (optimized for worker dashboard)
+      refreshInterval = setInterval(() => {
+        if (!document.hidden && !loadAssignedOrdersRef.current) {
+          loadAssignedOrders();
+        }
+      }, 90000); // 90 seconds - reduced server load
+    };
+    
+    // Refresh when page comes into focus (debounced)
+    const handleFocus = () => {
+      if (focusTimeout) clearTimeout(focusTimeout);
+      focusTimeout = setTimeout(() => {
+        if (!document.hidden && !loadAssignedOrdersRef.current) {
+          loadAssignedOrders();
+        }
+      }, 2000); // Wait 2 seconds after focus
+    };
+    
+    // Handle visibility changes
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is hidden, stop polling
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+          refreshInterval = null;
+        }
+      } else {
+        // Page became visible, refresh and restart interval
+        if (!loadAssignedOrdersRef.current) {
+          loadAssignedOrders();
+        }
+        if (!refreshInterval) {
+          startInterval();
+        }
+      }
+    };
+    
+    // Start interval
+    startInterval();
+    
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      if (refreshInterval) clearInterval(refreshInterval);
+      if (focusTimeout) clearTimeout(focusTimeout);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const loadAssignedOrders = async () => {
+    // Prevent multiple simultaneous requests
+    if (loadAssignedOrdersRef.current) {
+      return;
+    }
+    
     try {
+      loadAssignedOrdersRef.current = true;
       setIsLoading(true);
       const sessionData = getAdminSession();
       if (!sessionData) {
@@ -46,6 +103,7 @@ export default function WorkerDashboardPage() {
       }
 
       try {
+        // This API call now uses cache, so it won't hit database every time
         const response = await fetch(
           `/api/admin/orders?assigned_to=${sessionData.username}`,
           {
@@ -78,6 +136,7 @@ export default function WorkerDashboardPage() {
       console.error("Error in loadAssignedOrders:", err);
       setAssignedOrders([]); // Set empty array on error
     } finally {
+      loadAssignedOrdersRef.current = false;
       setIsLoading(false);
     }
   };

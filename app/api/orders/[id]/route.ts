@@ -1,27 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrderById, updateOrder } from "@/lib/orders-mongodb";
-import { adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import { getUserIdFromSession } from "@/lib/auth-helpers";
 import { initializeMongoDB } from "@/lib/mongodb.server";
-
-// Helper to verify Firebase token and get user ID
-async function getUserIdFromToken(request: NextRequest): Promise<string | null> {
-  try {
-    // Ensure Firebase is initialized before using adminAuth
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminAuth) {
-      return null;
-    }
-    
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) return null;
-    
-    const token = authHeader.substring(7);
-    const decoded = await adminAuth.verifyIdToken(token);
-    return decoded.uid;
-  } catch {
-    return null;
-  }
-}
 
 export async function GET(
   request: NextRequest,
@@ -71,17 +51,8 @@ export async function PUT(
       );
     }
 
-    // Ensure Firebase is initialized for authentication
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success) {
-      return NextResponse.json(
-        { success: false, error: "Service unavailable" },
-        { status: 500 }
-      );
-    }
-    
     const { id } = await params;
-    const userId = await getUserIdFromToken(request);
+    const userId = await getUserIdFromSession(request);
 
     if (!userId) {
       return NextResponse.json(

@@ -23,7 +23,7 @@ export default function AddWorkerUtilPage() {
   React.useEffect(() => {
     const session = getAdminSession();
     if (!session || !isSuperUser()) {
-      router.replace("/login?mode=admin");
+      router.replace("/login");
     }
   }, [router]);
 
@@ -65,7 +65,7 @@ export default function AddWorkerUtilPage() {
       if (data.success) {
         setResult({
           success: true,
-          message: `Worker added successfully! They can now login at /login?mode=admin`,
+          message: `Worker added successfully! They can now login at /login`,
         });
         setFormData({ ...formData, name: "", email: "" });
       } else {

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { getAdminSession, isAdminAuthenticated } from "@/lib/admin-auth";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
-import { Star, Trash2, Eye, EyeOff, ArrowLeft, CheckCircle, XCircle, Search, Filter } from "lucide-react";
+import { Star, Trash2, Eye, EyeOff, ArrowLeft, CheckCircle, XCircle, Search, Filter, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import type { Review } from "@/lib/reviews-types";
 
@@ -15,6 +15,7 @@ export default function ReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
+  const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterFeatured, setFilterFeatured] = useState<"all" | "featured" | "not-featured">("all");
 
@@ -25,7 +26,7 @@ export default function ReviewsPage() {
     }
 
     if (!isAdminAuthenticated()) {
-      router.replace("/login?mode=admin");
+      router.replace("/login");
       return;
     }
 
@@ -47,7 +48,7 @@ export default function ReviewsPage() {
         setReviews(data.reviews);
       }
     } catch (error) {
-      console.error("Error loading reviews:", error);
+      // Error loading reviews
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +89,6 @@ export default function ReviewsPage() {
         alert(data.error || "Failed to update review");
       }
     } catch (error) {
-      console.error("Error updating review:", error);
       alert("Failed to update review");
     }
   };
@@ -123,7 +123,6 @@ export default function ReviewsPage() {
         alert(data.error || "Failed to delete review");
       }
     } catch (error) {
-      console.error("Error deleting review:", error);
       alert("Failed to delete review");
     }
   };
@@ -152,6 +151,19 @@ export default function ReviewsPage() {
 
     return filtered;
   }, [reviews, searchQuery, filterFeatured]);
+
+  const toggleAccordion = (reviewId: string) => {
+    if (expandedReviewId === reviewId) {
+      setExpandedReviewId(null);
+      setSelectedReview(null);
+    } else {
+      const review = reviews.find(r => r.id === reviewId);
+      if (review) {
+        setExpandedReviewId(reviewId);
+        setSelectedReview(review);
+      }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -224,61 +236,135 @@ export default function ReviewsPage() {
                   </p>
                 </div>
               ) : (
-                filteredReviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className={`p-2 md:p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
-                      selectedReview?.id === review.id ? "bg-[#D4AF37]/5 dark:bg-[#D4AF37]/10" : ""
-                    }`}
-                    onClick={() => setSelectedReview(review)}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">
-                            {review.customer_name}
-                          </p>
-                          {review.is_featured && (
-                            <span className="text-[10px] bg-[#D4AF37] text-white px-1.5 py-0.5 rounded-full flex-shrink-0">
-                              Featured
-                            </span>
-                          )}
+                filteredReviews.map((review) => {
+                  const isExpanded = expandedReviewId === review.id;
+                  return (
+                    <div key={review.id} className="border-b dark:border-white/10 last:border-b-0">
+                      {/* Accordion Header */}
+                      <div
+                        className={`p-2 md:p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
+                          isExpanded ? "bg-[#D4AF37]/5 dark:bg-[#D4AF37]/10" : ""
+                        }`}
+                        onClick={() => toggleAccordion(review.id)}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                                {review.customer_name}
+                              </p>
+                              {review.is_featured && (
+                                <span className="text-[10px] bg-[#D4AF37] text-white px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                  Featured
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex gap-0.5 mb-1.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`h-3 w-3 ${
+                                    i < review.rating
+                                      ? "fill-[#D4AF37] text-[#D4AF37]"
+                                      : "text-gray-300 dark:text-gray-700"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <p className={`text-xs text-gray-600 dark:text-gray-400 mb-1 ${!isExpanded ? "line-clamp-2" : ""}`}>
+                              {review.review_text}
+                            </p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {review.is_featured ? (
+                              <Eye className="h-3.5 w-3.5 text-[#D4AF37]" />
+                            ) : (
+                              <EyeOff className="h-3.5 w-3.5 text-gray-400 dark:text-gray-600" />
+                            )}
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-gray-400" />
+                            )}
+                          </div>
                         </div>
-                        <div className="flex gap-0.5 mb-1.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-3 w-3 ${
-                                i < review.rating
-                                  ? "fill-[#D4AF37] text-[#D4AF37]"
-                                  : "text-gray-300 dark:text-gray-700"
-                              }`}
-                            />
-                          ))}
+                      </div>
+                      
+                      {/* Accordion Content */}
+                      {isExpanded && (
+                        <div className="px-2 md:px-3 pb-2 md:pb-3 bg-gray-50/50 dark:bg-white/5 border-t dark:border-white/10">
+                          <div className="pt-2 md:pt-3 space-y-2.5">
+                            {review.customer_email && (
+                              <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Email</p>
+                                <p className="text-xs text-gray-900 dark:text-white break-all">{review.customer_email}</p>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Full Review</p>
+                              <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                "{review.review_text}"
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Submitted</p>
+                              <p className="text-xs text-gray-900 dark:text-white">
+                                {new Date(review.created_at).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-1.5 pt-2 border-t dark:border-white/10">
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFeatured(review.id, review.is_featured);
+                                }}
+                                size="sm"
+                                className={`w-full sm:flex-1 h-8 text-xs transition-all ${
+                                  review.is_featured
+                                    ? "bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 text-white border border-orange-600 dark:border-orange-700"
+                                    : "bg-[#D4AF37] hover:bg-[#C19B2E] text-white"
+                                }`}
+                              >
+                                {review.is_featured ? (
+                                  <>
+                                    <EyeOff className="h-3 w-3 mr-1.5" />
+                                    Unfeature
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="h-3 w-3 mr-1.5" />
+                                    Feature
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(review.id);
+                                }}
+                                variant="outline"
+                                size="sm"
+                                className="w-full sm:flex-1 h-8 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              >
+                                <Trash2 className="h-3 w-3 mr-1.5" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-1">
-                          {review.review_text}
-                        </p>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500">
-                          {new Date(review.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0 mt-0.5">
-                        {review.is_featured ? (
-                          <Eye className="h-3.5 w-3.5 text-[#D4AF37]" />
-                        ) : (
-                          <EyeOff className="h-3.5 w-3.5 text-gray-400 dark:text-gray-600" />
-                        )}
-                      </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
 
-          {/* Review Details */}
-          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10">
+          {/* Review Details - Desktop Only */}
+          <div className="hidden lg:block bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10">
             {selectedReview ? (
               <div className="p-3 md:p-4">
                 <div className="mb-3">
@@ -328,15 +414,15 @@ export default function ReviewsPage() {
                   <Button
                     onClick={() => toggleFeatured(selectedReview.id, selectedReview.is_featured)}
                     size="sm"
-                    className={`w-full h-8 text-xs ${
+                    className={`w-full h-8 text-xs transition-all ${
                       selectedReview.is_featured
-                        ? "bg-gray-600 hover:bg-gray-700"
-                        : "bg-[#D4AF37] hover:bg-[#C19B2E]"
+                        ? "bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 text-white border border-orange-600 dark:border-orange-700"
+                        : "bg-[#D4AF37] hover:bg-[#C19B2E] text-white"
                     }`}
                   >
                     {selectedReview.is_featured ? (
                       <>
-                        <XCircle className="h-3 w-3 mr-1.5" />
+                        <EyeOff className="h-3 w-3 mr-1.5" />
                         Unfeature
                       </>
                     ) : (

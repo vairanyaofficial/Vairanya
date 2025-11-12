@@ -41,6 +41,7 @@ export default function OrderDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoadingWorkers, setIsLoadingWorkers] = useState(false);
+  const [workersError, setWorkersError] = useState<string>("");
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState("");
@@ -50,31 +51,67 @@ export default function OrderDetailPage() {
   const session = getAdminSession();
   const { showError, showSuccess, showWarning } = useToast();
 
+  const loadOrderDataRef = React.useRef(false);
+  
   useEffect(() => {
+    let refreshInterval: NodeJS.Timeout | null = null;
+    let focusTimeout: NodeJS.Timeout | null = null;
+    
     // Initial load
     loadOrderData(true); // Show loading on initial load
     if (isSuperUser()) {
       loadWorkers();
     }
     
-    // Auto-refresh every 3 seconds for real-time updates
-    const refreshInterval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        loadOrderData(false); // Silent refresh - no loading indicator
-      }
-    }, 3000); // 3 seconds
+    // Function to start polling interval
+    const startInterval = () => {
+      if (refreshInterval) clearInterval(refreshInterval);
+      // Auto-refresh every 60 seconds (reduced from 3 seconds to minimize server load)
+      refreshInterval = setInterval(() => {
+        if (document.visibilityState === 'visible' && !loadOrderDataRef.current) {
+          loadOrderData(false); // Silent refresh - no loading indicator
+        }
+      }, 60000); // 60 seconds - significantly reduced server load
+    };
+    
+    // Refresh when page comes into focus (debounced)
+    const handleFocus = () => {
+      if (focusTimeout) clearTimeout(focusTimeout);
+      focusTimeout = setTimeout(() => {
+        if (!loadOrderDataRef.current) {
+          loadOrderData(true); // Show loading when manually refreshing
+        }
+      }, 1000); // Debounce focus events
+    };
     
     // Refresh when page becomes visible
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        loadOrderData(true); // Show loading when tab becomes visible
+        if (!loadOrderDataRef.current) {
+          loadOrderData(true); // Show loading when tab becomes visible
+        }
+        if (!refreshInterval) {
+          startInterval();
+        }
+      } else {
+        // Page is hidden, stop polling
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+          refreshInterval = null;
+        }
       }
     };
     
+    // Start interval
+    startInterval();
+    
+    window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
-      clearInterval(refreshInterval);
+      if (refreshInterval) clearInterval(refreshInterval);
+      if (focusTimeout) clearTimeout(focusTimeout);
+      window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [orderId]);
@@ -88,7 +125,13 @@ export default function OrderDetailPage() {
   }, [showAssignModal]);
 
   const loadOrderData = async (showLoading = false) => {
+    // Prevent multiple simultaneous requests
+    if (loadOrderDataRef.current) {
+      return;
+    }
+    
     try {
+      loadOrderDataRef.current = true;
       if (showLoading) {
         setIsLoading(true);
       }
@@ -104,7 +147,6 @@ export default function OrderDetailPage() {
       if (orderData.success) {
         setOrder(orderData.order);
       } else {
-        console.error(`[Admin Orders] Failed to load order ${orderId}:`, orderData.error);
         if (orderData.error === "Order not found") {
           showError(`Order not found: ${orderId}`);
         } else {
@@ -112,9 +154,9 @@ export default function OrderDetailPage() {
         }
       }
     } catch (err: any) {
-      console.error(`[Admin Orders] Error loading order ${orderId}:`, err);
       showError(`Failed to load order: ${err.message || "Network error"}`);
     } finally {
+      loadOrderDataRef.current = false;
       if (showLoading) {
         setIsLoading(false);
       }
@@ -124,8 +166,11 @@ export default function OrderDetailPage() {
   const loadWorkers = async () => {
     try {
       setIsLoadingWorkers(true);
+      setWorkersError(""); // Clear previous errors
       const sessionData = getAdminSession();
       if (!sessionData) {
+        setWorkersError("Not authenticated");
+        setWorkers([]);
         return;
       }
 
@@ -135,15 +180,27 @@ export default function OrderDetailPage() {
 
       const data = await res.json();
 
+      if (!res.ok) {
+        const errorMsg = data.error || data.message || `Failed to load workers (${res.status})`;
+        setWorkersError(errorMsg);
+        setWorkers([]);
+        return;
+      }
+
       if (data.success && data.workers) {
         const workerList = data.workers.filter(
           (w: Worker) => w.role === "worker"
         );
         setWorkers(workerList);
+        setWorkersError(""); // Clear error on success
       } else {
+        const errorMsg = data.error || data.message || "Failed to load workers";
+        setWorkersError(errorMsg);
         setWorkers([]);
       }
-    } catch (err) {
+    } catch (err: any) {
+      const errorMsg = err?.message || "Failed to load workers: Network error";
+      setWorkersError(errorMsg);
       setWorkers([]);
     } finally {
       setIsLoadingWorkers(false);
@@ -803,6 +860,10 @@ export default function OrderDetailPage() {
               {isLoadingWorkers ? (
                 <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 py-2">
                   Loading workers...
+                </div>
+              ) : workersError ? (
+                <div className="text-sm text-red-600 dark:text-red-400 mb-2 py-2 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded">
+                  {workersError}
                 </div>
               ) : workers.length === 0 ? (
                 <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 py-2">

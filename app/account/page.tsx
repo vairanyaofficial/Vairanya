@@ -25,8 +25,6 @@ import {
 } from "lucide-react";
 import type { Order } from "@/lib/orders-types";
 import type { Offer } from "@/lib/offers-types";
-import { auth } from "@/lib/firebaseClient";
-import { updateProfile } from "firebase/auth";
 import { useToast } from "@/components/ToastProvider";
 import { AccountProfileSkeleton, AccountAddressesSkeleton, AccountOrdersSkeleton, AccountOffersSkeleton } from "@/components/SkeletonLoader";
 
@@ -103,24 +101,13 @@ function AccountPageContent() {
     fetchOffers();
   }, [user, router, searchParams]);
 
-  const getAuthToken = async (): Promise<string | null> => {
-    if (!user) return null;
-    try {
-      return await user.getIdToken();
-    } catch {
-      return null;
-    }
-  };
+  // NextAuth handles authentication via cookies, no token needed
 
   const fetchProfile = async () => {
     if (!user) return;
     try {
-      const token = await getAuthToken();
-      if (!token) return;
-
-      const response = await fetch("/api/user/profile", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // NextAuth handles authentication via cookies
+      const response = await fetch("/api/user/profile");
       const data = await response.json();
       if (data.success) {
         setProfile(data.profile);
@@ -137,7 +124,7 @@ function AccountPageContent() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch(`/api/orders?user_id=${user?.uid}`);
+      const response = await fetch(`/api/orders?user_id=${user?.id || user?.uid || ""}`);
       const data = await response.json();
       if (data.success) {
         setOrders(data.orders || []);
@@ -150,12 +137,8 @@ function AccountPageContent() {
     if (!user) return;
     try {
       setAddressLoading(true);
-      const token = await getAuthToken();
-      if (!token) return;
-
-      const response = await fetch("/api/addresses", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // NextAuth handles authentication via cookies
+      const response = await fetch("/api/addresses");
       const data = await response.json();
       if (data.success) {
         setAddresses(data.addresses || []);
@@ -170,13 +153,10 @@ function AccountPageContent() {
     if (!user) return;
     try {
       setProfileLoading(true);
-      const token = await getAuthToken();
-      if (!token) return;
-
+      // NextAuth handles authentication via cookies
       const response = await fetch("/api/user/profile", {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(profileForm),
@@ -186,15 +166,7 @@ function AccountPageContent() {
       if (data.success) {
         setProfile(data.profile);
         setEditingProfile(false);
-        // Update Firebase user display name
-        try {
-          const currentUser = auth.currentUser;
-          if (currentUser) {
-            await updateProfile(currentUser, { displayName: profileForm.displayName });
-          }
-        } catch (error) {
-          // Don't fail the whole operation if Firebase update fails
-        }
+        // Profile updated in MongoDB via API
         showSuccess("Profile updated successfully");
       } else {
         showError(data.error || "Failed to update profile");
@@ -210,9 +182,7 @@ function AccountPageContent() {
     if (!user) return;
     try {
       setAddressLoading(true);
-      const token = await getAuthToken();
-      if (!token) return;
-
+      // NextAuth handles authentication via cookies
       const url = editingAddress
         ? `/api/addresses/${editingAddress}`
         : "/api/addresses";
@@ -221,7 +191,6 @@ function AccountPageContent() {
       const response = await fetch(url, {
         method,
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(addressForm),
@@ -250,12 +219,9 @@ function AccountPageContent() {
 
     try {
       setAddressLoading(true);
-      const token = await getAuthToken();
-      if (!token) return;
-
+      // NextAuth handles authentication via cookies
       const response = await fetch(`/api/addresses/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await response.json();
@@ -307,7 +273,7 @@ function AccountPageContent() {
     if (!user) return;
     try {
       setOffersLoading(true);
-      const response = await fetch(`/api/offers?customer_email=${encodeURIComponent(user.email || "")}&customer_id=${user.uid}`);
+      const response = await fetch(`/api/offers?customer_email=${encodeURIComponent(user.email || "")}&customer_id=${user.id || user.uid || ""}`);
       const data = await response.json();
       if (data.success && data.offers) {
         setOffers(data.offers);
@@ -535,7 +501,7 @@ function AccountPageContent() {
                       Full Name
                     </span>
                     <p className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
-                      {profile?.displayName || user.displayName || "Not set"}
+                      {profile?.displayName || user.name || "Not set"}
                     </p>
                   </div>
                   <div className="p-3 sm:p-4 md:p-5 rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#1a1a1a] dark:to-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:shadow-md transition-all duration-300">
@@ -554,7 +520,7 @@ function AccountPageContent() {
                       Phone Number
                     </span>
                     <p className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
-                      {profile?.phoneNumber || user.phoneNumber || "Not set"}
+                      {profile?.phoneNumber || "Not set"}
                     </p>
                   </div>
                   <div className="p-3 sm:p-4 md:p-5 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#D4AF37]/5 to-[#C19B2E]/5 dark:from-[#D4AF37]/10 dark:to-[#C19B2E]/10 border border-[#D4AF37]/20 dark:border-[#D4AF37]/30 hover:shadow-md transition-all duration-300">

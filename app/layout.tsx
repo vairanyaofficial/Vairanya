@@ -5,9 +5,11 @@ import { CartProvider } from "@/lib/cart-context";
 import { WishlistProvider } from "@/lib/wishlist-context";
 import { ToastProvider } from "@/components/ToastProvider";
 import { AuthProvider } from "@/components/AuthProvider";
+import { SessionProvider } from "@/components/SessionProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ImageKitProviderWrapper } from "@/components/ImageKitProviderWrapper";
+import { ErrorProvider } from "@/lib/error-context";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const playfair = Playfair_Display({
@@ -130,15 +132,19 @@ export default function RootLayout({
             <ImageKitProviderWrapper 
               urlEndpoint={process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/zjax0fbrm"}
             >
-              <AuthProvider>
-                <ToastProvider>
-                  <WishlistProvider>
-                    <CartProvider>
-                      {children}
-                    </CartProvider>
-                  </WishlistProvider>
-                </ToastProvider>
-              </AuthProvider>
+              <SessionProvider>
+                <AuthProvider>
+                  <ToastProvider>
+                    <ErrorProvider>
+                      <WishlistProvider>
+                        <CartProvider>
+                          {children}
+                        </CartProvider>
+                      </WishlistProvider>
+                    </ErrorProvider>
+                  </ToastProvider>
+                </AuthProvider>
+              </SessionProvider>
             </ImageKitProviderWrapper>
           </ErrorBoundary>
         </ThemeProvider>

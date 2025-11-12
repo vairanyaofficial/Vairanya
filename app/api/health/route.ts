@@ -2,7 +2,6 @@
 // Health check endpoint for monitoring and load balancers
 
 import { NextResponse } from "next/server";
-import { adminFirestore, ensureFirebaseInitialized, getFirebaseDiagnostics } from "@/lib/firebaseAdmin.server";
 import { initializeMongoDB, getMongoDB, getMongoDBDiagnostics, isMongoDBAvailable } from "@/lib/mongodb.server";
 
 export const dynamic = "force-dynamic";
@@ -15,13 +14,11 @@ export async function GET() {
     timestamp: string;
     uptime: number;
     services: {
-      firebase: "ok" | "error" | "unavailable";
       mongodb: "ok" | "error" | "unavailable";
       responseTime: number;
       error?: string;
     };
     diagnostics?: {
-      firebase?: any;
       mongodb?: any;
     };
     version?: string;
@@ -30,46 +27,12 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     services: {
-      firebase: "unavailable",
       mongodb: "unavailable",
       responseTime: 0,
     },
   };
 
   let hasAnyDatabase = false;
-
-  // Check Firebase connectivity
-  try {
-    const initResult = await ensureFirebaseInitialized();
-    
-    if (initResult.success && adminFirestore) {
-      const dbStartTime = Date.now();
-      try {
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Firebase connection timeout")), 5000)
-        );
-        
-        const queryPromise = adminFirestore.collection("_health").limit(1).get();
-        await Promise.race([queryPromise, timeoutPromise]);
-        
-        health.services.firebase = "ok";
-        hasAnyDatabase = true;
-        health.services.responseTime = Date.now() - dbStartTime;
-      } catch (dbError: any) {
-        health.services.firebase = "error";
-        if (!health.services.error) {
-          health.services.error = `Firebase: ${dbError?.message || "Database query failed"}`;
-        }
-      }
-    } else {
-      health.services.firebase = "unavailable";
-    }
-  } catch (error: any) {
-    health.services.firebase = "error";
-    if (!health.services.error) {
-      health.services.error = `Firebase: ${error?.message || "Unknown error"}`;
-    }
-  }
 
   // Check MongoDB connectivity
   try {
@@ -115,13 +78,12 @@ export async function GET() {
   // Set overall status
   if (!hasAnyDatabase) {
     health.status = "unhealthy";
-  } else if (health.services.firebase === "error" || health.services.mongodb === "error") {
+  } else if (health.services.mongodb === "error") {
     health.status = "degraded";
   }
 
   // Add diagnostics
   health.diagnostics = {
-    firebase: getFirebaseDiagnostics(),
     mongodb: getMongoDBDiagnostics(),
   };
 

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { auth } from "@/lib/firebaseClient";
 import { useToast } from "@/components/ToastProvider";
 
 interface WishlistItem {
@@ -32,36 +32,48 @@ const WishlistContext = createContext<WishlistContextType>({
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const pathname = usePathname();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { showError, showWarning, showSuccess } = useToast();
 
-  const getAuthToken = async (): Promise<string | null> => {
-    if (!user) return null;
-    try {
-      return await user.getIdToken();
-    } catch {
-      return null;
-    }
-  };
+  // Check if we're on admin or worker pages
+  const isAdminOrWorkerPage = pathname?.startsWith("/admin") || pathname?.startsWith("/worker");
 
-  const fetchWishlist = async () => {
+  // NextAuth handles authentication via cookies, no token needed
+
+  const fetchWishlist = async (retryCount = 0, maxRetries = 3) => {
+    // Don't fetch wishlist on admin or worker pages
+    if (isAdminOrWorkerPage) {
+      setItems([]);
+      setIsLoading(false);
+      return;
+    }
+
     if (!user) {
       setItems([]);
+      setIsLoading(false);
       return;
     }
 
     try {
-      setIsLoading(true);
-      const token = await getAuthToken();
-      if (!token) {
-        setItems([]);
-        return;
+      // Only set loading on first attempt
+      if (retryCount === 0) {
+        setIsLoading(true);
+        // Add delay on first attempt to wait for DB connection
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
       }
+      
+      // NextAuth handles authentication via cookies
+      const response = await fetch("/api/wishlist");
 
-      const response = await fetch("/api/wishlist", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Retry on 401 (Unauthorized) or 503 (Service Unavailable) errors
+      if ((response.status === 401 || response.status === 503) && retryCount < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, retryCount) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchWishlist(retryCount + 1, maxRetries);
+      }
 
       const data = await response.json();
       if (data.success) {
@@ -69,35 +81,50 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       } else {
         setItems([]);
       }
+      setIsLoading(false);
     } catch (error) {
+      // Retry on network errors if we haven't exceeded max retries
+      if (retryCount < maxRetries) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchWishlist(retryCount + 1, maxRetries);
+      }
       setItems([]);
-    } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // Don't fetch wishlist on admin or worker pages
+    if (isAdminOrWorkerPage) {
+      setItems([]);
+      setIsLoading(false);
+      return;
+    }
+
     if (user) {
       fetchWishlist();
     } else {
       setItems([]);
     }
-  }, [user]);
+  }, [user, isAdminOrWorkerPage]);
 
   const addToWishlist = async (productId: string): Promise<boolean> => {
+    // Don't allow wishlist operations on admin or worker pages
+    if (isAdminOrWorkerPage) {
+      return false;
+    }
+
     if (!user) {
       showWarning("Please login to add items to wishlist");
       return false;
     }
 
     try {
-      const token = await getAuthToken();
-      if (!token) return false;
-
+      // NextAuth handles authentication via cookies
       const response = await fetch("/api/wishlist", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ product_id: productId }),
@@ -123,15 +150,17 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   };
 
   const removeFromWishlist = async (productId: string): Promise<boolean> => {
+    // Don't allow wishlist operations on admin or worker pages
+    if (isAdminOrWorkerPage) {
+      return false;
+    }
+
     if (!user) return false;
 
     try {
-      const token = await getAuthToken();
-      if (!token) return false;
-
+      // NextAuth handles authentication via cookies
       const response = await fetch(`/api/wishlist?product_id=${productId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await response.json();

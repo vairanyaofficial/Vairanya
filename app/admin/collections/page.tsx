@@ -17,6 +17,7 @@ import {
   Search,
   Filter,
   Layers,
+  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAdminSession, isAdminAuthenticated } from "@/lib/admin-auth";
@@ -24,6 +25,23 @@ import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/ToastProvider";
 import type { Collection } from "@/lib/collections-types";
 import type { Product } from "@/lib/products-types";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 export default function CollectionsPage() {
   const router = useRouter();
@@ -79,6 +97,16 @@ export default function CollectionsPage() {
       );
     }
 
+    // Sort by display_order (ascending), then by name
+    filtered.sort((a, b) => {
+      const orderA = a.display_order || 0;
+      const orderB = b.display_order || 0;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
     return filtered;
   }, [collections, searchQuery, filterFeatured, filterActive]);
 
@@ -103,7 +131,7 @@ export default function CollectionsPage() {
     }
     
     if (!isAdminAuthenticated()) {
-      router.replace("/login?mode=admin");
+      router.replace("/login");
       return;
     }
     
@@ -137,7 +165,6 @@ export default function CollectionsPage() {
         setCollections(data.collections);
       }
     } catch (err) {
-      console.error("Failed to load collections:", err);
       showError("Failed to load collections");
     } finally {
       setIsLoading(false);
@@ -160,7 +187,7 @@ export default function CollectionsPage() {
         setProducts(data.products);
       }
     } catch (err) {
-      console.error("Failed to load products:", err);
+      // Failed to load products
     }
   };
 
@@ -218,11 +245,9 @@ export default function CollectionsPage() {
         loadCollections();
       } else {
         const errorMsg = data.message || data.error || "Failed to save collection";
-        console.error("Collection save error:", errorMsg);
         showError(errorMsg);
       }
     } catch (err: any) {
-      console.error("Collection save exception:", err);
       showError(err?.message || "Failed to save collection");
     }
   };
@@ -295,6 +320,177 @@ export default function CollectionsPage() {
   const getProductById = (productId: string) => {
     return products.find((p) => p.product_id === productId);
   };
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement before drag starts (prevents accidental drags)
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end - update display_order based on new position
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = filteredCollections.findIndex((c) => c.id === active.id);
+    const newIndex = filteredCollections.findIndex((c) => c.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    // Update local state immediately for better UX
+    const reorderedCollections = arrayMove(filteredCollections, oldIndex, newIndex);
+    
+    // Update display_order for all affected collections
+    try {
+      const sessionData = getAdminSession();
+      if (!sessionData) {
+        return;
+      }
+
+      // Update all collections that changed position
+      const updates = reorderedCollections.map((collection, index) => ({
+        id: collection.id,
+        display_order: index,
+      }));
+
+      // Update all collections in parallel
+      const updatePromises = updates.map((update) =>
+        fetch("/api/admin/collections", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-username": sessionData.username,
+          },
+          body: JSON.stringify(update),
+        })
+      );
+
+      const results = await Promise.allSettled(updatePromises);
+      const failed = results.filter((r) => r.status === "rejected");
+      
+      if (failed.length > 0) {
+        showError("Some collections failed to update");
+        loadCollections(); // Reload to sync with server
+      } else {
+        showSuccess("Display order updated successfully");
+        loadCollections(); // Reload to sync with server
+      }
+    } catch (err) {
+      showError("Failed to update display order");
+      loadCollections(); // Reload to sync with server
+    }
+  };
+
+  // Sortable Collection Item Component
+  function SortableCollectionItem({ collection }: { collection: Collection }) {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: collection.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`p-2 md:p-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
+          isDragging ? "bg-[#D4AF37]/10 dark:bg-[#D4AF37]/20" : ""
+        }`}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <Layers className="h-4 w-4 text-[#D4AF37] flex-shrink-0" />
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                {collection.name}
+              </p>
+              {collection.is_featured && (
+                <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-[#D4AF37]/10 dark:bg-[#D4AF37]/20 text-[#D4AF37] flex items-center gap-0.5 flex-shrink-0">
+                  <Star className="h-2.5 w-2.5" />
+                  Featured
+                </span>
+              )}
+              {collection.is_active ? (
+                <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 flex items-center gap-0.5 flex-shrink-0">
+                  <CheckCircle className="h-2.5 w-2.5" />
+                  Active
+                </span>
+              ) : (
+                <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300 flex items-center gap-0.5 flex-shrink-0">
+                  <XCircle className="h-2.5 w-2.5" />
+                  Inactive
+                </span>
+              )}
+            </div>
+            {collection.short_description && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mb-1">
+                {collection.short_description}
+              </p>
+            )}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                <Package className="h-3 w-3" />
+                <span>{collection.product_ids?.length || 0} products</span>
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-500">
+                /{collection.slug}
+              </div>
+              <div className="text-xs font-semibold text-[#D4AF37] dark:text-[#D4AF37]">
+                Order: {collection.display_order || 0}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Drag Handle */}
+            <button
+              {...attributes}
+              {...listeners}
+              className="h-7 w-7 p-0 flex items-center justify-center cursor-grab active:cursor-grabbing text-gray-400 dark:text-gray-500 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-colors touch-manipulation"
+              title="Drag to reorder"
+            >
+              <GripVertical className="h-4 w-4" />
+            </button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleEdit(collection)}
+              className="h-7 w-7 p-0"
+            >
+              <Edit className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDelete(collection.id)}
+              className="h-7 w-7 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -578,7 +774,7 @@ export default function CollectionsPage() {
           </div>
         )}
 
-        {/* Collections List - Compact Cards */}
+        {/* Collections List - Compact Cards with Drag and Drop */}
         <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm border dark:border-white/10">
           {filteredCollections.length === 0 ? (
             <div className="text-center py-8">
@@ -598,79 +794,22 @@ export default function CollectionsPage() {
               )}
             </div>
           ) : (
-            <div className="divide-y divide-gray-200 dark:divide-white/10 max-h-[calc(100vh-300px)] overflow-y-auto">
-              {filteredCollections.map((collection) => (
-                <div
-                  key={collection.id}
-                  className="p-2 md:p-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Layers className="h-4 w-4 text-[#D4AF37] flex-shrink-0" />
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {collection.name}
-                        </p>
-                        {collection.is_featured && (
-                          <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-[#D4AF37]/10 dark:bg-[#D4AF37]/20 text-[#D4AF37] flex items-center gap-0.5 flex-shrink-0">
-                            <Star className="h-2.5 w-2.5" />
-                            Featured
-                          </span>
-                        )}
-                        {collection.is_active ? (
-                          <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 flex items-center gap-0.5 flex-shrink-0">
-                            <CheckCircle className="h-2.5 w-2.5" />
-                            Active
-                          </span>
-                        ) : (
-                          <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300 flex items-center gap-0.5 flex-shrink-0">
-                            <XCircle className="h-2.5 w-2.5" />
-                            Inactive
-                          </span>
-                        )}
-                      </div>
-                      {collection.short_description && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mb-1">
-                          {collection.short_description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-                          <Package className="h-3 w-3" />
-                          <span>{collection.product_ids?.length || 0} products</span>
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-500">
-                          /{collection.slug}
-                        </div>
-                        {collection.display_order !== undefined && collection.display_order > 0 && (
-                          <div className="text-xs text-gray-500 dark:text-gray-500">
-                            Order: {collection.display_order}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(collection)}
-                        className="h-7 w-7 p-0"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(collection.id)}
-                        className="h-7 w-7 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={filteredCollections.map((c) => c.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="divide-y divide-gray-200 dark:divide-white/10 max-h-[calc(100vh-300px)] overflow-y-auto">
+                  {filteredCollections.map((collection) => (
+                    <SortableCollectionItem key={collection.id} collection={collection} />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       </div>

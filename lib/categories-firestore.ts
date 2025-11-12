@@ -1,68 +1,21 @@
-// Categories Firestore service - server-side only
+// Categories MongoDB service - server-side only
+// This file maintains backward compatibility by re-exporting MongoDB functions
 import "server-only";
-import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import * as categoriesMongo from "./categories-mongodb";
 
-const CATEGORIES_COLLECTION = "categories";
-
-// Get all categories
+// Re-export all MongoDB functions
 export async function getAllCategories(): Promise<string[]> {
-  // Ensure Firebase is initialized
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-
-  try {
-    const snapshot = await adminFirestore.collection(CATEGORIES_COLLECTION).get();
-    
-    if (snapshot.empty) {
-      // Initialize with default categories
-      const defaultCategories = ["rings", "earrings", "pendants", "bracelets", "necklaces"];
-      await Promise.all(
-        defaultCategories.map((cat) =>
-          adminFirestore.collection(CATEGORIES_COLLECTION).doc(cat).set({ name: cat })
-        )
-      );
-      return defaultCategories;
-    }
-
-    return snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => doc.id).sort();
-  } catch (error) {
-    // Fallback to default categories
-    return ["rings", "earrings", "pendants", "bracelets", "necklaces"];
-  }
+  return categoriesMongo.getAllCategories();
 }
 
-// Add new category
 export async function addCategory(categoryName: string): Promise<string[]> {
-  // Ensure Firebase is initialized
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-
-  try {
-    const normalizedName = categoryName.trim().toLowerCase();
-    if (!normalizedName) {
-      throw new Error("Category name cannot be empty");
-    }
-
-    // Check if category already exists
-    const doc = await adminFirestore.collection(CATEGORIES_COLLECTION).doc(normalizedName).get();
-    if (doc.exists) {
-      throw new Error("Category already exists");
-    }
-
-    // Add category
-    await adminFirestore.collection(CATEGORIES_COLLECTION).doc(normalizedName).set({
-      name: normalizedName,
-      createdAt: new Date(),
-    });
-
-    // Return all categories
-    return getAllCategories();
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to add category");
-  }
+  return categoriesMongo.addCategory(categoryName);
 }
 
+export async function deleteCategory(categoryName: string): Promise<string[]> {
+  return categoriesMongo.deleteCategory(categoryName);
+}
+
+export async function updateCategory(oldName: string, newName: string): Promise<string[]> {
+  return categoriesMongo.updateCategory(oldName, newName);
+}

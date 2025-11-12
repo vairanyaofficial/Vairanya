@@ -1,53 +1,60 @@
 // app/api/admin/workers/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
-import { FieldValue } from "firebase-admin/firestore";
+import { getAllAdmins, getAdminByUid, getAdminByEmail } from "@/lib/admins-mongodb";
+import { initializeMongoDB } from "@/lib/mongodb.server";
+import { requireAdmin } from "@/lib/admin-auth-server";
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 // GET - Fetch all workers/admins
 export async function GET(req: NextRequest) {
   try {
-    // Ensure Firebase is initialized
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminFirestore) {
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
       return NextResponse.json(
-        { error: "Database unavailable" },
+        { success: false, error: "Database unavailable" },
         { status: 503 }
       );
     }
 
-    // Check if user is superuser (only superusers can view workers)
-    const username = req.headers.get("x-admin-username");
+    // Check authentication
+    const auth = requireAdmin(req);
+    if (!auth.authenticated || !auth.uid) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const username = auth.uid; // uid is the username in this context
     if (!username) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify user is superuser by checking their admin doc
-    const currentUserDoc = await adminFirestore.collection("admins").doc(username).get();
-    if (!currentUserDoc.exists) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const currentUser = await getAdminByUid(username);
+    if (!currentUser) {
+      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
-    const currentUserData = currentUserDoc.data();
-    const currentRole = currentUserData?.role || "worker";
+    const currentRole = currentUser.role || "worker";
     // Only superadmin can view/manage workers (not regular admin)
     const isSuperAdmin = currentRole === "superadmin";
 
     if (!isSuperAdmin) {
-      return NextResponse.json({ error: "Only superadmins can view workers" }, { status: 403 });
+      return NextResponse.json({ success: false, error: "Only superadmins can view workers" }, { status: 403 });
     }
 
-    // Fetch all admins/workers
-    const adminsSnapshot = await adminFirestore.collection("admins").get();
-    const workers = adminsSnapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
-      const data = doc.data();
-      return {
-        uid: doc.id,
-        name: data.name || "",
-        email: data.email || "",
-        role: data.role || "worker",
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
-      };
-    });
+    // Fetch all admins/workers from MongoDB
+    const admins = await getAllAdmins();
+
+    // Map to expected format
+    const workers = admins.map((admin) => ({
+      uid: admin.uid,
+      name: admin.name || "",
+      email: admin.email || "",
+      role: admin.role || "worker",
+      createdAt: admin.createdAt ? admin.createdAt.toISOString() : null,
+    }));
 
     return NextResponse.json({
       success: true,
@@ -55,7 +62,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: any) {
     return NextResponse.json(
-      { error: "Failed to fetch workers", message: String(err?.message || err) },
+      { success: false, error: "Failed to fetch workers", message: String(err?.message || err) },
       { status: 500 }
     );
   }
@@ -64,38 +71,52 @@ export async function GET(req: NextRequest) {
 // POST - Add new worker/admin
 export async function POST(req: NextRequest) {
   try {
-    // Ensure Firebase is initialized before using adminFirestore
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminFirestore) {
-      return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
+    // Initialize MongoDB connection
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return NextResponse.json({ success: false, error: "Database unavailable" }, { status: 500 });
     }
 
-    // Check if user is superuser
-    const username = req.headers.get("x-admin-username");
+    // Check authentication
+    const auth = requireAdmin(req);
+    if (!auth.authenticated || !auth.uid) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const username = auth.uid; // uid is the username in this context
     if (!username) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const currentUserDoc = await adminFirestore.collection("admins").doc(username).get();
-    if (!currentUserDoc.exists) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    // Verify user is superuser
+    const currentUser = await getAdminByUid(username);
+    if (!currentUser) {
+      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
-    const currentUserData = currentUserDoc.data();
-    const currentRole = currentUserData?.role || "worker";
+    const currentRole = currentUser.role || "worker";
     // Only superadmin can add workers (not regular admin)
     const isSuperAdmin = currentRole === "superadmin";
 
     if (!isSuperAdmin) {
-      return NextResponse.json({ error: "Only superadmins can add workers" }, { status: 403 });
+      return NextResponse.json({ success: false, error: "Only superadmins can add workers" }, { status: 403 });
     }
 
     const body = await req.json();
-    const { uid, name, email, role } = body;
+    const { name, email, role } = body;
 
-    if (!uid || !name || !role) {
+    if (!email || !name || !role) {
       return NextResponse.json(
-        { error: "Missing required fields: uid, name, role" },
+        { success: false, error: "Missing required fields: email, name, role" },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid email format" },
         { status: 400 }
       );
     }
@@ -104,39 +125,42 @@ export async function POST(req: NextRequest) {
     const validRoles = ["superadmin", "admin", "worker"];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
-        { error: `Invalid role. Must be one of: ${validRoles.join(", ")}` },
+        { success: false, error: `Invalid role. Must be one of: ${validRoles.join(", ")}` },
         { status: 400 }
       );
     }
 
-    // Check if worker already exists
-    const existingDoc = await adminFirestore.collection("admins").doc(uid).get();
-    if (existingDoc.exists) {
-      return NextResponse.json({ error: "Worker already exists with this UID" }, { status: 409 });
+    // Normalize email
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if worker already exists by email
+    const existingAdmin = await getAdminByEmail(normalizedEmail);
+    if (existingAdmin) {
+      return NextResponse.json({ success: false, error: "Worker already exists with this email" }, { status: 409 });
     }
 
-    // Add worker to Firestore
-    await adminFirestore.collection("admins").doc(uid).set({
+    // Use email as uid (for backward compatibility, uid field still exists but equals email)
+    const { upsertAdmin } = await import("@/lib/admins-mongodb");
+    const newWorker = await upsertAdmin({
+      uid: normalizedEmail, // Use email as uid
       name,
-      email: email || "",
-      role,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+      email: normalizedEmail,
+      role: role as "superadmin" | "admin" | "worker",
     });
 
     return NextResponse.json({
       success: true,
       message: "Worker added successfully",
       worker: {
-        uid,
-        name,
-        email: email || "",
-        role,
+        uid: newWorker.uid,
+        name: newWorker.name,
+        email: newWorker.email,
+        role: newWorker.role,
       },
     });
   } catch (err: any) {
     return NextResponse.json(
-      { error: "Failed to add worker", message: String(err?.message || err) },
+      { success: false, error: "Failed to add worker", message: String(err?.message || err) },
       { status: 500 }
     );
   }

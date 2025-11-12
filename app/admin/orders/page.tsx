@@ -33,27 +33,70 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const { showError } = useToast();
+  const isLoadingOrdersRef = React.useRef(false);
 
   useEffect(() => {
     loadOrders();
     loadWorkers();
     
-    // Auto-refresh every 30 seconds to see worker updates
-    const interval = setInterval(() => {
-      loadOrders();
-    }, 30000);
+    let intervalId: NodeJS.Timeout | null = null;
+    let focusTimeout: NodeJS.Timeout | null = null;
     
-    // Refresh when page comes into focus
-    const handleFocus = () => {
-      loadOrders();
+    // Function to start the polling interval
+    const startInterval = () => {
+      if (intervalId) clearInterval(intervalId);
+      // Auto-refresh every 90 seconds (increased from 30s to reduce server load)
+      // Only refresh when page is visible and not already loading
+      intervalId = setInterval(() => {
+        if (!document.hidden && !isLoadingOrdersRef.current) {
+          loadOrders();
+        }
+      }, 90000); // 90 seconds - reduced frequency to minimize server load
     };
     
+    // Function to handle visibility change
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is hidden, clear interval to save resources
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      } else {
+        // Page became visible, refresh data and restart interval
+        if (!isLoadingOrdersRef.current) {
+          loadOrders();
+        }
+        if (!intervalId) {
+          startInterval();
+        }
+      }
+    };
+    
+    // Refresh when page comes into focus (debounced)
+    const handleFocus = () => {
+      if (focusTimeout) clearTimeout(focusTimeout);
+      focusTimeout = setTimeout(() => {
+        if (!document.hidden && !isLoadingOrdersRef.current) {
+          loadOrders();
+        }
+      }, 2000); // Wait 2 seconds after focus to avoid rapid calls
+    };
+    
+    // Start interval
+    startInterval();
+    
+    // Listen to visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
     
     return () => {
-      clearInterval(interval);
+      if (intervalId) clearInterval(intervalId);
+      if (focusTimeout) clearTimeout(focusTimeout);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadWorkers = async () => {
@@ -71,7 +114,7 @@ export default function OrdersPage() {
         setWorkers(data.workers || []);
       }
     } catch (err) {
-      console.error("Error loading workers:", err);
+      // Error loading workers
     }
   };
 
@@ -86,10 +129,20 @@ export default function OrdersPage() {
   }, [orders, searchTerm, statusFilter]);
 
   const loadOrders = async () => {
+    // Prevent multiple simultaneous requests
+    if (isLoadingOrdersRef.current) {
+      return;
+    }
+    
     try {
+      isLoadingOrdersRef.current = true;
       setIsLoading(true);
       const session = getAdminSession();
-      if (!session) return;
+      if (!session) {
+        isLoadingOrdersRef.current = false;
+        setIsLoading(false);
+        return;
+      }
 
       const response = await fetch("/api/admin/orders", {
         headers: {
@@ -102,7 +155,9 @@ export default function OrdersPage() {
         setOrders(data.orders);
       }
     } catch (err) {
+      // Error loading orders
     } finally {
+      isLoadingOrdersRef.current = false;
       setIsLoading(false);
     }
   };
@@ -146,6 +201,7 @@ export default function OrdersPage() {
 
       const data = await response.json();
       if (data.success) {
+        // Refresh orders list (server-side cache is cleared after update, so fresh data will be fetched)
         loadOrders();
         if (selectedOrder?.id === orderId) {
           setSelectedOrder(data.order);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminFirestore, adminAuth, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import { initializeMongoDB, getMongoDB } from "@/lib/mongodb.server";
+import { getUserIdFromSession } from "@/lib/auth-helpers";
 
 const ADDRESSES_COLLECTION = "addresses";
 
@@ -19,40 +20,20 @@ interface Address {
   updated_at?: string;
 }
 
-// Helper to verify Firebase token and get user ID
-async function getUserIdFromToken(request: NextRequest): Promise<string | null> {
-  try {
-    // Ensure Firebase is initialized before using adminAuth
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminAuth) {
-      return null;
-    }
-    
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) return null;
-    
-    const token = authHeader.substring(7);
-    const decoded = await adminAuth.verifyIdToken(token);
-    return decoded.uid;
-  } catch {
-    return null;
-  }
-}
-
 // GET - Fetch all addresses for the authenticated user
 export async function GET(request: NextRequest) {
   try {
-    // Ensure Firebase is initialized
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminFirestore) {
+    // Initialize MongoDB
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
       return NextResponse.json(
         { success: false, error: "Database unavailable" },
         { status: 500 }
       );
     }
 
-    // Get user ID from token
-    const userId = await getUserIdFromToken(request);
+    // Get user ID from NextAuth session
+    const userId = await getUserIdFromSession(request);
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
@@ -60,26 +41,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const snapshot = await adminFirestore
+    const db = getMongoDB();
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: "Database unavailable" },
+        { status: 500 }
+      );
+    }
+
+    const addresses = await db
       .collection(ADDRESSES_COLLECTION)
-      .where("user_id", "==", userId)
-      .get();
+      .find({ user_id: userId })
+      .sort({ is_default: -1, created_at: -1 })
+      .toArray();
 
-    const addresses = snapshot.docs
-      .map((doc: any) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .sort((a: any, b: any) => {
-        // Sort by default first, then by created_at
-        if (a.is_default && !b.is_default) return -1;
-        if (!a.is_default && b.is_default) return 1;
-        const dateA = new Date(a.created_at || 0).getTime();
-        const dateB = new Date(b.created_at || 0).getTime();
-        return dateB - dateA;
-      });
+    const formattedAddresses = addresses.map((addr: any) => ({
+      id: addr._id?.toString() || addr.id,
+      ...addr,
+      _id: undefined, // Remove MongoDB _id from response
+    }));
 
-    return NextResponse.json({ success: true, addresses });
+    return NextResponse.json({ success: true, addresses: formattedAddresses });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || "Failed to fetch addresses" },
@@ -91,16 +73,16 @@ export async function GET(request: NextRequest) {
 // POST - Create a new address
 export async function POST(request: NextRequest) {
   try {
-    // Ensure Firebase is initialized
-    const initResult = await ensureFirebaseInitialized();
-    if (!initResult.success || !adminFirestore) {
+    // Initialize MongoDB
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
       return NextResponse.json(
         { success: false, error: "Database unavailable" },
         { status: 500 }
       );
     }
     
-    const userId = await getUserIdFromToken(request);
+    const userId = await getUserIdFromSession(request);
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
@@ -128,7 +110,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!adminFirestore) {
+    const db = getMongoDB();
+    if (!db) {
       return NextResponse.json(
         { success: false, error: "Database unavailable" },
         { status: 500 }
@@ -137,21 +120,10 @@ export async function POST(request: NextRequest) {
 
     // If this is set as default, unset other defaults
     if (is_default) {
-      const existingAddresses = await adminFirestore
-        .collection(ADDRESSES_COLLECTION)
-        .where("user_id", "==", userId)
-        .get();
-
-      const batch = adminFirestore.batch();
-      existingAddresses.docs.forEach((doc: any) => {
-        const data = doc.data();
-        if (data.is_default) {
-          batch.update(doc.ref, { is_default: false });
-        }
-      });
-      if (existingAddresses.docs.length > 0) {
-        await batch.commit();
-      }
+      await db.collection(ADDRESSES_COLLECTION).updateMany(
+        { user_id: userId, is_default: true },
+        { $set: { is_default: false } }
+      );
     }
 
     const addressData: Omit<Address, "id"> = {
@@ -169,13 +141,11 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    const docRef = await adminFirestore
-      .collection(ADDRESSES_COLLECTION)
-      .add(addressData);
+    const result = await db.collection(ADDRESSES_COLLECTION).insertOne(addressData);
 
     return NextResponse.json({
       success: true,
-      address: { id: docRef.id, ...addressData },
+      address: { id: result.insertedId.toString(), ...addressData },
     });
   } catch (error: any) {
     return NextResponse.json(
@@ -184,4 +154,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
 import { getAdminSession, setAdminSession } from "@/lib/admin-auth";
+import { setRedirectLock, shouldAllowRedirect, clearRedirectLock, getRedirectLock } from "@/lib/redirect-lock";
 
 import { Shield, Lock, Sparkles, ArrowRight, Mail, Key, Eye, EyeOff } from "lucide-react";
 import { LoginSkeleton } from "@/components/SkeletonLoader";
@@ -49,9 +50,14 @@ function LoginForm() {
   const [checkingAdmin, setCheckingAdmin] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
   const [hasCheckedAdmin, setHasCheckedAdmin] = useState(false);
+  const verificationInProgress = useRef(false);
   
-  // Login method state
-  const [loginMethod, setLoginMethod] = useState<LoginMethod>("google");
+  // Check available providers
+  const [hasGoogleOAuth, setHasGoogleOAuth] = useState(false);
+  const [checkingProviders, setCheckingProviders] = useState(true);
+  
+  // Login method state - default to email if Google not available
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>("email");
   
   // Email/Password state
   const [email, setEmail] = useState("");
@@ -59,6 +65,30 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
   
+
+  // Check available authentication providers
+  useEffect(() => {
+    const checkProviders = async () => {
+      try {
+        const response = await fetch("/api/auth/providers");
+        const data = await response.json();
+        setHasGoogleOAuth(data.google || false);
+        // Default to Google if available, otherwise email
+        if (data.google) {
+          setLoginMethod("google");
+        } else {
+          setLoginMethod("email");
+        }
+      } catch (error) {
+        // If API fails, assume Google is not available
+        setHasGoogleOAuth(false);
+        setLoginMethod("email");
+      } finally {
+        setCheckingProviders(false);
+      }
+    };
+    checkProviders();
+  }, []);
 
   // Show success message if just registered
   useEffect(() => {
@@ -68,126 +98,226 @@ function LoginForm() {
     }
   }, [registered]);
 
-  // Redirect logic for admin mode
-  useEffect(() => {
-    if (mode !== "admin" || hasRedirected) return;
-    if (adminLoading) return;
+  // Verify admin status and redirect accordingly
+  // DEFINE THIS FIRST before using it in useEffect
+  const verifyAdminStatus = useCallback(async () => {
+    if (checkingAdmin || hasCheckedAdmin || hasRedirected || verificationInProgress.current) return;
     
-    const session = getAdminSession();
-    if (adminInfo && session) {
-      const role = session.role || adminInfo.role;
-      let redirectPath = "/admin";
-      if (role === "worker") {
-        redirectPath = "/worker/dashboard";
+    // Double check we're still on login page before redirecting
+    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+      return;
+    }
+    
+    verificationInProgress.current = true;
+    setCheckingAdmin(true);
+    setHasCheckedAdmin(true);
+    
+    try {
+      // First check if there's already an admin session
+      const existingSession = getAdminSession();
+      if (existingSession) {
+        setHasRedirected(true);
+        const role = existingSession.role;
+        const currentPath = typeof window !== "undefined" ? window.location.pathname : "/login";
+        
+        // Use replace immediately - no delay needed
+        if (role === "worker") {
+          if (shouldAllowRedirect(currentPath, "/worker/dashboard")) {
+            if (setRedirectLock(currentPath, "/worker/dashboard")) {
+              window.location.replace("/worker/dashboard");
+            }
+          }
+        } else if (role === "admin" || role === "superuser") {
+          // Only redirect if not already on admin route and redirect is allowed
+          if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
+            if (shouldAllowRedirect(currentPath, "/admin")) {
+              if (setRedirectLock(currentPath, "/admin")) {
+                window.location.replace("/admin");
+              }
+            }
+          } else {
+            // Already on admin route, clear any locks
+            clearRedirectLock();
+          }
+        }
+        return;
       }
-      setHasRedirected(true);
-      window.location.href = redirectPath;
-      return;
-    }
-    
-    if (user && !adminInfo && !session) {
-      setHasRedirected(true);
-      window.location.href = "/";
-      return;
-    }
-  }, [user, adminInfo, mode, adminLoading, hasRedirected]);
 
-  // Check if user is a worker/admin after customer login (only once)
-  useEffect(() => {
-    // Only check for customer mode, if user exists, and we haven't checked yet
-    if (mode !== "customer" || !user || checkingAdmin || hasCheckedAdmin || hasRedirected) return;
-    
-    // Check if there's already an admin session
-    const session = getAdminSession();
-    if (session) {
-      setHasCheckedAdmin(true);
-      setHasRedirected(true);
-      const role = session.role;
-      if (role === "worker") {
-        router.replace("/worker/dashboard");
-      } else {
-        router.replace("/admin");
-      }
-      return;
-    }
+      // Check if user is admin/worker using the admin login API
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+      });
 
-    // Verify if user is admin/worker (only check once)
-    const verifyWorker = async () => {
-      setCheckingAdmin(true);
-      setHasCheckedAdmin(true);
-      let isAdminOrWorker = false;
-      
-      try {
-        const idToken = await user.getIdToken();
-        // Use the check endpoint instead of login endpoint to avoid 403 errors in console
-        const res = await fetch("/api/admin/check", {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ idToken }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.isAdmin && data.user) {
-            isAdminOrWorker = true;
-            setHasRedirected(true);
-            const adminUser = {
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          // User is an admin/worker - establish session and redirect
+          setHasRedirected(true);
+          const adminUser = {
+            username: data.user.username,
+            role: data.user.role as "superuser" | "admin" | "worker",
+            name: data.user.name || user?.name || "",
+            password: "",
+          };
+          
+          setAdminSession(adminUser);
+          
+          if (typeof window !== "undefined") {
+            // Set session in both sessionStorage and localStorage
+            const sessionData = {
               username: data.user.username,
-              role: data.user.role as "superuser" | "worker",
-              name: data.user.name || data.user.username,
-              password: "",
+              role: data.user.role,
+              name: data.user.name,
             };
             
-            setAdminSession(adminUser);
+            sessionStorage.setItem("admin_session", JSON.stringify(sessionData));
+            localStorage.setItem("va_admin_session_local", JSON.stringify(sessionData));
+            // Set a flag to indicate session is being established (prevents AdminLayout from checking)
+            localStorage.setItem("admin_session_establishing", "true");
             
-            if (typeof window !== "undefined") {
-              localStorage.setItem("va_admin_session_local", JSON.stringify({
-                username: data.user.username,
-                role: data.user.role,
-                name: data.user.name,
-              }));
-            }
+            // Mark as redirected FIRST to prevent multiple redirects
+            setHasRedirected(true);
+            
+            // Redirect based on role - use replace to prevent back button issues
+            // Keep the flag until redirect completes (AdminLayout will remove it)
+            const currentPath = typeof window !== "undefined" ? window.location.pathname : "/login";
             
             if (data.user.role === "worker") {
-              window.location.href = "/worker/dashboard";
-            } else {
-              window.location.href = "/admin";
+              if (shouldAllowRedirect(currentPath, "/worker/dashboard")) {
+                if (setRedirectLock(currentPath, "/worker/dashboard")) {
+                  window.location.replace("/worker/dashboard");
+                }
+              }
+              return; // Exit immediately
+            } else if (data.user.role === "admin" || data.user.role === "superuser") {
+              // For admin, redirect only if not already on admin route and redirect is allowed
+              if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
+                if (shouldAllowRedirect(currentPath, "/admin")) {
+                  if (setRedirectLock(currentPath, "/admin")) {
+                    window.location.replace("/admin");
+                  }
+                }
+              } else {
+                // Already on admin route, clear locks
+                clearRedirectLock();
+              }
+              return; // Exit immediately
             }
-            return;
           }
-          // If isAdmin is false, user is a regular customer (expected)
-          isAdminOrWorker = false;
-        } else {
-          // Server error - treat as regular customer
-          isAdminOrWorker = false;
+          return;
         }
-      } catch (err) {
-        // Network errors - treat as regular customer
-        isAdminOrWorker = false;
-      } finally {
+      } else if (res.status === 401 || res.status === 403) {
+        // Not authenticated (401) or not an admin (403) - treat as regular customer
+        // This is expected for regular customers
+        // Mark as redirected and redirect to account page
+        setHasRedirected(true);
+        verificationInProgress.current = false;
         setCheckingAdmin(false);
-        if (!isAdminOrWorker && !hasRedirected) {
-          setHasRedirected(true);
+        if (typeof window !== "undefined" && window.location.pathname === "/login") {
           router.replace(callbackUrl);
         }
+        return;
+      } else {
+        // Other error - treat as regular customer
+        verificationInProgress.current = false;
       }
-    };
+    } catch (err) {
+      // Network errors - treat as regular customer
+      console.error("Error checking admin status:", err);
+    } finally {
+      verificationInProgress.current = false;
+      setCheckingAdmin(false);
+      // Only redirect to customer account if we haven't redirected yet and still on login page
+      // This handles the case where user is a regular customer (not admin)
+      if (!hasRedirected && typeof window !== "undefined" && window.location.pathname === "/login") {
+        // Small delay to ensure all redirects are processed
+        setTimeout(() => {
+          if (!hasRedirected && typeof window !== "undefined" && window.location.pathname === "/login") {
+            setHasRedirected(true);
+            router.replace(callbackUrl);
+          }
+        }, 300);
+      }
+    }
+  }, [checkingAdmin, hasCheckedAdmin, hasRedirected, user, router, callbackUrl]);
 
-    verifyWorker();
-  }, [user, router, callbackUrl, mode, checkingAdmin, hasCheckedAdmin, hasRedirected]);
+  // SINGLE CHECK: If user is already signed in, check admin status once
+  // This prevents loop when user is signed in but admin session not set
+  useEffect(() => {
+    // Only check if user exists and we haven't checked yet and not already redirected
+    if (!user || !user.email || checkingAdmin || hasCheckedAdmin || hasRedirected) return;
+    
+    // Don't check if there's an active redirect lock (prevents loops)
+    const lock = getRedirectLock();
+    if (lock) {
+      return; // Wait for redirect to complete
+    }
+    
+    // Don't check if we're not on login page OR if we're already on admin route
+    if (typeof window !== "undefined") {
+      const currentPath = window.location.pathname;
+      if (currentPath !== "/login" || currentPath.startsWith("/admin") || currentPath.startsWith("/worker")) {
+        return;
+      }
+    }
+    
+    // Single check with a small delay to ensure we're on login page
+    const checkTimer = setTimeout(() => {
+      // Double check we're still on login page and haven't redirected
+      if (typeof window !== "undefined" && window.location.pathname === "/login" && !hasRedirected) {
+        verifyAdminStatus();
+      }
+    }, 200);
+    
+    return () => clearTimeout(checkTimer);
+  }, [user?.email, checkingAdmin, hasCheckedAdmin, hasRedirected, verifyAdminStatus]);
+
+  const handleAdminLogin = async () => {
+    setError("");
+    setSuccessMessage("");
+    setAdminLoading(true);
+    
+    try {
+      // Sign in with Google - this will trigger the admin check in useEffect
+      await signinAsAdmin();
+      // Don't set loading to false here - let the redirect handle it
+      // The useEffect will check admin status and redirect accordingly
+    } catch (err: any) {
+      const errorMessage = err?.message || "Admin sign in failed. Please try again.";
+      setError(errorMessage);
+      setAdminLoading(false);
+    }
+  };
 
   const handleCustomerLogin = async () => {
     setError("");
     setSuccessMessage("");
+    
+    // Check if Google OAuth is available before attempting login
+    if (!hasGoogleOAuth) {
+      setError("Google Sign-In is not configured. Please use email/password login.");
+      setLoginMethod("email");
+      return;
+    }
+    
     setLoading(true);
     try {
+      // Sign in with Google - this will trigger the admin check in useEffect
       await signinWithGoogle();
+      // Don't set loading to false here - let the redirect handle it
+      // The useEffect will check admin status and redirect accordingly
     } catch (err: any) {
       const errorMessage = err?.message || "Sign in failed. Please try again.";
       setError(errorMessage);
       setLoading(false);
+      // If Google login fails and error suggests provider not available, switch to email
+      if (errorMessage.includes("client_id") || errorMessage.includes("not configured")) {
+        setLoginMethod("email");
+      }
     }
   };
 
@@ -197,8 +327,10 @@ function LoginForm() {
     setSuccessMessage("");
     setEmailLoading(true);
     try {
+      // Sign in with email/password - this will trigger the admin check in useEffect
       await signinWithEmailPassword(email, password);
-      // Don't set loading to false - let useEffect handle redirect
+      // Don't set loading to false here - let the redirect handle it
+      // The useEffect will check admin status and redirect accordingly
     } catch (err: any) {
       const errorMessage = err?.message || "Sign in failed. Please try again.";
       setError(errorMessage);
@@ -207,48 +339,8 @@ function LoginForm() {
   };
 
 
-  const handleAdminLogin = async () => {
-    setError("");
-    setSuccessMessage("");
-    setAdminLoading(true);
-    try {
-      await signinAsAdmin();
-      
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      let session = getAdminSession();
-      let attempts = 0;
-      while (!session && attempts < 5) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        session = getAdminSession();
-        attempts++;
-      }
-      
-      if (!session) {
-        throw new Error("Failed to establish admin session. Please try again.");
-      }
-      
-      const role = session.role;
-      let redirectPath = "/admin";
-      if (role === "worker") {
-        redirectPath = "/worker/dashboard";
-      } else if (role === "admin" || role === "superuser") {
-        redirectPath = "/admin";
-      }
-      
-      if (typeof window !== "undefined") {
-        window.location.href = redirectPath;
-      } else {
-        router.replace(redirectPath);
-      }
-    } catch (err: any) {
-      const errorMessage = err?.message || "Sign in failed. Make sure your Google account is registered as admin.";
-      setError(errorMessage);
-      setAdminLoading(false);
-    }
-  };
-
-  const isAdminMode = mode === "admin";
+  // Admin mode is no longer needed - all logins are handled the same way
+  const isAdminMode = false;
 
   return (
     <main className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-amber-50/30 flex items-center justify-center px-4 sm:px-6 py-6 sm:py-8">
@@ -270,10 +362,10 @@ function LoginForm() {
             )}
           </div>
           <h1 className="font-serif text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">
-            {isAdminMode ? "Admin Portal" : "Welcome Back"}
+            {isAdminMode ? "Organizers Portal" : "Welcome Back"}
           </h1>
           <p className="text-slate-600 text-base">
-            {isAdminMode ? "Secure access to Vairanya Admin Panel" : "Sign in to continue your journey"}
+            {isAdminMode ? "Secure access for Workers, Admins & Superadmins" : "Sign in to continue your journey"}
           </p>
         </div>
 
@@ -309,7 +401,7 @@ function LoginForm() {
                   <p className="text-sm text-red-800">{error}</p>
                   {isAdminMode && (
                     <p className="text-xs text-red-700 mt-1">
-                      If you believe you should have access, please contact a superadmin.
+                      If you believe you should have access, please contact a superadmin to add your account as a worker, admin, or superadmin.
                     </p>
                   )}
                 </div>
@@ -382,38 +474,40 @@ function LoginForm() {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Login Method Tabs */}
-              <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                <button
-                  onClick={() => {
-                    setLoginMethod("google");
-                    setError("");
-                  }}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                    loginMethod === "google"
-                      ? "bg-white text-[#D4AF37] shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  Google
-                </button>
-                <button
-                  onClick={() => {
-                    setLoginMethod("email");
-                    setError("");
-                  }}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                    loginMethod === "email"
-                      ? "bg-white text-[#D4AF37] shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  Email
-                </button>
-              </div>
+              {/* Login Method Tabs - Only show if Google OAuth is available */}
+              {hasGoogleOAuth && !checkingProviders && (
+                <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                  <button
+                    onClick={() => {
+                      setLoginMethod("google");
+                      setError("");
+                    }}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                      loginMethod === "google"
+                        ? "bg-white text-[#D4AF37] shadow-sm"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Google
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLoginMethod("email");
+                      setError("");
+                    }}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                      loginMethod === "email"
+                        ? "bg-white text-[#D4AF37] shadow-sm"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Email
+                  </button>
+                </div>
+              )}
 
-              {/* Google Login */}
-              {loginMethod === "google" && (
+              {/* Google Login - Only show if Google OAuth is available */}
+              {hasGoogleOAuth && !checkingProviders && loginMethod === "google" && (
                 <>
                   <Button 
                     onClick={handleCustomerLogin} 
@@ -438,30 +532,18 @@ function LoginForm() {
                     </span>
                   </Button>
 
-                  <div className="relative py-2">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-slate-200"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-4 bg-white/80 text-slate-500 font-medium">or</span>
-                    </div>
-                  </div>
-
-                  <Link href="/login?mode=admin">
-                    <Button 
-                      variant="outline"
-                      className="w-full group border-2 border-slate-200 hover:border-[#D4AF37] hover:bg-gradient-to-r hover:from-[#D4AF37]/5 hover:to-amber-50/50 h-11 text-base font-medium rounded-xl transition-all duration-300"
-                    >
-                      <Shield className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                      Admin Login
-                      <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </Link>
                 </>
               )}
 
-              {/* Email/Password Login */}
-              {loginMethod === "email" && (
+              {/* Show loading while checking providers */}
+              {checkingProviders && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D4AF37]"></div>
+                </div>
+              )}
+
+              {/* Email/Password Login - Show when email method is selected or Google is not available */}
+              {!checkingProviders && loginMethod === "email" && (
                 <form onSubmit={handleEmailLogin} className="space-y-3.5">
                   <div className="space-y-1.5">
                     <label className="block text-sm font-semibold text-slate-700">Email</label>
@@ -559,6 +641,7 @@ function LoginForm() {
             </Link>
           </p>
         )}
+
       </div>
     </main>
   );

@@ -39,11 +39,9 @@ export default function AdminProductsPage() {
       const data = await response.json();
       if (data.success) {
         setProducts(data.products || []);
-        console.log(`[Admin Products] Loaded ${data.products?.length || 0} products`);
         setError(""); // Clear any previous errors
       } else {
         const errorMsg = data.error || data.message || "Failed to load products";
-        console.error(`[Admin Products] Failed to load products:`, errorMsg);
         setError(errorMsg);
         
         // If database unavailable, show helpful message
@@ -52,7 +50,6 @@ export default function AdminProductsPage() {
         }
       }
     } catch (err: any) {
-      console.error("[Admin Products] Error loading products:", err);
       setError(`Failed to load products: ${err.message || "Network error"}`);
     } finally {
       setIsLoading(false);
@@ -192,17 +189,17 @@ export default function AdminProductsPage() {
               <Button
                 onClick={handleBulkDelete}
                 disabled={isDeleting}
-                className="bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 md:py-2 flex-1 sm:flex-none"
+                className="bg-red-600 hover:bg-red-700 text-white text-sm sm:text-base md:text-lg px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 flex-1 sm:flex-none"
               >
-                <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 mr-1 sm:mr-1.5 md:mr-2" />
+                <Trash2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 mr-1.5 sm:mr-2 md:mr-2.5" />
                 <span className="hidden xs:inline">Delete ({selectedProducts.size})</span>
                 <span className="xs:hidden">Del ({selectedProducts.size})</span>
               </Button>
             )}
             {canCreateProduct() && (
-              <Button asChild className="bg-[#D4AF37] hover:bg-[#C19B2E] text-xs sm:text-sm px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 flex-1 sm:flex-none">
+              <Button asChild className="bg-[#D4AF37] hover:bg-[#C19B2E] text-sm sm:text-base md:text-lg px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 flex-1 sm:flex-none">
                 <Link href="/admin/products/new">
-                  <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 mr-1 sm:mr-1.5 md:mr-2" />
+                  <Plus className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 mr-1.5 sm:mr-2 md:mr-2.5" />
                   <span className="hidden sm:inline">Add Product</span>
                   <span className="sm:hidden">Add</span>
                 </Link>
@@ -238,33 +235,33 @@ export default function AdminProductsPage() {
                 <thead className="bg-gray-50 dark:bg-[#0a0a0a] border-b dark:border-white/10">
                   <tr>
                     {canDeleteProduct() && (
-                      <th className="pl-3 sm:pl-2 md:pl-3 pr-1.5 sm:pr-2 md:pr-3 py-1.5 sm:py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-6 sm:w-8 md:w-10">
+                      <th className="pl-3 sm:pl-4 md:pl-4 pr-2 sm:pr-3 md:pr-3 py-2 sm:py-2.5 md:py-3 text-left text-xs sm:text-sm md:text-base font-medium text-gray-500 dark:text-gray-400 uppercase w-8 sm:w-10 md:w-12">
                         <button
                           onClick={handleSelectAll}
-                          className="flex items-center justify-center w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 border border-gray-300 dark:border-white/20 rounded hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors bg-white dark:bg-[#0a0a0a]"
+                          className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 border border-gray-300 dark:border-white/20 rounded hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors bg-white dark:bg-[#0a0a0a]"
                           title={selectedProducts.size === products.length ? "Deselect all" : "Select all"}
                         >
                           {selectedProducts.size === products.length && products.length > 0 ? (
-                            <CheckSquare className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 text-[#D4AF37]" />
+                            <CheckSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-[#D4AF37]" />
                           ) : (
-                            <Square className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 text-gray-400 dark:text-gray-500" />
+                            <Square className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-gray-400 dark:text-gray-500" />
                           )}
                         </button>
                       </th>
                     )}
-                    <th className="px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 text-left text-xs sm:text-sm md:text-base font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Product
                     </th>
-                    <th className="px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">
+                    <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 text-left text-xs sm:text-sm md:text-base font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">
                       Category
                     </th>
-                    <th className="px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">
+                    <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 text-left text-xs sm:text-sm md:text-base font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">
                       Price
                     </th>
-                    <th className="px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">
+                    <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 text-left text-xs sm:text-sm md:text-base font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">
                       Stock
                     </th>
-                    <th className="px-1 sm:px-1.5 md:px-2 pr-3 sm:pr-2 md:pr-2 py-1.5 sm:py-2 text-right text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-16 sm:w-20 md:w-24">
+                    <th className="px-2 sm:px-3 md:px-4 pr-3 sm:pr-4 md:pr-4 py-2 sm:py-2.5 md:py-3 text-right text-xs sm:text-sm md:text-base font-medium text-gray-500 dark:text-gray-400 uppercase w-20 sm:w-24 md:w-28">
                       Actions
                     </th>
                   </tr>
@@ -276,23 +273,23 @@ export default function AdminProductsPage() {
                       className={`hover:bg-gray-50 dark:hover:bg-white/5 ${selectedProducts.has(product.product_id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                     >
                       {canDeleteProduct() && (
-                        <td className="pl-3 sm:pl-2 md:pl-3 pr-1.5 sm:pr-2 md:pr-3 py-1.5 sm:py-2 whitespace-nowrap">
+                        <td className="pl-3 sm:pl-4 md:pl-4 pr-2 sm:pr-3 md:pr-3 py-2 sm:py-2.5 md:py-3 whitespace-nowrap">
                           <button
                             onClick={() => handleSelectProduct(product.product_id)}
-                            className="flex items-center justify-center w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 border border-gray-300 dark:border-white/20 rounded hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors bg-white dark:bg-[#0a0a0a]"
+                            className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 border border-gray-300 dark:border-white/20 rounded hover:border-[#D4AF37] dark:hover:border-[#D4AF37] transition-colors bg-white dark:bg-[#0a0a0a]"
                             title={selectedProducts.has(product.product_id) ? "Deselect" : "Select"}
                           >
                             {selectedProducts.has(product.product_id) ? (
-                              <CheckSquare className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 text-[#D4AF37]" />
+                              <CheckSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-[#D4AF37]" />
                             ) : (
-                              <Square className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 text-gray-400 dark:text-gray-500" />
+                              <Square className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-gray-400 dark:text-gray-500" />
                             )}
                           </button>
                         </td>
                       )}
-                      <td className="px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2">
-                        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
-                          <div className="flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 bg-gray-100 dark:bg-[#1a1a1a] rounded overflow-hidden">
+                      <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3">
+                        <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3">
+                          <div className="flex-shrink-0 h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 lg:h-20 lg:w-20 bg-gray-100 dark:bg-[#1a1a1a] rounded overflow-hidden">
                             {product.images && product.images.length > 0 ? (
                               <img
                                 src={product.images[0]}
@@ -301,17 +298,17 @@ export default function AdminProductsPage() {
                               />
                             ) : (
                               <div className="h-full w-full flex items-center justify-center">
-                                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-gray-400 dark:text-gray-600" />
+                                <Package className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 lg:h-10 lg:w-10 text-gray-400 dark:text-gray-600" />
                               </div>
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="text-[10px] sm:text-[11px] md:text-xs lg:text-sm font-medium text-gray-900 dark:text-white truncate leading-tight">
+                            <div className="text-xs sm:text-sm md:text-base lg:text-lg font-medium text-gray-900 dark:text-white truncate leading-tight">
                               {product.title}
                             </div>
-                            <div className="text-[8px] sm:text-[9px] md:text-[10px] lg:text-xs text-gray-500 dark:text-gray-400 truncate leading-tight">{product.sku}</div>
-                            <div className="text-[8px] sm:text-[9px] md:text-[10px] lg:text-xs text-gray-500 dark:text-gray-400 capitalize lg:hidden mt-0.5 leading-tight">{product.category}</div>
-                            <div className="text-[8px] sm:text-[9px] md:text-[10px] lg:text-xs lg:hidden mt-0.5 flex items-center gap-1.5 leading-tight">
+                            <div className="text-[10px] sm:text-xs md:text-sm lg:text-base text-gray-500 dark:text-gray-400 truncate leading-tight mt-0.5">{product.sku}</div>
+                            <div className="text-[10px] sm:text-xs md:text-sm lg:text-base text-gray-500 dark:text-gray-400 capitalize lg:hidden mt-1 leading-tight">{product.category}</div>
+                            <div className="text-[10px] sm:text-xs md:text-sm lg:text-base lg:hidden mt-1 flex items-center gap-2 leading-tight">
                               <span className={`${product.stock_qty > 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}`}>
                                 {product.stock_qty}
                               </span>
@@ -322,42 +319,42 @@ export default function AdminProductsPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 hidden lg:table-cell">
-                        <span className="text-xs sm:text-sm text-gray-900 dark:text-white capitalize">
+                      <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 hidden lg:table-cell">
+                        <span className="text-sm sm:text-base md:text-lg text-gray-900 dark:text-white capitalize">
                           {product.category}
                         </span>
                       </td>
-                      <td className="px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 hidden lg:table-cell">
-                        <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 hidden lg:table-cell">
+                        <span className="text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-white">
                           ₹{product.price}
                         </span>
                       </td>
-                      <td className="px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 hidden md:table-cell">
+                      <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 hidden md:table-cell">
                         <span
-                          className={`text-xs sm:text-sm ${
+                          className={`text-sm sm:text-base md:text-lg ${
                             product.stock_qty > 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"
                           }`}
                         >
                           {product.stock_qty}
                         </span>
                       </td>
-                      <td className="px-1 sm:px-1.5 md:px-2 pr-3 sm:pr-2 md:pr-2 py-1.5 sm:py-2 text-right">
-                        <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+                      <td className="px-2 sm:px-3 md:px-4 pr-3 sm:pr-4 md:pr-4 py-2 sm:py-2.5 md:py-3 text-right">
+                        <div className="flex items-center justify-end gap-1 sm:gap-1.5 md:gap-2">
                           <Link
                             href={`/products/${product.slug}`}
                             target="_blank"
-                            className="text-gray-600 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] p-0.5"
+                            className="text-gray-600 dark:text-gray-400 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] p-1 sm:p-1.5 md:p-2 rounded hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                             title="View"
                           >
-                            <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            <Eye className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
                           </Link>
                           {canEditProduct() && (
                             <Link
                               href={`/admin/products/${product.product_id}/edit`}
-                              className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-0.5"
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-1 sm:p-1.5 md:p-2 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                               title="Edit"
                             >
-                              <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                              <Edit className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
                             </Link>
                           )}
                           {canDeleteProduct() && (
@@ -365,10 +362,10 @@ export default function AdminProductsPage() {
                               onClick={() =>
                                 handleDelete(product.product_id, product.title)
                               }
-                              className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 p-0.5"
+                              className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 p-1 sm:p-1.5 md:p-2 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                               title="Delete"
                             >
-                              <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                              <Trash2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
                             </button>
                           )}
                         </div>

@@ -73,11 +73,9 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
     if (user && !adminInfo && !currentSession && pathname?.startsWith("/worker")) {
       const verifyAndEstablishSession = async () => {
         try {
-          const idToken = await user.getIdToken();
           const res = await fetch("/api/admin/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ idToken }),
           });
 
           if (res.ok) {
@@ -150,7 +148,7 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
     // THIRD: If no user signed in, redirect to login
     if (!user && !isAdminAuth) {
       setHasRedirected(true);
-      window.location.href = "/login?mode=admin";
+      window.location.href = "/login";
       return;
     }
     
@@ -169,7 +167,7 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
 
   const handleLogout = () => {
     clearAdminSession();
-    router.push("/login?mode=admin");
+    router.push("/login");
   };
 
   if (!mounted) {

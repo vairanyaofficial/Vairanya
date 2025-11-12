@@ -1,434 +1,61 @@
-// Offers Firestore service - server-side only
+// Offers MongoDB service - server-side only
+// This file maintains backward compatibility by re-exporting MongoDB functions
 import "server-only";
-import { adminFirestore, ensureFirebaseInitialized } from "@/lib/firebaseAdmin.server";
+import * as offersMongo from "./offers-mongodb";
 import type { Offer } from "./offers-types";
 
-const OFFERS_COLLECTION = "offers";
-const OFFER_USAGES_COLLECTION = "offer_usages";
-
-// Helper function to ensure Firestore is initialized
-async function ensureInitialized(): Promise<void> {
-  const initResult = await ensureFirebaseInitialized();
-  if (!initResult.success || !adminFirestore) {
-    throw new Error("Database unavailable");
-  }
-}
-
-// Convert Firestore document to Offer
-function docToOffer(doc: any): Offer {
-  const data = doc.data();
-  return {
-    id: doc.id,
-    code: data.code || undefined,
-    title: data.title || "",
-    description: data.description || "",
-    discount_type: data.discount_type || "percentage",
-    discount_value: data.discount_value || 0,
-    min_order_amount: data.min_order_amount || undefined,
-    max_discount: data.max_discount || undefined,
-    valid_from: data.valid_from 
-      ? (typeof data.valid_from === 'string' ? data.valid_from : data.valid_from.toDate?.()?.toISOString() || new Date().toISOString())
-      : new Date().toISOString(),
-    valid_until: data.valid_until 
-      ? (typeof data.valid_until === 'string' ? data.valid_until : data.valid_until.toDate?.()?.toISOString() || new Date().toISOString())
-      : new Date().toISOString(),
-    is_active: data.is_active !== undefined ? data.is_active : true,
-    customer_email: data.customer_email || undefined,
-    customer_emails: data.customer_emails || undefined,
-    customer_id: data.customer_id || undefined,
-    customer_ids: data.customer_ids || undefined,
-    usage_limit: data.usage_limit || undefined,
-    used_count: data.used_count || 0,
-    one_time_per_user: data.one_time_per_user !== undefined ? data.one_time_per_user : false,
-    created_at: data.created_at 
-      ? (typeof data.created_at === 'string' ? data.created_at : data.created_at.toDate?.()?.toISOString() || new Date().toISOString())
-      : (data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()),
-    updated_at: data.updated_at 
-      ? (typeof data.updated_at === 'string' ? data.updated_at : data.updated_at.toDate?.()?.toISOString() || new Date().toISOString())
-      : (data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString()),
-    created_by: data.created_by || undefined,
-  };
-}
-
-// Get all offers
+// Re-export all MongoDB functions
 export async function getAllOffers(): Promise<Offer[]> {
-  await ensureInitialized();
-
-  try {
-    // Add timeout to prevent hanging queries
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("Firestore query timeout (10s)")), 10000)
-    );
-    
-    // Try with orderBy first, but fallback to unordered if index doesn't exist
-    let snapshot;
-    try {
-      const queryPromise = adminFirestore
-        .collection(OFFERS_COLLECTION)
-        .orderBy("created_at", "desc")
-        .get();
-      
-      snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
-    } catch (orderByError: any) {
-      // If orderBy fails (likely due to missing index or timeout), get without ordering
-      // and sort in memory
-      try {
-        const queryPromise = adminFirestore
-          .collection(OFFERS_COLLECTION)
-          .get();
-        
-        snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
-        
-        const offers = snapshot.docs.map(docToOffer);
-        // Sort by created_at descending
-        return offers.sort((a: Offer, b: Offer) => {
-          const dateA = new Date(a.created_at).getTime();
-          const dateB = new Date(b.created_at).getTime();
-          return dateB - dateA;
-        });
-      } catch (fallbackError: any) {
-        console.error("Error fetching offers (fallback):", {
-          message: fallbackError?.message,
-          code: fallbackError?.code,
-          name: fallbackError?.name,
-        });
-        return [];
-      }
-    }
-
-    return snapshot.docs.map(docToOffer);
-  } catch (error: any) {
-    console.error("Error fetching offers:", {
-      message: error?.message,
-      code: error?.code,
-      name: error?.name,
-    });
-    return [];
-  }
+  return offersMongo.getAllOffers();
 }
 
-// Get active offers (for public display)
-export async function getActiveOffers(customerEmail?: string, customerId?: string): Promise<Offer[]> {
-  await ensureInitialized();
-
-  try {
-    const now = new Date();
-    const nowISO = now.toISOString();
-    const allOffers = await getAllOffers();
-    
-    // Filter offers and check user usage for one_time_per_user offers
-    const filteredOffers = await Promise.all(
-      allOffers.map(async (offer) => {
-        // Check if offer is active
-        if (!offer.is_active) {
-          return null;
-        }
-        
-        // Check validity dates - convert to Date objects for proper comparison
-        try {
-          const validFrom = new Date(offer.valid_from);
-          const validUntil = new Date(offer.valid_until);
-          
-          // Check if current date is within validity range
-          if (now < validFrom || now > validUntil) {
-            return null;
-          }
-        } catch (dateError) {
-          console.error("Error parsing offer dates:", dateError, offer);
-          return null;
-        }
-        
-        // Check usage limit
-        if (offer.usage_limit && offer.used_count >= offer.usage_limit) {
-          return null;
-        }
-        
-        // Check if user has already used this offer (one_time_per_user)
-        if (offer.one_time_per_user && (customerEmail || customerId)) {
-          const hasUsed = await hasUserUsedOffer(offer.id, customerEmail, customerId);
-          if (hasUsed) {
-            return null; // User has already used this offer
-          }
-        }
-        
-        // Check if offer is for specific customer
-        if (offer.customer_email || offer.customer_emails || offer.customer_id || offer.customer_ids) {
-          // If offer is for a specific customer, check if it matches
-          if (customerEmail) {
-            if (offer.customer_email === customerEmail) return offer;
-            if (offer.customer_emails && offer.customer_emails.includes(customerEmail)) return offer;
-          }
-          if (customerId) {
-            if (offer.customer_id === customerId) return offer;
-            if (offer.customer_ids && offer.customer_ids.includes(customerId)) return offer;
-          }
-          // Offer is for specific customer(s) but doesn't match current customer
-          return null;
-        }
-        
-        // Offer is for all customers
-        return offer;
-      })
-    );
-
-    // Filter out null values
-    return filteredOffers.filter((offer): offer is Offer => offer !== null);
-  } catch (error) {
-    console.error("Error fetching active offers:", error);
-    return [];
-  }
+export async function getActiveOffers(
+  customerEmail?: string,
+  customerId?: string
+): Promise<Offer[]> {
+  return offersMongo.getActiveOffers(customerEmail, customerId);
 }
 
-// Get offer by code
 export async function getOfferByCode(code: string): Promise<Offer | null> {
-  await ensureInitialized();
-
-  try {
-    const normalizedCode = code.trim().toUpperCase();
-    const snapshot = await adminFirestore
-      .collection(OFFERS_COLLECTION)
-      .where("code", "==", normalizedCode)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) {
-      return null;
-    }
-
-    return docToOffer(snapshot.docs[0]);
-  } catch (error) {
-    return null;
-  }
+  return offersMongo.getOfferByCode(code);
 }
 
-// Get offer by ID
 export async function getOfferById(offerId: string): Promise<Offer | null> {
-  await ensureInitialized();
-
-  try {
-    const doc = await adminFirestore.collection(OFFERS_COLLECTION).doc(offerId).get();
-    if (!doc.exists) return null;
-    return docToOffer(doc);
-  } catch (error) {
-    return null;
-  }
+  return offersMongo.getOfferById(offerId);
 }
 
-// Create new offer
-export async function createOffer(
-  offer: Omit<Offer, "id" | "created_at" | "updated_at" | "used_count">
-): Promise<Offer> {
-  await ensureInitialized();
-
-  try {
-    // Remove undefined values from offer data (Firestore doesn't accept undefined)
-    const offerData: any = {
-      title: offer.title,
-      description: offer.description || "",
-      discount_type: offer.discount_type,
-      discount_value: offer.discount_value,
-      valid_from: offer.valid_from,
-      valid_until: offer.valid_until,
-      is_active: offer.is_active !== undefined ? offer.is_active : true,
-      used_count: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    // Only add optional fields if they have values
-    if (offer.min_order_amount !== undefined && offer.min_order_amount !== null) {
-      offerData.min_order_amount = offer.min_order_amount;
-    }
-    if (offer.max_discount !== undefined && offer.max_discount !== null) {
-      offerData.max_discount = offer.max_discount;
-    }
-    if (offer.code && offer.code.trim() !== "") {
-      offerData.code = offer.code.trim().toUpperCase();
-    }
-    if (offer.customer_email) {
-      offerData.customer_email = offer.customer_email;
-    }
-    if (offer.customer_emails && Array.isArray(offer.customer_emails) && offer.customer_emails.length > 0) {
-      offerData.customer_emails = offer.customer_emails;
-    }
-    if (offer.customer_id) {
-      offerData.customer_id = offer.customer_id;
-    }
-    if (offer.customer_ids && Array.isArray(offer.customer_ids) && offer.customer_ids.length > 0) {
-      offerData.customer_ids = offer.customer_ids;
-    }
-    if (offer.usage_limit !== undefined && offer.usage_limit !== null) {
-      offerData.usage_limit = offer.usage_limit;
-    }
-    if (offer.one_time_per_user !== undefined) {
-      offerData.one_time_per_user = offer.one_time_per_user;
-    }
-    if (offer.created_by) {
-      offerData.created_by = offer.created_by;
-    }
-
-    const docRef = await adminFirestore.collection(OFFERS_COLLECTION).add(offerData);
-    const doc = await docRef.get();
-    return docToOffer(doc);
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to create offer");
-  }
+export async function createOffer(offer: Omit<Offer, "id" | "created_at" | "updated_at">): Promise<Offer> {
+  return offersMongo.createOffer(offer);
 }
 
-// Update offer
 export async function updateOffer(offerId: string, updates: Partial<Offer>): Promise<Offer> {
-  await ensureInitialized();
-
-  try {
-    const offerRef = adminFirestore.collection(OFFERS_COLLECTION).doc(offerId);
-    const doc = await offerRef.get();
-
-    if (!doc.exists) {
-      throw new Error("Offer not found");
-    }
-
-    const updateData: any = {
-      updated_at: new Date().toISOString(),
-    };
-
-    // Copy all updates except timestamps and id, and filter out undefined values
-    Object.keys(updates).forEach((key) => {
-      if (key !== "id" && key !== "created_at" && key !== "updated_at") {
-        const value = (updates as any)[key];
-        // Only add the field if it's not undefined
-        if (value !== undefined) {
-          updateData[key] = value;
-        }
-      }
-    });
-
-    await offerRef.update(updateData);
-
-    const updated = await offerRef.get();
-    return docToOffer(updated);
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to update offer");
-  }
+  return offersMongo.updateOffer(offerId, updates);
 }
 
-// Delete offer
 export async function deleteOffer(offerId: string): Promise<void> {
-  await ensureInitialized();
-
-  try {
-    const offerRef = adminFirestore.collection(OFFERS_COLLECTION).doc(offerId);
-    const doc = await offerRef.get();
-
-    if (!doc.exists) {
-      throw new Error("Offer not found");
-    }
-
-    await offerRef.delete();
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to delete offer");
-  }
+  return offersMongo.deleteOffer(offerId);
 }
 
-// Check if user has already used an offer
 export async function hasUserUsedOffer(
   offerId: string,
   customerEmail?: string,
   customerId?: string
 ): Promise<boolean> {
-  if (!adminFirestore) {
-    return false;
-  }
-
-  try {
-    const usagesRef = adminFirestore.collection(OFFER_USAGES_COLLECTION);
-    let query = usagesRef.where("offer_id", "==", offerId);
-
-    // Check by customer_id first (more reliable)
-    if (customerId) {
-      const snapshotById = await query.where("customer_id", "==", customerId).limit(1).get();
-      if (!snapshotById.empty) {
-        return true;
-      }
-    }
-
-    // Check by customer_email as fallback
-    if (customerEmail) {
-      const snapshotByEmail = await query.where("customer_email", "==", customerEmail).limit(1).get();
-      if (!snapshotByEmail.empty) {
-        return true;
-      }
-    }
-
-    return false;
-  } catch (error) {
-    // If query fails (e.g., missing index), return false to allow usage
-    console.error("Error checking offer usage:", error);
-    return false;
-  }
+  return offersMongo.hasUserUsedOffer(offerId, customerEmail, customerId);
 }
 
-// Record offer usage by user
 export async function recordOfferUsage(
   offerId: string,
   customerEmail?: string,
   customerId?: string
 ): Promise<void> {
-  if (!adminFirestore) {
-    return;
-  }
-
-  try {
-    const usageData: any = {
-      offer_id: offerId,
-      used_at: new Date().toISOString(),
-    };
-
-    if (customerId) {
-      usageData.customer_id = customerId;
-    }
-    if (customerEmail) {
-      usageData.customer_email = customerEmail;
-    }
-
-    await adminFirestore.collection(OFFER_USAGES_COLLECTION).add(usageData);
-  } catch (error) {
-    // Silently fail - don't block order creation
-    console.error("Error recording offer usage:", error);
-  }
+  return offersMongo.recordOfferUsage(offerId, customerEmail, customerId);
 }
 
-// Increment offer usage count
 export async function incrementOfferUsage(
   offerId: string,
   customerEmail?: string,
   customerId?: string
 ): Promise<void> {
-  await ensureInitialized();
-
-  try {
-    const offerRef = adminFirestore.collection(OFFERS_COLLECTION).doc(offerId);
-    const doc = await offerRef.get();
-
-    if (!doc.exists) {
-      return;
-    }
-
-    const offerData = doc.data();
-    const currentCount = offerData?.used_count || 0;
-    
-    // Update offer usage count
-    await offerRef.update({
-      used_count: currentCount + 1,
-      updated_at: new Date().toISOString(),
-    });
-
-    // If one_time_per_user is enabled, record user usage
-    if (offerData?.one_time_per_user && (customerEmail || customerId)) {
-      await recordOfferUsage(offerId, customerEmail, customerId);
-    }
-  } catch (error: any) {
-    // Silently fail - don't block order creation
-    console.error("Error incrementing offer usage:", error);
-  }
+  return offersMongo.incrementOfferUsage(offerId, customerEmail, customerId);
 }
-

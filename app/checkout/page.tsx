@@ -93,7 +93,7 @@ export default function CheckoutPage() {
       setFormData((prev) => ({
         ...prev,
         email: user.email || "",
-        name: user.displayName || "",
+        name: user.name || "",
       }));
     }
   }, [user]);
@@ -104,12 +104,8 @@ export default function CheckoutPage() {
       if (!user) return;
       try {
         setLoadingAddresses(true);
-        const token = await user.getIdToken();
-        if (!token) return;
 
-        const response = await fetch("/api/addresses", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await fetch("/api/addresses");
         const data = await response.json();
         if (data.success && data.addresses) {
           setSavedAddresses(data.addresses);
@@ -432,43 +428,39 @@ export default function CheckoutPage() {
                 const isUsingSavedAddress = savedAddresses.length > 0 && selectedAddressId && !useNewAddress;
                 if (saveAddress && user && !isUsingSavedAddress) {
                   try {
-                    const token = await user.getIdToken();
-                    if (token) {
-                      // Check if address already exists before saving
-                      const addressExists = savedAddresses.some((addr) => {
-                        return (
-                          addr.address_line1.toLowerCase().trim() === formData.address_line1.toLowerCase().trim() &&
-                          addr.city.toLowerCase().trim() === formData.city.toLowerCase().trim() &&
-                          addr.state.toLowerCase().trim() === formData.state.toLowerCase().trim() &&
-                          addr.pincode.trim() === formData.pincode.trim() &&
-                          addr.name.toLowerCase().trim() === formData.name.toLowerCase().trim()
-                        );
-                      });
+                    // Check if address already exists before saving
+                    const addressExists = savedAddresses.some((addr) => {
+                      return (
+                        addr.address_line1.toLowerCase().trim() === formData.address_line1.toLowerCase().trim() &&
+                        addr.city.toLowerCase().trim() === formData.city.toLowerCase().trim() &&
+                        addr.state.toLowerCase().trim() === formData.state.toLowerCase().trim() &&
+                        addr.pincode.trim() === formData.pincode.trim() &&
+                        addr.name.toLowerCase().trim() === formData.name.toLowerCase().trim()
+                      );
+                    });
 
-                      if (!addressExists) {
-                        await fetch("/api/addresses", {
-                          method: "POST",
-                          headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json",
-                          },
-                          body: JSON.stringify({
-                            name: formData.name,
-                            address_line1: formData.address_line1,
-                            address_line2: formData.address_line2 || "",
-                            city: formData.city,
-                            state: formData.state,
-                            pincode: formData.pincode,
-                            country: formData.country,
-                            phone: formData.phone,
-                            is_default: false,
-                          }),
-                        });
-                      }
+                    if (!addressExists) {
+                      // NextAuth handles authentication via cookies
+                      await fetch("/api/addresses", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          name: formData.name,
+                          address_line1: formData.address_line1,
+                          address_line2: formData.address_line2 || "",
+                          city: formData.city,
+                          state: formData.state,
+                          pincode: formData.pincode,
+                          country: formData.country,
+                          phone: formData.phone,
+                          is_default: false,
+                        }),
+                      });
                     }
                   } catch (error) {
                     // Don't block order completion if address save fails
-                    console.error("Failed to save address:", error);
                   }
                 }
                 clearCart();
@@ -569,39 +561,35 @@ export default function CheckoutPage() {
           const isUsingSavedAddress = savedAddresses.length > 0 && selectedAddressId && !useNewAddress;
           if (saveAddress && user && !isUsingSavedAddress) {
             try {
-              const token = await user.getIdToken();
-              if (token) {
-                // Check if address already exists before saving
-                const addressExists = savedAddresses.some((addr) => {
-                  return (
-                    addr.address_line1.toLowerCase().trim() === formData.address_line1.toLowerCase().trim() &&
-                    addr.city.toLowerCase().trim() === formData.city.toLowerCase().trim() &&
-                    addr.state.toLowerCase().trim() === formData.state.toLowerCase().trim() &&
-                    addr.pincode.trim() === formData.pincode.trim() &&
-                    addr.name.toLowerCase().trim() === formData.name.toLowerCase().trim()
-                  );
-                });
+              // Check if address already exists before saving
+              const addressExists = savedAddresses.some((addr) => {
+                return (
+                  addr.address_line1.toLowerCase().trim() === formData.address_line1.toLowerCase().trim() &&
+                  addr.city.toLowerCase().trim() === formData.city.toLowerCase().trim() &&
+                  addr.state.toLowerCase().trim() === formData.state.toLowerCase().trim() &&
+                  addr.pincode.trim() === formData.pincode.trim() &&
+                  addr.name.toLowerCase().trim() === formData.name.toLowerCase().trim()
+                );
+              });
 
-                if (!addressExists) {
-                  await fetch("/api/addresses", {
-                    method: "POST",
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      name: formData.name,
-                      address_line1: formData.address_line1,
-                      address_line2: formData.address_line2 || "",
-                      city: formData.city,
-                      state: formData.state,
+              if (!addressExists) {
+                await fetch("/api/addresses", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    name: formData.name,
+                    address_line1: formData.address_line1,
+                    address_line2: formData.address_line2 || "",
+                    city: formData.city,
+                    state: formData.state,
                       pincode: formData.pincode,
                       country: formData.country,
                       phone: formData.phone,
                       is_default: false,
                     }),
                   });
-                }
               }
             } catch (error) {
               // Don't block order completion if address save fails

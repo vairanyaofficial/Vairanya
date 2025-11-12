@@ -98,7 +98,7 @@ export default function Page() {
         }
       }
     } catch (err) {
-      console.error("Failed to load reviews:", err);
+      // Failed to load reviews
     } finally {
       setIsLoadingReviews(false);
     }
@@ -142,27 +142,18 @@ export default function Page() {
               setAllProducts(productsData.products);
               if (productsData.products.length > 0) {
                 setFeaturedProducts(productsData.products.slice(0, 4));
-                console.log("✅ Products loaded:", productsData.products.length);
               } else {
                 setFeaturedProducts([]);
-                console.warn("⚠️ Products array is empty");
               }
             } else {
-              console.warn("⚠️ Products API returned invalid data:", productsData);
               setAllProducts([]);
               setFeaturedProducts([]);
             }
           } catch (e) {
-            console.error("❌ Error parsing products data:", e);
             setAllProducts([]);
             setFeaturedProducts([]);
           }
         } else {
-          if (productsRes.status === 'rejected') {
-            console.error("❌ Products API rejected:", productsRes.reason);
-          } else if (productsRes.status === 'fulfilled' && !productsRes.value.ok) {
-            console.error("❌ Products API error:", productsRes.value.status);
-          }
           // Set empty arrays on error to trigger re-render
           setAllProducts([]);
           setFeaturedProducts([]);
@@ -176,15 +167,12 @@ export default function Page() {
             // Check for collections array regardless of success flag or status code
             if (collectionsData && Array.isArray(collectionsData.collections)) {
               setFeaturedCollections(collectionsData.collections);
-              console.log("✅ Collections loaded:", collectionsData.collections.length);
-            } else {
-              console.warn("⚠️ Collections API returned no collections array:", collectionsData);
             }
           } catch (e) {
-            console.error("❌ Error parsing collections data:", e);
+            // Error parsing collections data
           }
         } else if (collectionsRes.status === 'rejected') {
-          console.error("❌ Collections API rejected:", collectionsRes.reason);
+          // Collections API rejected
         }
         setIsLoadingCollections(false);
 
@@ -196,7 +184,7 @@ export default function Page() {
               setOffers(offersData.offers.slice(0, 3));
             }
           } catch (e) {
-            console.error("Error parsing offers data:", e);
+            // Error parsing offers data
           }
         }
         setIsLoadingOffers(false);
@@ -209,7 +197,7 @@ export default function Page() {
               setCarouselSlides(carouselData.slides);
             }
           } catch (e) {
-            console.error("Error parsing carousel data:", e);
+            // Error parsing carousel data
           }
         }
         setIsLoadingCarousel(false);
@@ -222,7 +210,7 @@ export default function Page() {
               setReviews(reviewsData.reviews);
             }
           } catch (e) {
-            console.error("Error parsing reviews data:", e);
+            // Error parsing reviews data
           }
         }
         setIsLoadingReviews(false);
@@ -231,7 +219,6 @@ export default function Page() {
         clearTimeout(timeoutId);
       } catch (error) {
         // Handle any unexpected errors
-        console.error("Error fetching data:", error);
         setIsLoadingProducts(false);
         setIsLoadingCollections(false);
         setIsLoadingOffers(false);
@@ -390,40 +377,6 @@ export default function Page() {
             );
           })}
         </>
-      ) : null}
-
-      {/* Featured Products - Always show when products are loaded */}
-      {isLoadingProducts ? (
-        <section id="featured-products" className="max-w-7xl mx-auto px-2 md:px-10 lg:px-12 py-3 md:py-8">
-          <div className="text-center mb-3 md:mb-5">
-            <div className="h-6 sm:h-8 w-48 sm:w-64 bg-gray-200 rounded mx-auto mb-2 animate-pulse"></div>
-            <div className="h-3 sm:h-4 w-64 sm:w-96 bg-gray-200 rounded mx-auto animate-pulse"></div>
-          </div>
-          <ProductSliderSkeleton count={4} />
-        </section>
-      ) : featuredProducts.length > 0 ? (
-        <section id="featured-products" className="max-w-7xl mx-auto px-2 md:px-10 lg:px-12 py-3 md:py-8">
-          <div className="text-center mb-3 md:mb-5">
-            <h2 className="font-serif text-lg md:text-3xl font-light mb-1 md:mb-1.5 tracking-tight text-gray-900 dark:text-white">Featured Products</h2>
-            <p className="text-xs md:text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto px-2">Discover our handpicked selection of timeless pieces</p>
-          </div>
-          <HorizontalSlider
-            items={featuredProducts}
-            renderItem={renderProductItem}
-            cardWidth={176} // 160px card (mobile) + 16px gap
-            gap={16}
-            infiniteScroll={false}
-            showNavigation={featuredProducts.length > 2}
-            autoSlide={true}
-            autoSlideInterval={4000}
-            emptyMessage="No featured products available"
-          />
-          <div className="text-center mt-2 md:mt-4">
-            <Button asChild variant="outline" className="border border-gray-300 dark:border-white hover:border-[#D4AF37] dark:hover:border-[#D4AF37] px-3 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-medium rounded-md hover:bg-[#D4AF37]/5 dark:hover:bg-[#D4AF37]/5 transition-all duration-300 text-gray-900 dark:text-white hover:text-[#D4AF37] dark:hover:text-[#D4AF37]">
-              <Link href="/products">View All Products</Link>
-            </Button>
-          </div>
-        </section>
       ) : null}
 
       {/* How It's Made - Mobile Optimized */}

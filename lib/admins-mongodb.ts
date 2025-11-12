@@ -49,6 +49,38 @@ export async function getAdminByUid(uid: string): Promise<Admin | null> {
 }
 
 /**
+ * Get admin by email
+ */
+export async function getAdminByEmail(email: string): Promise<Admin | null> {
+  const db = getMongoDB();
+  if (!db) {
+    console.error("[Admins MongoDB] Database not available");
+    return null;
+  }
+
+  try {
+    const admin = await db.collection(ADMINS_COLLECTION).findOne({ email: email.toLowerCase().trim() });
+    
+    if (!admin) {
+      return null;
+    }
+
+    return {
+      _id: admin._id,
+      uid: admin.uid,
+      name: admin.name || "",
+      email: admin.email || "",
+      role: admin.role || "worker",
+      createdAt: admin.createdAt,
+      updatedAt: admin.updatedAt,
+    };
+  } catch (error: any) {
+    console.error("[Admins MongoDB] Error getting admin by email:", error);
+    return null;
+  }
+}
+
+/**
  * Get all admins/workers
  */
 export async function getAllAdmins(): Promise<Admin[]> {
@@ -128,7 +160,7 @@ export async function upsertAdmin(admin: Omit<Admin, "_id" | "createdAt" | "upda
 }
 
 /**
- * Update admin
+ * Update admin by UID
  */
 export async function updateAdmin(uid: string, updates: Partial<Omit<Admin, "_id" | "uid" | "createdAt">>): Promise<Admin | null> {
   const db = getMongoDB();
@@ -170,7 +202,49 @@ export async function updateAdmin(uid: string, updates: Partial<Omit<Admin, "_id
 }
 
 /**
- * Delete admin
+ * Update admin by email
+ */
+export async function updateAdminByEmail(email: string, updates: Partial<Omit<Admin, "_id" | "uid" | "createdAt">>): Promise<Admin | null> {
+  const db = getMongoDB();
+  if (!db) {
+    throw new Error("MongoDB not available");
+  }
+
+  try {
+    const result = await db.collection(ADMINS_COLLECTION).findOneAndUpdate(
+      { email: email.toLowerCase().trim() },
+      {
+        $set: {
+          ...updates,
+          updatedAt: new Date(),
+        },
+      },
+      {
+        returnDocument: "after",
+      }
+    );
+
+    if (!result) {
+      return null;
+    }
+
+    return {
+      _id: result._id,
+      uid: result.uid,
+      name: result.name || "",
+      email: result.email || "",
+      role: result.role || "worker",
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+    };
+  } catch (error: any) {
+    console.error("[Admins MongoDB] Error updating admin by email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Delete admin by UID
  */
 export async function deleteAdmin(uid: string): Promise<boolean> {
   const db = getMongoDB();
@@ -183,6 +257,24 @@ export async function deleteAdmin(uid: string): Promise<boolean> {
     return result.deletedCount > 0;
   } catch (error: any) {
     console.error("[Admins MongoDB] Error deleting admin:", error);
+    throw error;
+  }
+}
+
+/**
+ * Delete admin by email
+ */
+export async function deleteAdminByEmail(email: string): Promise<boolean> {
+  const db = getMongoDB();
+  if (!db) {
+    throw new Error("MongoDB not available");
+  }
+
+  try {
+    const result = await db.collection(ADMINS_COLLECTION).deleteOne({ email: email.toLowerCase().trim() });
+    return result.deletedCount > 0;
+  } catch (error: any) {
+    console.error("[Admins MongoDB] Error deleting admin by email:", error);
     throw error;
   }
 }

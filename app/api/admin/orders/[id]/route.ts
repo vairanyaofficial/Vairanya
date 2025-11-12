@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOrderById, updateOrder, getTasksByOrder } from "@/lib/orders-mongodb";
 import { requireAdmin } from "@/lib/admin-auth-server";
 import { initializeMongoDB } from "@/lib/mongodb.server";
+import { clearOrdersCache } from "@/lib/orders-cache";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -28,27 +29,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
-    console.log(`[Admin Orders API] Fetching order with ID: ${id}`);
     
     // Try to get order by ID
     let order = await getOrderById(id);
     
     // If not found by ID, try by order_number
     if (!order) {
-      console.log(`[Admin Orders API] Order not found by ID, trying order_number...`);
       const { getOrderByNumber } = await import("@/lib/orders-mongodb");
       order = await getOrderByNumber(id);
     }
     
     if (!order) {
-      console.error(`[Admin Orders API] Order not found with ID/order_number: ${id}`);
       return NextResponse.json(
         { success: false, error: "Order not found" },
         { status: 404 }
       );
     }
-    
-    console.log(`[Admin Orders API] Found order: ${order.order_number} (ID: ${order.id})`);
 
     // Workers can only view orders assigned to them or orders with tasks assigned to them
     if (auth.role === "worker") {
@@ -108,8 +104,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    console.log(`[Admin Orders API] Updating order with ID: ${id}`);
-
     let updates;
     try {
       updates = await request.json();
@@ -153,14 +147,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
     
     if (!order) {
-      console.error(`[Admin Orders API] Order not found for update: ${id}`);
       return NextResponse.json(
         { success: false, error: "Order not found" },
         { status: 404 }
       );
     }
-    
-    console.log(`[Admin Orders API] Found order for update: ${order.order_number} (ID: ${order.id})`);
 
     // Workers can only update orders assigned to them
     if (auth.role === "worker") {
@@ -201,6 +192,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         { status: 500 }
       );
     }
+    
+    // Invalidate orders cache since order was updated
+    clearOrdersCache();
     
     return NextResponse.json({ 
       success: true, 
