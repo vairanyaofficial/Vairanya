@@ -4,6 +4,7 @@ import {
   updateProduct,
   deleteProduct,
 } from "@/lib/products-mongodb";
+import { deleteReviewsByProductId } from "@/lib/reviews-mongodb";
 import type { Product } from "@/lib/products-types";
 import { requireAdmin, requireSuperUser } from "@/lib/admin-auth-server";
 import { initializeMongoDB } from "@/lib/mongodb.server";
@@ -136,6 +137,21 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     console.log(`[Admin Products API] Deleting product with ID: ${id}`);
+    
+    // Get product first to get product_id for deleting reviews
+    const product = await getProductById(id);
+    if (product && product.product_id) {
+      // Delete all reviews associated with this product
+      try {
+        const deletedReviewsCount = await deleteReviewsByProductId(product.product_id);
+        console.log(`[Admin Products API] Deleted ${deletedReviewsCount} reviews for product ${product.product_id}`);
+      } catch (reviewError: any) {
+        // Log error but continue with product deletion
+        console.error(`[Admin Products API] Error deleting reviews for product ${product.product_id}:`, reviewError);
+      }
+    }
+    
+    // Delete the product
     await deleteProduct(id);
     console.log(`[Admin Products API] Product deleted successfully: ${id}`);
     return NextResponse.json({ success: true });

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Script from "next/script";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -16,6 +17,7 @@ import type { CarouselSlide } from "@/lib/carousel-types";
 import type { Review } from "@/lib/reviews-types";
 import type { Collection } from "@/lib/collections-types";
 import ReviewForm from "@/components/ReviewForm";
+import { useAuth } from "@/components/AuthProvider";
 import {
   CarouselSkeleton,
   ProductSliderSkeleton,
@@ -71,6 +73,8 @@ const websiteJsonLd = {
 };
 
 export default function Page() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [carouselSlides, setCarouselSlides] = useState<CarouselSlide[]>([]);
@@ -419,14 +423,21 @@ export default function Page() {
       <section className="bg-gray-50 dark:bg-black py-3 md:py-6 lg:py-8">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-12">
           <div className="text-center mb-3 md:mb-6 px-2">
-            <h2 className="font-serif text-base md:text-3xl font-light mb-1 md:mb-1.5 tracking-tight text-gray-900 dark:text-white">What Our Customers Say</h2>
+            <h2 className="font-serif text-base md:text-3xl font-light mb-1 md:mb-1.5 tracking-tight text-gray-900 dark:text-white">What People Say About Us</h2>
             <p className="text-gray-600 dark:text-white/80 text-[10px] md:text-sm mb-2">
               You can also be featured!{" "}
               <button
-                onClick={() => setShowReviewForm(true)}
+                onClick={() => {
+                  if (user) {
+                    setShowReviewForm(true);
+                  } else {
+                    const currentPath = typeof window !== "undefined" ? window.location.pathname : "/";
+                    router.push("/login?callbackUrl=" + encodeURIComponent(currentPath));
+                  }
+                }}
                 className="text-[#D4AF37] active:underline md:hover:underline font-semibold md:font-medium touch-manipulation text-[10px] md:text-sm"
               >
-                Write a review
+                Write a website review
               </button>
             </p>
           </div>

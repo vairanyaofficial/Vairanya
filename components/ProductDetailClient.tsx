@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/components/AuthProvider";
 import { useWishlist } from "@/lib/wishlist-context";
 import type { Product } from "@/lib/products-types";
-import { Check, Shield, Truck, RotateCcw, Heart, Bell } from "lucide-react";
+import type { Review } from "@/lib/reviews-types";
+import { Check, Shield, Truck, RotateCcw, Heart, Bell, Star, MessageSquare } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
+import Image from "next/image";
 
 interface ProductDetailClientProps {
   product: Product;
@@ -27,8 +29,32 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
   const [activeTab, setActiveTab] = useState<"description" | "shipping" | "reviews">(
     "description"
   );
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
   const inWishlist = isInWishlist(product.product_id);
   const isOutOfStock = product.stock_qty === 0;
+
+  // Fetch reviews when reviews tab is active
+  useEffect(() => {
+    if (activeTab === "reviews") {
+      fetchReviews();
+    }
+  }, [activeTab, product.product_id]);
+
+  const fetchReviews = async () => {
+    setLoadingReviews(true);
+    try {
+      const response = await fetch(`/api/reviews?product_id=${product.product_id}`);
+      const data = await response.json();
+      if (data.success) {
+        setReviews(data.reviews || []);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
 
   const handleAddToCart = () => {
     if (isOutOfStock) {
@@ -287,10 +313,77 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
           )}
 
           {activeTab === "reviews" && (
-            <div className="text-center py-8 md:py-8 text-gray-400 dark:text-gray-500 text-xs md:text-xs">
-              <p>No reviews yet. Be the first to review this product!</p>
+            <div className="space-y-4 md:space-y-6">
+              {/* Reviews List */}
+              {loadingReviews ? (
+                <div className="text-center py-8 text-gray-400 dark:text-gray-500">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#D4AF37] mx-auto mb-2"></div>
+                  <p className="text-xs md:text-sm">Loading reviews...</p>
+                </div>
+              ) : reviews.length === 0 ? (
+                <div className="text-center py-8 md:py-8 text-gray-400 dark:text-gray-500 text-xs md:text-sm">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No reviews yet. Be the first to review this product!</p>
+                </div>
+              ) : (
+                <div className="space-y-4 md:space-y-6">
+                  {reviews.map((review) => (
+                    <div
+                      key={review.id}
+                      className="border-b border-gray-200 dark:border-white/10 pb-4 md:pb-6 last:border-0"
+                    >
+                      <div className="flex items-start gap-3 md:gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 md:gap-3 mb-2">
+                            <h4 className="font-semibold text-sm md:text-base text-gray-900 dark:text-white">
+                              {review.customer_name}
+                            </h4>
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`h-3 w-3 md:h-4 md:w-4 ${
+                                    star <= review.rating
+                                      ? "fill-[#D4AF37] text-[#D4AF37]"
+                                      : "text-gray-300"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 mb-3 md:mb-4 leading-relaxed">
+                            {review.review_text}
+                          </p>
+                          {/* Review Images */}
+                          {review.images && review.images.length > 0 && (
+                            <div className="grid grid-cols-3 gap-2 md:gap-3 mt-3">
+                              {review.images.map((imageUrl, index) => (
+                                <div
+                                  key={index}
+                                  className="relative aspect-square rounded border border-gray-200 dark:border-white/10 overflow-hidden"
+                                >
+                                  <Image
+                                    src={imageUrl}
+                                    alt={`Review image ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
+
         </div>
       </div>
     </div>

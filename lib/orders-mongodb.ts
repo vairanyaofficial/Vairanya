@@ -71,9 +71,10 @@ function docToOrder(doc: any): Order {
 
 // Get all orders (admin only)
 export async function getAllOrders(): Promise<Order[]> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    throw new Error("MongoDB not available. Please initialize connection first.");
   }
 
   try {
@@ -105,9 +106,12 @@ export async function getAllOrders(): Promise<Order[]> {
 
 // Get orders by user ID
 export async function getOrdersByUserId(userId: string): Promise<Order[]> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    // Return empty array instead of throwing - graceful degradation
+    console.warn("MongoDB not available for getOrdersByUserId");
+    return [];
   }
 
   try {
@@ -125,9 +129,11 @@ export async function getOrdersByUserId(userId: string): Promise<Order[]> {
 
 // Get order by ID
 export async function getOrderById(orderId: string): Promise<Order | null> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    console.warn("MongoDB not available for getOrderById");
+    return null;
   }
 
   try {
@@ -176,9 +182,11 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 
 // Get order by order number
 export async function getOrderByNumber(orderNumber: string): Promise<Order | null> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    console.warn("MongoDB not available for getOrderByNumber");
+    return null;
   }
 
   try {
@@ -196,9 +204,10 @@ export async function getOrderByNumber(orderNumber: string): Promise<Order | nul
 export async function createOrder(
   order: Omit<Order, "id" | "order_number" | "created_at" | "updated_at">
 ): Promise<Order> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    throw new Error("MongoDB not available. Please initialize connection first.");
   }
 
   try {
@@ -256,9 +265,10 @@ export async function createOrder(
 
 // Update order
 export async function updateOrder(orderId: string, updates: Partial<Order>): Promise<Order> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    throw new Error("MongoDB not available. Please initialize connection first.");
   }
 
   try {
@@ -341,9 +351,11 @@ export async function updateOrder(orderId: string, updates: Partial<Order>): Pro
 
 // Get orders by status
 export async function getOrdersByStatus(status: string): Promise<Order[]> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    console.warn("MongoDB not available for getOrdersByStatus");
+    return [];
   }
 
   try {
@@ -388,9 +400,11 @@ function docToTask(doc: any): Task {
 
 // Get all tasks
 export async function getAllTasks(): Promise<Task[]> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    console.warn("MongoDB not available for getAllTasks");
+    return [];
   }
 
   try {
@@ -408,9 +422,11 @@ export async function getAllTasks(): Promise<Task[]> {
 
 // Get task by ID
 export async function getTaskById(taskId: string): Promise<Task | null> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    console.warn("MongoDB not available for getTaskById");
+    return null;
   }
 
   try {
@@ -443,9 +459,11 @@ export async function getTaskById(taskId: string): Promise<Task | null> {
 
 // Get tasks by worker
 export async function getTasksByWorker(workerUsername: string): Promise<Task[]> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    console.warn("MongoDB not available for getTasksByWorker");
+    return [];
   }
 
   try {
@@ -463,9 +481,11 @@ export async function getTasksByWorker(workerUsername: string): Promise<Task[]> 
 
 // Get tasks by order
 export async function getTasksByOrder(orderId: string): Promise<Task[]> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    console.warn("MongoDB not available for getTasksByOrder");
+    return [];
   }
 
   try {
@@ -485,9 +505,10 @@ export async function getTasksByOrder(orderId: string): Promise<Task[]> {
 export async function createTask(
   task: Omit<Task, "id" | "created_at" | "updated_at">
 ): Promise<Task> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    throw new Error("MongoDB not available. Please initialize connection first.");
   }
 
   try {
@@ -513,9 +534,10 @@ export async function createTask(
 
 // Update task
 export async function updateTask(taskId: string, updates: Partial<Task>): Promise<Task> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    throw new Error("MongoDB not available. Please initialize connection first.");
   }
 
   try {
@@ -578,9 +600,10 @@ export async function updateTask(taskId: string, updates: Partial<Task>): Promis
 
 // Delete task
 export async function deleteTask(taskId: string): Promise<void> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    throw new Error("MongoDB not available. Please initialize connection first.");
   }
 
   try {

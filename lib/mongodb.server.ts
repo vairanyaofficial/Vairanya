@@ -85,7 +85,10 @@ export async function initializeMongoDB(): Promise<{ success: boolean; error?: s
   }
   
   // If already connected, return success
+  // The connection pool will handle reconnection automatically if needed
   if (client && db) {
+    // Simple check - if client and db exist, assume connection is valid
+    // MongoDB driver's connection pool handles reconnection automatically
     return { success: true };
   }
   
@@ -133,16 +136,21 @@ export async function initializeMongoDB(): Promise<{ success: boolean; error?: s
       // Determine if this is an Atlas connection (mongodb+srv://)
       const isAtlasConnection = uri.startsWith('mongodb+srv://');
       
-      // Build connection options
+      // Build connection options - optimized for connection reuse
       const connectionOptions: any = {
-        maxPoolSize: 10,
-        serverSelectionTimeoutMS: 15000, // Increased to 15s for better reliability
-        socketTimeoutMS: 45000,
-        connectTimeoutMS: 15000, // Increased to 15s for better reliability
+        maxPoolSize: 5, // Reduced to 5 to avoid hitting connection limits
+        minPoolSize: 1, // Keep at least 1 connection alive
+        serverSelectionTimeoutMS: 10000, // 10s timeout
+        socketTimeoutMS: 30000, // 30s socket timeout
+        connectTimeoutMS: 10000, // 10s connection timeout
         retryWrites: true,
         retryReads: true,
-        // Add heartbeat to keep connection alive
+        // Connection pool settings
+        maxIdleTimeMS: 30000, // Close connections after 30s of inactivity
+        // Add heartbeat to keep connection alive but less frequent
         heartbeatFrequencyMS: 10000,
+        // Monitor for connection issues
+        monitorCommands: false, // Disable command monitoring to reduce overhead
       };
       
       // For MongoDB Atlas (mongodb+srv://), TLS is required

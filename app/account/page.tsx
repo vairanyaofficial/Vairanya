@@ -22,11 +22,14 @@ import {
   AlertCircle,
   Tag,
   Copy,
+  MessageSquare,
+  Star,
 } from "lucide-react";
 import type { Order } from "@/lib/orders-types";
 import type { Offer } from "@/lib/offers-types";
 import { useToast } from "@/components/ToastProvider";
 import { AccountProfileSkeleton, AccountAddressesSkeleton, AccountOrdersSkeleton, AccountOffersSkeleton } from "@/components/SkeletonLoader";
+import ReviewForm from "@/components/ReviewForm";
 
 interface Address {
   id: string;
@@ -64,6 +67,8 @@ function AccountPageContent() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [offersLoading, setOffersLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [selectedProductForReview, setSelectedProductForReview] = useState<{ productId: string; productSlug: string } | null>(null);
 
   // Edit states
   const [editingProfile, setEditingProfile] = useState(false);
@@ -124,12 +129,16 @@ function AccountPageContent() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch(`/api/orders?user_id=${user?.id || user?.uid || ""}`);
+      // API now uses session-based authentication, no need to pass user_id
+      const response = await fetch(`/api/orders`);
       const data = await response.json();
       if (data.success) {
         setOrders(data.orders || []);
+      } else {
+        console.error("Failed to fetch orders:", data.error);
       }
     } catch (error) {
+      console.error("Error fetching orders:", error);
     }
   };
 
@@ -878,6 +887,55 @@ function AccountPageContent() {
                       </div>
                     )}
 
+                    {/* Order Items with Review Buttons for Delivered Orders */}
+                    {order.items && order.items.length > 0 && (
+                      <div className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg sm:rounded-xl p-3 sm:p-4 mb-3 sm:mb-4">
+                        <h4 className="font-semibold text-xs sm:text-sm mb-3 flex items-center gap-1.5 sm:gap-2 text-gray-900 dark:text-white">
+                          <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          Order Items
+                        </h4>
+                        <div className="space-y-3">
+                          {order.items.map((item, index) => (
+                            <div key={index} className="flex items-start justify-between gap-3 pb-3 border-b border-gray-200 dark:border-white/10 last:border-0 last:pb-0">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white mb-1">{item.title}</p>
+                                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                                  Qty: {item.quantity} × ₹{item.price.toFixed(2)} = ₹{(item.price * item.quantity).toFixed(2)}
+                                </p>
+                              </div>
+                              {order.status === "delivered" && (
+                                <Button
+                                  onClick={async () => {
+                                    // Fetch product slug from product_id
+                                    try {
+                                      const response = await fetch(`/api/products/by-id/${item.product_id}`);
+                                      const data = await response.json();
+                                      if (data.success && data.product) {
+                                        setSelectedProductForReview({
+                                          productId: item.product_id,
+                                          productSlug: data.product.slug,
+                                        });
+                                        setShowReviewForm(true);
+                                      } else {
+                                        showError("Could not load product details. Please try again.");
+                                      }
+                                    } catch (error) {
+                                      showError("Failed to load product. Please try again.");
+                                    }
+                                  }}
+                                  size="sm"
+                                  className="bg-[#D4AF37] hover:bg-[#C19B2E] text-white text-[10px] sm:text-xs whitespace-nowrap"
+                                >
+                                  <Star className="h-3 w-3 mr-1" />
+                                  Review
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 pt-3 sm:pt-4 border-t border-gray-200 dark:border-white/10">
                       <div className="flex-1 min-w-0">
                         <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1 sm:mb-2">
@@ -1021,6 +1079,26 @@ function AccountPageContent() {
         )}
       </main>
       <Footer />
+
+      {/* Review Form Dialog */}
+      {selectedProductForReview && (
+        <ReviewForm
+          open={showReviewForm}
+          onOpenChange={(open) => {
+            setShowReviewForm(open);
+            if (!open) {
+              setSelectedProductForReview(null);
+            }
+          }}
+          onReviewSubmitted={() => {
+            // Refresh orders to show updated review status if needed
+            fetchOrders();
+          }}
+          productId={selectedProductForReview.productId}
+          productSlug={selectedProductForReview.productSlug}
+          skipPurchaseCheck={true}
+        />
+      )}
     </div>
   );
 }

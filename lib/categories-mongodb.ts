@@ -7,9 +7,12 @@ const CATEGORIES_COLLECTION = "Category";
 
 // Get all categories
 export async function getAllCategories(): Promise<string[]> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    // Return default categories if MongoDB is not available
+    console.warn("MongoDB not available, returning default categories");
+    return ["rings", "earrings", "pendants", "bracelets", "necklaces"];
   }
 
   try {
@@ -38,9 +41,10 @@ export async function getAllCategories(): Promise<string[]> {
 
 // Add new category
 export async function addCategory(categoryName: string): Promise<string[]> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    throw new Error("MongoDB not available. Please initialize connection first.");
   }
 
   try {
@@ -72,9 +76,10 @@ export async function addCategory(categoryName: string): Promise<string[]> {
 
 // Delete category
 export async function deleteCategory(categoryName: string): Promise<string[]> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    throw new Error("MongoDB not available. Please initialize connection first.");
   }
 
   try {
@@ -98,9 +103,10 @@ export async function deleteCategory(categoryName: string): Promise<string[]> {
 
 // Update/rename category
 export async function updateCategory(oldName: string, newName: string): Promise<string[]> {
+  // Don't initialize here - trust that connection is initialized at API route level
   const db = getMongoDB();
   if (!db) {
-    throw new Error("MongoDB not available");
+    throw new Error("MongoDB not available. Please initialize connection first.");
   }
 
   try {

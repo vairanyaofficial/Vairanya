@@ -26,17 +26,20 @@ export async function syncCustomerToFirestore(
   userId?: string,
   photoURL?: string
 ): Promise<void> {
-  // Initialize MongoDB connection
-  const mongoInit = await initializeMongoDB();
-  if (!mongoInit.success) {
-    console.warn("[Customer Sync] MongoDB not available, skipping customer sync");
-    return;
-  }
-
-  const db = getMongoDB();
+  // Try to get existing connection first
+  let db = getMongoDB();
   if (!db) {
-    console.warn("[Customer Sync] MongoDB database not available, skipping customer sync");
-    return;
+    // Only initialize if not already connected (fallback)
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      console.warn("[Customer Sync] MongoDB not available, skipping customer sync");
+      return;
+    }
+    db = getMongoDB();
+    if (!db) {
+      console.warn("[Customer Sync] MongoDB database not available, skipping customer sync");
+      return;
+    }
   }
 
   try {
@@ -140,15 +143,18 @@ export async function syncCustomerToFirestore(
 
 // Get customer from MongoDB
 export async function getCustomerFromFirestore(email: string): Promise<CustomerData | null> {
-  // Initialize MongoDB connection
-  const mongoInit = await initializeMongoDB();
-  if (!mongoInit.success) {
-    return null;
-  }
-
-  const db = getMongoDB();
+  // Try to get existing connection first
+  let db = getMongoDB();
   if (!db) {
-    return null;
+    // Only initialize if not already connected (fallback)
+    const mongoInit = await initializeMongoDB();
+    if (!mongoInit.success) {
+      return null;
+    }
+    db = getMongoDB();
+    if (!db) {
+      return null;
+    }
   }
 
   try {

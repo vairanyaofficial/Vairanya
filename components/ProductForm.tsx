@@ -18,7 +18,7 @@ type Props = {
   isSaving?: boolean; // For editing
 };
 
-const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2 MB
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export default function ProductForm({ initialCategories = [], product, onSubmit, isSaving = false }: Props) {
   const { adminInfo } = useAuth();
@@ -236,7 +236,7 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
         return;
       }
       if (file.size > MAX_IMAGE_SIZE) {
-        setMsg({ type: "error", text: `"${file.name}" is too large. Max 2 MB per image.` });
+        setMsg({ type: "error", text: `"${file.name}" is too large. Max 5 MB per image.` });
         return;
       }
     }
@@ -550,7 +550,7 @@ export default function ProductForm({ initialCategories = [], product, onSubmit,
 
         {/* Images - Multiple */}
         <div className="block">
-          <span className="text-sm font-medium block mb-2 text-gray-900 dark:text-white">Images (optional) — max 2MB per image</span>
+          <span className="text-sm font-medium block mb-2 text-gray-900 dark:text-white">Images (optional) — max 5MB per image</span>
           <input 
             type="file" 
             accept="image/*" 
