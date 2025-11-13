@@ -48,6 +48,9 @@ export default function OrderDetailPage() {
   const [refundStatus, setRefundStatus] = useState<"started" | "processing" | "completed" | "failed">("started");
   const [refundId, setRefundId] = useState("");
   const [refundNotes, setRefundNotes] = useState("");
+  const [trackingId, setTrackingId] = useState("");
+  const [courierCompany, setCourierCompany] = useState("");
+  const [isUpdatingTracking, setIsUpdatingTracking] = useState(false);
   const session = getAdminSession();
   const { showError, showSuccess, showWarning } = useToast();
 
@@ -146,6 +149,8 @@ export default function OrderDetailPage() {
       const orderData = await orderRes.json();
       if (orderData.success) {
         setOrder(orderData.order);
+        setTrackingId(orderData.order.tracking_number || "");
+        setCourierCompany(orderData.order.courier_company || "");
       } else {
         if (orderData.error === "Order not found") {
           showError(`Order not found: ${orderId}`);
@@ -252,6 +257,58 @@ export default function OrderDetailPage() {
       showError("Failed to update order status. Please try again.");
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const updateTrackingId = async () => {
+    if (!order) return;
+
+    try {
+      setIsUpdatingTracking(true);
+      const sessionData = getAdminSession();
+      if (!sessionData) {
+        showError("Session expired. Please login again.");
+        return;
+      }
+
+      // Check if worker is trying to update order not assigned to them
+      if (sessionData.role === "worker" && order.assigned_to !== sessionData.username) {
+        showWarning("You can only update orders assigned to you");
+        return;
+      }
+
+      const response = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-username": sessionData.username,
+          "x-admin-role": sessionData.role || "superuser",
+        },
+        body: JSON.stringify({ 
+          tracking_number: trackingId.trim() || null,
+          courier_company: courierCompany.trim() || null,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+      
+      if (data.success) {
+        setOrder(data.order);
+        setTrackingId(data.order.tracking_number || "");
+        setCourierCompany(data.order.courier_company || "");
+        showSuccess("Tracking information updated successfully!");
+        await loadOrderData();
+      } else {
+        showError(data.error || "Failed to update tracking ID");
+      }
+    } catch (err: any) {
+      showError(err?.message || "Failed to update tracking ID");
+    } finally {
+      setIsUpdatingTracking(false);
     }
   };
 
@@ -509,8 +566,17 @@ export default function OrderDetailPage() {
             <div className="space-y-2">
               {nextStatus[order.status] && (
                 <Button
-                  onClick={() => updateOrderStatus(nextStatus[order.status]!)}
-                  disabled={isUpdating}
+                  onClick={() => {
+                    // Prevent moving to shipped if tracking ID is missing when status is packed
+                    if (order.status === "packed" && nextStatus[order.status] === "shipped") {
+                      if (!order.tracking_number || order.tracking_number.trim() === "") {
+                        showWarning("Please enter tracking ID before marking as shipped");
+                        return;
+                      }
+                    }
+                    updateOrderStatus(nextStatus[order.status]!);
+                  }}
+                  disabled={isUpdating || (order.status === "packed" && (!order.tracking_number || order.tracking_number.trim() === ""))}
                   className="w-full bg-[#D4AF37] hover:bg-[#C19B2E]"
                 >
                   {isUpdating ? (
@@ -582,6 +648,9 @@ export default function OrderDetailPage() {
                 )}
                 {order.status === "packed" && (
                   <>
+                    {!order.tracking_number && (
+                      <p className="text-amber-600 dark:text-amber-400 font-medium">• ⚠️ Enter tracking ID before marking as shipped</p>
+                    )}
                     <p>• Prepare shipping label and tracking information</p>
                     <p>• Coordinate with courier for pickup</p>
                     <p>• Update status to "Shipped" after dispatch</p>
@@ -638,6 +707,74 @@ export default function OrderDetailPage() {
                     order.assigned_to
                   : "Unassigned"}
               </p>
+            </div>
+          </div>
+
+          {/* Tracking ID */}
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+              <Truck className="h-5 w-5" />
+              Tracking ID
+            </h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tracking Number
+                  {order.status === "packed" && !order.tracking_number && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
+                </label>
+                <input
+                  type="text"
+                  value={trackingId}
+                  onChange={(e) => setTrackingId(e.target.value)}
+                  placeholder="Enter tracking number"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/10 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Courier Company
+                </label>
+                <input
+                  type="text"
+                  value={courierCompany}
+                  onChange={(e) => setCourierCompany(e.target.value)}
+                  placeholder="Enter courier company name (e.g., BlueDart, FedEx, etc.)"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/10 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                />
+              </div>
+              {order.tracking_number && (
+                <div className="text-sm">
+                  <p className="text-gray-600 dark:text-gray-400 mb-1">Current Tracking:</p>
+                  <p className="font-mono font-medium text-gray-900 dark:text-white break-all">
+                    {order.tracking_number}
+                  </p>
+                  {order.courier_company && (
+                    <p className="text-gray-600 dark:text-gray-400 mt-2">
+                      Courier: <span className="font-medium text-gray-900 dark:text-white">{order.courier_company}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+              <Button
+                onClick={updateTrackingId}
+                disabled={isUpdatingTracking}
+                className="w-full bg-[#D4AF37] hover:bg-[#C19B2E] text-white"
+                size="sm"
+              >
+                {isUpdatingTracking ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Truck className="h-4 w-4 mr-2" />
+                    {order.tracking_number ? "Update Tracking ID" : "Add Tracking ID"}
+                  </>
+                )}
+              </Button>
             </div>
           </div>
 

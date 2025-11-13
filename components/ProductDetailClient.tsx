@@ -8,9 +8,10 @@ import { useAuth } from "@/components/AuthProvider";
 import { useWishlist } from "@/lib/wishlist-context";
 import type { Product } from "@/lib/products-types";
 import type { Review } from "@/lib/reviews-types";
-import { Check, Shield, Truck, RotateCcw, Heart, Bell, Star, MessageSquare } from "lucide-react";
+import { Check, Shield, Truck, RotateCcw, Heart, Bell, Star, MessageSquare, Sparkles } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import Image from "next/image";
+import Link from "next/link";
 
 interface ProductDetailClientProps {
   product: Product;
@@ -73,7 +74,6 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
       return;
     }
     
-    // TODO: Implement notify me functionality
     showSuccess("We'll notify you when this product is back in stock!");
   };
 
@@ -95,96 +95,144 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      {/* Title & Price - Compact Mobile */}
-      <div>
-        <h1 className="font-serif text-xl md:text-3xl font-light mb-2 md:mb-4 tracking-tight text-gray-900 dark:text-white leading-tight">{product.title}</h1>
-        <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-5 flex-wrap">
-          <span className="text-2xl md:text-2xl font-bold md:font-semibold text-gray-900 dark:text-gray-50">₹{product.price.toLocaleString()}</span>
-          {product.mrp && product.mrp > product.price && (
-            <span className="text-lg md:text-lg text-gray-400 dark:text-gray-500 line-through">₹{product.mrp.toLocaleString()}</span>
-          )}
+    <div className="space-y-3 md:space-y-4">
+      {/* Header Section - Compact */}
+      <div className="space-y-2">
+        {/* Category Badge */}
+        <div className="flex items-center gap-1.5">
+          <Link 
+            href={`/products?category=${product.category}`}
+            className="text-[10px] font-medium text-[#D4AF37] uppercase tracking-wider hover:underline transition-colors"
+          >
+            {product.category}
+          </Link>
           {product.is_new && !isOutOfStock && (
-            <span className="bg-[#D4AF37] text-white text-[10px] md:text-xs px-2 md:px-2.5 py-1 md:py-1 rounded-full font-semibold md:font-medium shadow-sm">New</span>
+            <span className="bg-[#D4AF37] text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5">
+              <Sparkles className="h-2.5 w-2.5" />
+              New
+            </span>
           )}
         </div>
+
+        {/* Title */}
+        <h1 className="font-serif text-lg sm:text-xl md:text-2xl font-light tracking-tight text-gray-900 dark:text-white leading-tight">
+          {product.title}
+        </h1>
+
+        {/* Price Section - Compact */}
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+            ₹{product.price.toLocaleString()}
+          </span>
+          {product.mrp && product.mrp > product.price && (
+            <>
+              <span className="text-sm md:text-base text-gray-400 dark:text-gray-500 line-through">
+                ₹{product.mrp.toLocaleString()}
+              </span>
+              <span className="text-xs font-semibold text-[#D4AF37]">
+                {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Stock Status - Compact */}
+        {isOutOfStock ? (
+          <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-[10px]">
+            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+            <span className="font-medium text-red-700 dark:text-red-300">Out of Stock</span>
+          </div>
+        ) : (
+          <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-[10px]">
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+            <span className="font-medium text-green-700 dark:text-green-300">In Stock</span>
+          </div>
+        )}
       </div>
 
-      {/* Benefits - Compact Mobile */}
-      <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-xs border-b border-gray-200 dark:border-white/10 pb-3 md:pb-4">
-        <div className="flex items-center gap-1.5 md:gap-1.5 text-gray-600 dark:text-gray-400">
-          <Shield className="h-4 w-4 md:h-4 md:w-4 text-[#D4AF37]" />
-          <span className="font-medium">Anti-tarnish</span>
+      {/* Benefits - Compact */}
+      <div className="grid grid-cols-3 gap-2 p-2 bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-[#0a0a0a] dark:to-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10">
+        <div className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-300">
+          <div className="p-1.5 rounded bg-[#D4AF37]/10">
+            <Shield className="h-3 w-3 text-[#D4AF37]" />
+          </div>
+          <span className="text-[10px] font-medium text-center">Anti-tarnish</span>
         </div>
-        <div className="flex items-center gap-1.5 md:gap-1.5 text-gray-600 dark:text-gray-400">
-          <Check className="h-4 w-4 md:h-4 md:w-4 text-[#D4AF37]" />
-          <span className="font-medium">Hypoallergenic</span>
+        <div className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-300">
+          <div className="p-1.5 rounded bg-[#D4AF37]/10">
+            <Check className="h-3 w-3 text-[#D4AF37]" />
+          </div>
+          <span className="text-[10px] font-medium text-center">Hypoallergenic</span>
         </div>
-        <div className="flex items-center gap-1.5 md:gap-1.5 text-gray-600 dark:text-gray-400">
-          <RotateCcw className="h-4 w-4 md:h-4 md:w-4 text-[#D4AF37]" />
-          <span className="font-medium">30-day return</span>
+        <div className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-300">
+          <div className="p-1.5 rounded bg-[#D4AF37]/10">
+            <RotateCcw className="h-3 w-3 text-[#D4AF37]" />
+          </div>
+          <span className="text-[10px] font-medium text-center">30-day return</span>
         </div>
       </div>
 
-      {/* Size Options - Compact Mobile */}
-      {product.size_options && product.size_options.length > 0 && (
-        <div>
-          <label className="block text-xs md:text-xs font-semibold md:font-medium mb-2 md:mb-2 text-gray-900 dark:text-white md:text-gray-700">Size</label>
-          <div className="flex flex-wrap gap-2 md:gap-2">
-            {product.size_options.map((size) => (
-              <button
-                key={size}
-                onClick={() => setSelectedSize(size)}
-                className={`px-3 md:px-4 py-2 md:py-2 rounded-lg md:rounded-lg border-2 md:border text-xs md:text-xs font-semibold md:font-medium transition-all touch-manipulation ${
-                  selectedSize === size
-                    ? "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-black shadow-md"
-                    : "border-gray-200 dark:border-white/10 active:border-gray-400 dark:active:border-white/30 md:hover:border-gray-400 dark:md:hover:border-white/30 active:bg-gray-50 dark:active:bg-[#1a1a1a] md:hover:bg-gray-50 dark:md:hover:bg-[#1a1a1a] text-gray-700 dark:text-gray-300"
-                }`}
-              >
-                {size}
-              </button>
-            ))}
+      {/* Size Options & Quantity - Compact Row */}
+      <div className="space-y-2">
+        {product.size_options && product.size_options.length > 0 && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-gray-900 dark:text-white">Size</label>
+            <div className="flex flex-wrap gap-1.5">
+              {product.size_options.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSize(size)}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-semibold transition-all ${
+                    selectedSize === size
+                      ? "border-[#D4AF37] bg-[#D4AF37] text-white"
+                      : "border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] text-gray-700 dark:text-gray-300 hover:border-[#D4AF37]/50"
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quantity - Compact */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-gray-900 dark:text-white">Quantity</label>
+          <div className="flex items-center gap-2 w-fit">
+            <button
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              className="w-8 h-8 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-all font-bold text-sm text-gray-900 dark:text-white flex items-center justify-center"
+              aria-label="Decrease quantity"
+            >
+              −
+            </button>
+            <span className="w-10 text-center text-sm font-bold text-gray-900 dark:text-white">{quantity}</span>
+            <button
+              onClick={() => setQuantity((q) => q + 1)}
+              className="w-8 h-8 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-all font-bold text-sm text-gray-900 dark:text-white flex items-center justify-center"
+              aria-label="Increase quantity"
+            >
+              +
+            </button>
           </div>
         </div>
-      )}
-
-      {/* Quantity - Compact Mobile */}
-      <div>
-        <label className="block text-xs md:text-xs font-semibold md:font-medium mb-2 md:mb-2 text-gray-900 dark:text-white md:text-gray-700">Quantity</label>
-        <div className="flex items-center gap-3 md:gap-3">
-          <button
-            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            className="w-10 h-10 md:w-10 md:h-10 rounded-lg md:rounded-lg border-2 md:border border-gray-200 dark:border-white/10 active:border-gray-400 dark:active:border-white/30 md:hover:border-gray-400 dark:md:hover:border-white/30 active:bg-gray-100 dark:active:bg-[#1a1a1a] md:hover:bg-gray-50 dark:md:hover:bg-[#1a1a1a] transition-all font-bold md:font-medium text-base md:text-base touch-manipulation text-gray-900 dark:text-white"
-            aria-label="Decrease quantity"
-          >
-            −
-          </button>
-          <span className="w-12 md:w-12 text-center text-base md:text-base font-bold md:font-semibold text-gray-900 dark:text-white">{quantity}</span>
-          <button
-            onClick={() => setQuantity((q) => q + 1)}
-            className="w-10 h-10 md:w-10 md:h-10 rounded-lg md:rounded-lg border-2 md:border border-gray-200 dark:border-white/10 active:border-gray-400 dark:active:border-white/30 md:hover:border-gray-400 dark:md:hover:border-white/30 active:bg-gray-100 dark:active:bg-[#1a1a1a] md:hover:bg-gray-50 dark:md:hover:bg-[#1a1a1a] transition-all font-bold md:font-medium text-base md:text-base touch-manipulation text-gray-900 dark:text-white"
-            aria-label="Increase quantity"
-          >
-            +
-          </button>
-        </div>
       </div>
 
-      {/* Add to Cart & Buy Now / Notify Me - Compact Mobile */}
-      <div className="flex gap-2 md:gap-3 pt-2 md:pt-2">
+      {/* Action Buttons - Compact */}
+      <div className="space-y-2 pt-1">
         {isOutOfStock ? (
           <Button
             onClick={handleNotifyMe}
-            className="flex-1 bg-[#D4AF37] active:bg-[#C19B2E] md:hover:bg-[#C19B2E] text-white font-semibold md:font-medium py-3 md:py-3 rounded-lg md:rounded-lg transition-all flex items-center justify-center gap-2 touch-manipulation shadow-md md:shadow-sm text-sm md:text-base"
+            className="w-full bg-[#D4AF37] hover:bg-[#C19B2E] text-white font-semibold py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 text-sm"
           >
-            <Bell className="h-4 w-4 md:h-4 md:w-4" />
-            Notify Me
+            <Bell className="h-4 w-4" />
+            Notify Me When Available
           </Button>
         ) : (
-          <>
+          <div className="flex gap-2">
             <Button
               onClick={handleAddToCart}
-              className="flex-1 bg-[#D4AF37] active:bg-[#C19B2E] md:hover:bg-[#C19B2E] text-white font-semibold md:font-medium py-3 md:py-3 rounded-lg md:rounded-lg transition-all touch-manipulation shadow-md md:shadow-sm text-sm md:text-base"
+              className="flex-1 bg-[#D4AF37] hover:bg-[#C19B2E] text-white font-semibold py-2.5 rounded-lg transition-all text-sm"
             >
               Add to Cart
             </Button>
@@ -198,82 +246,84 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
                 window.location.href = "/checkout";
               }}
               variant="outline"
-              className="flex-1 border-2 md:border border-gray-300 dark:border-white/10 active:border-gray-400 dark:active:border-white/30 md:hover:border-gray-400 dark:md:hover:border-white/30 py-3 md:py-3 rounded-lg md:rounded-lg font-semibold md:font-medium active:bg-gray-50 dark:active:bg-[#1a1a1a] md:hover:bg-gray-50 dark:md:hover:bg-[#1a1a1a] transition-all touch-manipulation text-sm md:text-base text-gray-900 dark:text-white"
+              className="flex-1 border border-gray-300 dark:border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 py-2.5 rounded-lg font-semibold transition-all text-sm text-gray-900 dark:text-white"
             >
               Buy Now
             </Button>
-          </>
+            <Button
+              onClick={handleWishlistToggle}
+              variant="outline"
+              className="px-3 border border-gray-300 dark:border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 rounded-lg transition-all"
+              aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            >
+              <Heart
+                className={`h-4 w-4 transition-all ${
+                  inWishlist
+                    ? "fill-[#D4AF37] text-[#D4AF37]"
+                    : "text-gray-600 dark:text-white hover:text-[#D4AF37]"
+                }`}
+              />
+            </Button>
+          </div>
         )}
-        <Button
-          onClick={handleWishlistToggle}
-          variant="outline"
-          className="px-4 md:px-4 py-3 md:py-3 border-2 md:border border-gray-300 dark:border-white/10 active:border-gray-400 dark:active:border-white/30 md:hover:border-gray-400 dark:md:hover:border-white/30 rounded-lg md:rounded-lg active:bg-gray-50 dark:active:bg-[#1a1a1a] md:hover:bg-gray-50 dark:md:hover:bg-[#1a1a1a] transition-all touch-manipulation"
-          aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
-        >
-          <Heart
-            className={`h-4 w-4 md:h-4 md:w-4 transition-all ${
-              inWishlist
-                ? "fill-[#D4AF37] text-[#D4AF37]"
-                : "text-gray-600 dark:text-white active:text-[#D4AF37] md:hover:text-[#D4AF37]"
-            }`}
-          />
-        </Button>
       </div>
 
-      {/* Tabs - Compact Mobile */}
-      <div className="border-t border-gray-200 dark:border-white/10 pt-4 md:pt-6">
-        <div className="flex gap-2 md:gap-4 border-b border-gray-200 dark:border-white/10 mb-3 md:mb-4 overflow-x-auto scrollbar-hide -mx-1 px-1">
+      {/* Tabs - Compact */}
+      <div className="border-t border-gray-200 dark:border-white/10 pt-3">
+        <div className="flex gap-0.5 border-b border-gray-200 dark:border-white/10 mb-3 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setActiveTab("description")}
-            className={`pb-2 md:pb-2 text-xs md:text-xs font-semibold md:font-medium transition-all relative whitespace-nowrap touch-manipulation px-2 ${
+            className={`pb-2 px-3 text-xs font-semibold transition-all relative whitespace-nowrap ${
               activeTab === "description"
-                ? "text-gray-900 dark:text-white"
-                : "text-gray-500 dark:text-gray-400 active:text-gray-700 dark:active:text-gray-300 md:hover:text-gray-700 dark:md:hover:text-gray-300"
+                ? "text-[#D4AF37]"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
             Description
             {activeTab === "description" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]"></span>
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37] rounded-t"></span>
             )}
           </button>
           <button
             onClick={() => setActiveTab("shipping")}
-            className={`pb-2 md:pb-2 text-xs md:text-xs font-semibold md:font-medium transition-all relative whitespace-nowrap touch-manipulation px-2 ${
+            className={`pb-2 px-3 text-xs font-semibold transition-all relative whitespace-nowrap ${
               activeTab === "shipping"
-                ? "text-gray-900 dark:text-white"
-                : "text-gray-500 dark:text-gray-400 active:text-gray-700 dark:active:text-gray-300 md:hover:text-gray-700 dark:md:hover:text-gray-300"
+                ? "text-[#D4AF37]"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
-            Shipping & Returns
+            Shipping
             {activeTab === "shipping" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]"></span>
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37] rounded-t"></span>
             )}
           </button>
           <button
             onClick={() => setActiveTab("reviews")}
-            className={`pb-2 md:pb-2 text-xs md:text-xs font-semibold md:font-medium transition-all relative whitespace-nowrap touch-manipulation px-2 ${
+            className={`pb-2 px-3 text-xs font-semibold transition-all relative whitespace-nowrap ${
               activeTab === "reviews"
-                ? "text-gray-900 dark:text-white"
-                : "text-gray-500 dark:text-gray-400 active:text-gray-700 dark:active:text-gray-300 md:hover:text-gray-700 dark:md:hover:text-gray-300"
+                ? "text-[#D4AF37]"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
-            Reviews
+            Reviews {reviews.length > 0 && `(${reviews.length})`}
             {activeTab === "reviews" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]"></span>
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37] rounded-t"></span>
             )}
           </button>
         </div>
 
         <div className="max-w-none">
           {activeTab === "description" && (
-            <div>
-              <p className="text-gray-600 dark:text-gray-400 mb-4 md:mb-4 leading-relaxed text-sm md:text-sm">{product.description}</p>
+            <div className="space-y-2">
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-sm">
+                {product.description}
+              </p>
               {product.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 md:gap-2">
+                <div className="flex flex-wrap gap-1.5 pt-1">
                   {product.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="bg-gray-100 dark:bg-[#1a1a1a] text-gray-600 dark:text-gray-400 px-3 md:px-3 py-1.5 md:py-1 rounded-md md:rounded text-xs md:text-xs font-medium border border-gray-200 dark:border-white/10"
+                      className="bg-gray-100 dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300 px-2 py-1 rounded text-xs font-medium border border-gray-200 dark:border-white/10"
                     >
                       {tag}
                     </span>
@@ -284,82 +334,98 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
           )}
 
           {activeTab === "shipping" && (
-            <div className="space-y-4 md:space-y-4 text-xs md:text-xs text-gray-600 dark:text-gray-400">
-              <div>
-                <h4 className="font-semibold md:font-medium mb-2 md:mb-2 flex items-center gap-2 text-sm md:text-sm text-gray-900 dark:text-white">
-                  <Truck className="h-4 w-4 md:h-4 md:w-4 text-[#D4AF37]" />
+            <div className="space-y-3">
+              <div className="p-3 bg-gray-50 dark:bg-[#0a0a0a] rounded-lg border border-gray-200 dark:border-white/10">
+                <h4 className="font-semibold mb-2 flex items-center gap-1.5 text-sm text-gray-900 dark:text-white">
+                  <Truck className="h-4 w-4 text-[#D4AF37]" />
                   Shipping
                 </h4>
-                <ul className="list-disc list-inside space-y-1 md:space-y-1 ml-2">
-                  <li>Free shipping on orders over ₹999</li>
-                  <li>Standard shipping: ₹50 (3-5 business days)</li>
-                  <li>Express shipping: ₹150 (1-2 business days)</li>
-                  <li>We ship across India</li>
+                <ul className="space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
+                  <li className="flex items-start gap-1.5">
+                    <Check className="h-3 w-3 text-[#D4AF37] mt-0.5 flex-shrink-0" />
+                    <span>Free shipping on orders over ₹999</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <Check className="h-3 w-3 text-[#D4AF37] mt-0.5 flex-shrink-0" />
+                    <span>Standard: ₹50 (3-5 days)</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <Check className="h-3 w-3 text-[#D4AF37] mt-0.5 flex-shrink-0" />
+                    <span>Express: ₹150 (1-2 days)</span>
+                  </li>
                 </ul>
               </div>
-              <div>
-                <h4 className="font-semibold md:font-medium mb-2 md:mb-2 flex items-center gap-2 text-sm md:text-sm text-gray-900 dark:text-white">
-                  <RotateCcw className="h-4 w-4 md:h-4 md:w-4 text-[#D4AF37]" />
+              <div className="p-3 bg-gray-50 dark:bg-[#0a0a0a] rounded-lg border border-gray-200 dark:border-white/10">
+                <h4 className="font-semibold mb-2 flex items-center gap-1.5 text-sm text-gray-900 dark:text-white">
+                  <RotateCcw className="h-4 w-4 text-[#D4AF37]" />
                   Returns
                 </h4>
-                <ul className="list-disc list-inside space-y-1 md:space-y-1 ml-2">
-                  <li>30-day return policy</li>
-                  <li>Items must be unworn and in original packaging</li>
-                  <li>Return shipping costs are the customer's responsibility</li>
-                  <li>Refunds processed within 5-7 business days</li>
+                <ul className="space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
+                  <li className="flex items-start gap-1.5">
+                    <Check className="h-3 w-3 text-[#D4AF37] mt-0.5 flex-shrink-0" />
+                    <span>30-day return policy</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <Check className="h-3 w-3 text-[#D4AF37] mt-0.5 flex-shrink-0" />
+                    <span>Unworn items in original packaging</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <Check className="h-3 w-3 text-[#D4AF37] mt-0.5 flex-shrink-0" />
+                    <span>Refunds in 5-7 business days</span>
+                  </li>
                 </ul>
               </div>
             </div>
           )}
 
           {activeTab === "reviews" && (
-            <div className="space-y-4 md:space-y-6">
-              {/* Reviews List */}
+            <div className="space-y-3">
               {loadingReviews ? (
                 <div className="text-center py-8 text-gray-400 dark:text-gray-500">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#D4AF37] mx-auto mb-2"></div>
-                  <p className="text-xs md:text-sm">Loading reviews...</p>
+                  <p className="text-xs">Loading reviews...</p>
                 </div>
               ) : reviews.length === 0 ? (
-                <div className="text-center py-8 md:py-8 text-gray-400 dark:text-gray-500 text-xs md:text-sm">
+                <div className="text-center py-8 text-gray-400 dark:text-gray-500">
                   <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No reviews yet. Be the first to review this product!</p>
+                  <p className="text-sm font-medium mb-1">No reviews yet</p>
+                  <p className="text-xs">Be the first to review!</p>
                 </div>
               ) : (
-                <div className="space-y-4 md:space-y-6">
+                <div className="space-y-3">
                   {reviews.map((review) => (
                     <div
                       key={review.id}
-                      className="border-b border-gray-200 dark:border-white/10 pb-4 md:pb-6 last:border-0"
+                      className="p-3 bg-gray-50 dark:bg-[#0a0a0a] rounded-lg border border-gray-200 dark:border-white/10"
                     >
-                      <div className="flex items-start gap-3 md:gap-4">
+                      <div className="flex items-start gap-2">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 md:gap-3 mb-2">
-                            <h4 className="font-semibold text-sm md:text-base text-gray-900 dark:text-white">
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <h4 className="font-semibold text-sm text-gray-900 dark:text-white">
                               {review.customer_name}
                             </h4>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-0.5">
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
                                   key={star}
-                                  className={`h-3 w-3 md:h-4 md:w-4 ${
+                                  className={`h-3 w-3 ${
                                     star <= review.rating
                                       ? "fill-[#D4AF37] text-[#D4AF37]"
-                                      : "text-gray-300"
+                                      : "text-gray-300 dark:text-gray-600"
                                   }`}
                                 />
                               ))}
                             </div>
-                            <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400">
                               {new Date(review.created_at).toLocaleDateString()}
                             </span>
                           </div>
-                          <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 mb-3 md:mb-4 leading-relaxed">
+                          <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-2">
                             {review.review_text}
                           </p>
                           {/* Review Images */}
                           {review.images && review.images.length > 0 && (
-                            <div className="grid grid-cols-3 gap-2 md:gap-3 mt-3">
+                            <div className="grid grid-cols-3 gap-1.5 mt-2">
                               {review.images.map((imageUrl, index) => (
                                 <div
                                   key={index}
@@ -370,6 +436,7 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
                                     alt={`Review image ${index + 1}`}
                                     fill
                                     className="object-cover"
+                                    sizes="(max-width: 640px) 33vw, 100px"
                                   />
                                 </div>
                               ))}
@@ -383,7 +450,6 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
               )}
             </div>
           )}
-
         </div>
       </div>
     </div>
@@ -391,4 +457,3 @@ const ProductDetailClient: React.FC<ProductDetailClientProps> = ({ product }) =>
 };
 
 export default ProductDetailClient;
-

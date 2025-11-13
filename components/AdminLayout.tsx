@@ -20,6 +20,7 @@ import {
   X,
   ImageIcon,
   Home,
+  Settings,
 } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -500,6 +501,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <ImageIcon className="h-5 w-5" />
                   Carousel
                 </Link>
+
+                <Link
+                  href="/admin/settings"
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    pathname?.startsWith("/admin/settings")
+                      ? "bg-[#D4AF37]/10 text-[#D4AF37] dark:bg-[#D4AF37]/20"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  <Settings className="h-5 w-5" />
+                  Settings
+                </Link>
               </>
             )}
 
@@ -541,15 +554,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Mobile Header */}
       <header className="lg:hidden sticky top-0 z-50 flex h-16 items-center justify-between border-b border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a] px-4">
-        <Link href="/admin" className="font-serif text-lg font-semibold text-[#D4AF37] hover:text-[#C19B2E] transition-colors flex-shrink-0">
-          Vairanya Admin
-        </Link>
         <button
           onClick={() => setShowMobileMenu(!showMobileMenu)}
           className="p-2 text-gray-700 dark:text-gray-300"
         >
           {showMobileMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
+        <Link href="/admin" className="font-serif text-lg font-semibold text-[#D4AF37] hover:text-[#C19B2E] transition-colors flex-shrink-0">
+          Vairanya Admin
+        </Link>
       </header>
 
       {/* Mobile Menu */}
@@ -702,6 +715,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     >
                       <ImageIcon className="h-5 w-5" />
                       Carousel
+                    </Link>
+
+                    <Link
+                      href="/admin/settings"
+                      onClick={() => setShowMobileMenu(false)}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        pathname?.startsWith("/admin/settings")
+                          ? "bg-[#D4AF37]/10 text-[#D4AF37] dark:bg-[#D4AF37]/20"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      <Settings className="h-5 w-5" />
+                      Settings
                     </Link>
                   </>
                 )}

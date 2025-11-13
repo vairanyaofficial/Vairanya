@@ -78,6 +78,19 @@ export default function AdminCarouselPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      alert(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds 10MB limit. Please choose a smaller file.`);
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
+      return;
+    }
+
     try {
       const url = await handleFileUpload(file);
       setFormData({ ...formData, image_url: url });

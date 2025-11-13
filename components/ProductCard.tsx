@@ -73,7 +73,7 @@ const ProductCard: React.FC<Props> = React.memo(({ product, priority = false }) 
   };
 
   return (
-    <div className={`group relative glass-card rounded-xl md:rounded-2xl border border-gray-200/50 dark:border-white/10 overflow-hidden active:border-[#D4AF37]/40 dark:active:border-[#D4AF37]/40 md:hover:border-[#D4AF37]/40 dark:md:hover:border-[#D4AF37]/40 active:shadow-lg md:hover:shadow-xl dark:active:shadow-lg dark:md:hover:shadow-xl transition-all duration-200 backdrop-blur-md ${isOutOfStock ? 'opacity-60' : ''}`}>
+    <div className={`group relative glass-card rounded-xl md:rounded-2xl border border-gray-300 dark:border-gray-600 overflow-hidden active:border-[#D4AF37] dark:active:border-[#D4AF37] md:hover:border-[#D4AF37] dark:md:hover:border-[#D4AF37] active:shadow-lg md:hover:shadow-xl dark:active:shadow-lg dark:md:hover:shadow-xl transition-all duration-200 backdrop-blur-md ${isOutOfStock ? 'opacity-60' : ''}`}>
       <Link href={`/products/${product.slug}`} className="block">
         {/* Image Container - Mobile Optimized */}
         <div className="relative aspect-square bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-black/20 dark:to-black/20 overflow-hidden backdrop-blur-sm">
@@ -81,7 +81,7 @@ const ProductCard: React.FC<Props> = React.memo(({ product, priority = false }) 
             src={imageUrl}
             alt={product.title}
             fill
-            className="object-contain p-1.5 sm:p-2 md:p-3 group-active:scale-105 md:group-hover:scale-105 transition-transform duration-300"
+            className="object-cover group-active:scale-105 md:group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             quality={priority ? 80 : 70}
             priority={priority}
@@ -90,7 +90,7 @@ const ProductCard: React.FC<Props> = React.memo(({ product, priority = false }) 
               format: 'auto',
               quality: priority ? 80 : 70,
             }]}
-            objectFit="contain"
+            objectFit="cover"
           />
           {/* New Badge - Mobile Optimized */}
           {product.is_new && !isOutOfStock && (
@@ -115,21 +115,21 @@ const ProductCard: React.FC<Props> = React.memo(({ product, priority = false }) 
         </div>
 
         {/* Content - Mobile Optimized */}
-        <div className="p-2 sm:p-2.5 md:p-3">
-          <h4 className="font-medium text-xs sm:text-sm md:text-sm font-serif mb-1 sm:mb-1.5 md:mb-1 line-clamp-2 group-active:text-[#D4AF37] dark:group-active:text-[#D4AF37] md:group-hover:text-[#D4AF37] dark:md:group-hover:text-[#D4AF37] transition-colors min-h-[2.5rem] sm:min-h-[2.5rem] md:min-h-0 text-gray-900 dark:text-white">
+        <div className="p-2.5 sm:p-3 md:p-3.5">
+          <h4 className="font-medium text-xs sm:text-sm md:text-sm font-serif mb-2 sm:mb-2.5 md:mb-2.5 line-clamp-2 group-active:text-[#D4AF37] dark:group-active:text-[#D4AF37] md:group-hover:text-[#D4AF37] dark:md:group-hover:text-[#D4AF37] transition-colors text-gray-900 dark:text-white leading-tight">
             {product.title}
           </h4>
-          <div className="flex items-center justify-between mt-1.5 sm:mt-2 md:mt-2 gap-1 sm:gap-2">
-            <span className="font-bold sm:font-bold md:font-semibold text-sm sm:text-base md:text-base text-gray-900 dark:text-gray-50">₹{product.price.toLocaleString()}</span>
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="font-bold text-sm sm:text-base md:text-lg text-gray-900 dark:text-gray-50">₹{product.price.toLocaleString()}</span>
             {product.mrp && product.mrp > product.price && (
-              <span className="text-[10px] sm:text-xs md:text-xs text-gray-400 dark:text-gray-600 line-through flex-shrink-0">₹{product.mrp.toLocaleString()}</span>
+              <span className="text-[10px] sm:text-xs md:text-sm text-gray-400 dark:text-gray-500 line-through flex-shrink-0">₹{product.mrp.toLocaleString()}</span>
             )}
           </div>
         </div>
       </Link>
 
       {/* Add to Cart Button - Mobile Optimized */}
-      <div className="px-2 sm:px-2.5 md:px-3 pb-2 sm:pb-2.5 md:pb-3">
+      <div className="px-2.5 sm:px-3 md:px-3.5 pb-2.5 sm:pb-3 md:pb-3.5">
         {isOutOfStock ? (
           <button
             onClick={handleNotifyMe}

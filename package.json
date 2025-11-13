@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "engines": {
-    "node": "20.x",
+    "node": ">=20.0.0",
     "npm": ">=9.0.0"
   },
   "scripts": {
@@ -24,6 +24,7 @@
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-slot": "^1.1.0",
     "@tailwindcss/postcss": "^4.0.0",
+    "@types/nodemailer": "^7.0.3",
     "@vercel/speed-insights": "^1.2.0",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.0",
@@ -36,6 +37,7 @@
     "mongodb": "^6.20.0",
     "next": "^14.2.0",
     "next-auth": "^5.0.0-beta.30",
+    "nodemailer": "^7.0.10",
     "razorpay": "^2.9.6",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",

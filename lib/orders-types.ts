@@ -45,6 +45,7 @@ export interface Order {
   razorpay_order_id?: string;
   razorpay_payment_id?: string;
   tracking_number?: string;
+  courier_company?: string; // Courier company name
   assigned_to?: string; // Worker username
   notes?: string;
   user_id?: string; // Firebase user UID

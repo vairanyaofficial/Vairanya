@@ -844,7 +844,7 @@ function AccountPageContent() {
 
                     {order.tracking_number && (
                       <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-lg sm:rounded-xl p-3 sm:p-4 mb-3 sm:mb-4">
-                        <div className="flex items-center gap-2 text-xs sm:text-sm">
+                        <div className="flex items-center gap-2 text-xs sm:text-sm mb-2">
                           <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                           <span className="text-blue-800 dark:text-blue-300 font-medium break-words">
                             Tracking:{" "}
@@ -853,6 +853,15 @@ function AccountPageContent() {
                             </span>
                           </span>
                         </div>
+                        <a
+                          href={`https://www.shiprocket.in/shipment-tracking/${order.tracking_number}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-medium text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 underline"
+                        >
+                          Track Shipment
+                          <Truck className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </a>
                       </div>
                     )}
 

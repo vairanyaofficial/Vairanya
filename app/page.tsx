@@ -72,6 +72,78 @@ const websiteJsonLd = {
   },
 };
 
+// FAQ Schema for homepage
+const homepageFaqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What is anti-tarnish jewellery?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Anti-tarnish jewellery is plated with a special coating that prevents oxidation and tarnishing, keeping your pieces looking new for longer. Vairanya's jewellery is designed to maintain its shine even with regular wear.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Is Vairanya jewellery hypoallergenic?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes, all Vairanya jewellery is hypoallergenic and safe for sensitive skin. We use high-quality materials that are gentle and comfortable for everyday wear.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What is Vairanya's shipping policy?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "We offer free shipping on orders over ₹999. Standard shipping (₹50) takes 3-5 business days, while express shipping (₹150) takes 1-2 business days. We ship across India.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What is Vairanya's return policy?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "We offer a 30-day return policy. Items must be unworn and in original packaging. Return shipping costs are the customer's responsibility. Refunds are processed within 5-7 business days after we receive the returned item.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How do I care for my Vairanya jewellery?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "To maintain the shine of your jewellery, avoid contact with perfumes, lotions, and water. Clean with a soft, dry cloth. Store in a dry place away from direct sunlight. For detailed care instructions, refer to the care card included with your order.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What payment methods does Vairanya accept?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "We accept all major credit/debit cards, UPI, net banking through Razorpay, and Cash on Delivery (COD) for orders above ₹500.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Does Vairanya offer customization?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes, we offer customization services for select pieces. Please contact us at hello@vairanya.in with your requirements, and we'll work with you to create a unique piece.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Where does Vairanya ship?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Currently, we ship only within India. We're working on expanding our shipping to international destinations. Please check back soon or contact us for updates.",
+      },
+    },
+  ],
+};
+
 export default function Page() {
   const router = useRouter();
   const { user } = useAuth();
@@ -280,6 +352,11 @@ export default function Page() {
         id="website-jsonld"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+      <Script
+        id="faq-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageFaqSchema) }}
       />
       <main className="min-h-screen bg-gradient-to-b from-white via-gray-50/50 to-white dark:from-black dark:via-black dark:to-black text-gray-900 dark:text-white">
         <Header />

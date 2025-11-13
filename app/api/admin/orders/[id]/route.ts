@@ -3,6 +3,8 @@ import { getOrderById, updateOrder, getTasksByOrder } from "@/lib/orders-mongodb
 import { requireAdmin } from "@/lib/admin-auth-server";
 import { initializeMongoDB } from "@/lib/mongodb.server";
 import { clearOrdersCache } from "@/lib/orders-cache";
+import { sendShippingEmail } from "@/lib/email-service";
+import { logger } from "@/lib/logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -191,6 +193,38 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         { success: false, error: "Failed to update order - no order returned" },
         { status: 500 }
       );
+    }
+    
+    // Send shipping email if status changed to "shipped" and tracking number exists
+    if (updates.status === "shipped" && order.status !== "shipped") {
+      const trackingNumber = updatedOrder.tracking_number || order.tracking_number;
+      if (trackingNumber) {
+        try {
+          await sendShippingEmail({
+            order_number: updatedOrder.order_number,
+            customer: updatedOrder.customer,
+            items: updatedOrder.items.map((item) => ({
+              title: item.title,
+              quantity: item.quantity,
+              price: item.price,
+              image: item.image,
+            })),
+            tracking_number: trackingNumber,
+            courier_company: updatedOrder.courier_company,
+            shipping_address: updatedOrder.shipping_address,
+          });
+        } catch (emailError) {
+          // Continue even if email fails - don't break order update
+          logger.error("Failed to send shipping email", emailError as Error, {
+            order_number: updatedOrder.order_number,
+            tracking_number: trackingNumber,
+          });
+        }
+      } else {
+        logger.warn("Order marked as shipped but no tracking number available", {
+          order_number: updatedOrder.order_number,
+        });
+      }
     }
     
     // Invalidate orders cache since order was updated

@@ -37,9 +37,11 @@ function removeUndefinedValues(obj: any): any {
 // Convert MongoDB document to Order
 function docToOrder(doc: any): Order {
   const data = doc;
+  // Handle both order_number (snake_case) and orderNumber (camelCase) for compatibility
+  const orderNumber = data.order_number || data.orderNumber || doc._id?.toString() || doc.id;
   return {
     id: doc._id?.toString() || doc.id,
-    order_number: data.order_number || doc._id?.toString() || doc.id,
+    order_number: orderNumber,
     items: data.items || [],
     total: data.total || 0,
     subtotal: data.subtotal || 0,
@@ -54,6 +56,7 @@ function docToOrder(doc: any): Order {
     razorpay_order_id: data.razorpay_order_id || null,
     razorpay_payment_id: data.razorpay_payment_id || null,
     tracking_number: data.tracking_number || null,
+    courier_company: data.courier_company || null,
     assigned_to: data.assigned_to || null,
     notes: data.notes || null,
     refund_status: data.refund_status || null,
@@ -211,23 +214,59 @@ export async function createOrder(
   }
 
   try {
-    // Generate order number
+    // Generate unique order number
     const today = new Date();
     const year = today.getFullYear();
     const timestamp = Date.now();
-    const orderNumber = `ORD-${year}-${String(timestamp).slice(-6)}`;
+    const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const orderNumber = `ORD-${year}-${String(timestamp).slice(-6)}-${randomSuffix}`;
+
+    const collection = db.collection(ORDERS_COLLECTION);
+    
+    // Ensure order number is unique - check if it exists
+    let finalOrderNumber = orderNumber;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const existing = await collection.findOne({ 
+        $or: [
+          { order_number: finalOrderNumber },
+          { orderNumber: finalOrderNumber }
+        ]
+      });
+      
+      if (!existing) {
+        break; // Order number is unique
+      }
+      
+      // Generate new order number if duplicate found
+      const newTimestamp = Date.now();
+      const newRandomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      finalOrderNumber = `ORD-${year}-${String(newTimestamp).slice(-6)}-${newRandomSuffix}`;
+      attempts++;
+    }
 
     const orderData = {
       ...order,
-      order_number: orderNumber,
+      order_number: finalOrderNumber,
+      orderNumber: finalOrderNumber, // Also set camelCase for MongoDB index compatibility
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
     const cleanedOrderData = removeUndefinedValues(orderData);
     
-    const collection = db.collection(ORDERS_COLLECTION);
+    // Ensure order_number and orderNumber are always set (never null/undefined)
+    if (!cleanedOrderData.order_number) {
+      cleanedOrderData.order_number = finalOrderNumber;
+    }
+    if (!cleanedOrderData.orderNumber) {
+      cleanedOrderData.orderNumber = finalOrderNumber;
+    }
+    
     console.log(`📦 Saving order to MongoDB collection: ${ORDERS_COLLECTION}`);
+    console.log(`📦 Order number: ${finalOrderNumber}`);
     console.log(`📦 Order data:`, JSON.stringify(cleanedOrderData, null, 2).substring(0, 500));
     
     const result = await collection.insertOne(cleanedOrderData);

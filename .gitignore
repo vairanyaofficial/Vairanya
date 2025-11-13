@@ -49,3 +49,17 @@ next-env.d.ts
 **/serviceAccountKey.json
 *.key
 *.pem
+
+# Capacitor
+/android/app/build/
+/android/.gradle/
+/android/.idea/
+/android/local.properties
+/android/app/release/
+/ios/App/Pods/
+/ios/App/build/
+/ios/App/*.xcworkspace/xcuserdata/
+/ios/App/*.xcodeproj/xcuserdata/
+/ios/App/*.xcodeproj/project.xcworkspace/xcuserdata/
+*.keystore
+*.jks

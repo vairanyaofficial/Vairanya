@@ -31,6 +31,8 @@ export default function WorkerOrderDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoadingRef, setIsLoadingRef] = useState(false);
+  const [trackingId, setTrackingId] = useState("");
+  const [isUpdatingTracking, setIsUpdatingTracking] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -108,6 +110,7 @@ export default function WorkerOrderDetailPage() {
       }
 
       setOrder(order);
+      setTrackingId(order.tracking_number || "");
       
     } catch (err) {
       showToast("Failed to load order");
@@ -162,6 +165,53 @@ export default function WorkerOrderDetailPage() {
       showToast("Failed to update order status. Please try again.");
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const updateTrackingId = async () => {
+    if (!order) return;
+
+    try {
+      setIsUpdatingTracking(true);
+      const sessionData = getAdminSession();
+      if (!sessionData) {
+        showToast("Session expired. Please login again.");
+        return;
+      }
+
+      if (sessionData.role === "worker" && order.assigned_to !== sessionData.username) {
+        showToast("You can only update orders assigned to you");
+        return;
+      }
+
+      const response = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-username": sessionData.username,
+          "x-admin-role": sessionData.role,
+        },
+        body: JSON.stringify({ tracking_number: trackingId.trim() || null }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+      
+      if (data.success) {
+        setOrder(data.order);
+        setTrackingId(data.order.tracking_number || "");
+        showToast("Tracking ID updated successfully! ✅");
+        await loadOrderData();
+      } else {
+        showToast(data.error || "Failed to update tracking ID");
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Failed to update tracking ID");
+    } finally {
+      setIsUpdatingTracking(false);
     }
   };
 
@@ -896,6 +946,54 @@ export default function WorkerOrderDetailPage() {
                   </>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Tracking ID */}
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+            <h2 className="font-serif text-xl mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+              <Truck className="h-5 w-5" />
+              Tracking ID
+            </h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tracking Number
+                </label>
+                <input
+                  type="text"
+                  value={trackingId}
+                  onChange={(e) => setTrackingId(e.target.value)}
+                  placeholder="Enter tracking number"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/10 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                />
+              </div>
+              {order.tracking_number && (
+                <div className="text-sm">
+                  <p className="text-gray-600 dark:text-gray-400 mb-1">Current Tracking:</p>
+                  <p className="font-mono font-medium text-gray-900 dark:text-white break-all">
+                    {order.tracking_number}
+                  </p>
+                </div>
+              )}
+              <Button
+                onClick={updateTrackingId}
+                disabled={isUpdatingTracking}
+                className="w-full bg-[#D4AF37] hover:bg-[#C19B2E] text-white"
+                size="sm"
+              >
+                {isUpdatingTracking ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Truck className="h-4 w-4 mr-2" />
+                    {order.tracking_number ? "Update Tracking ID" : "Add Tracking ID"}
+                  </>
+                )}
+              </Button>
             </div>
           </div>
 

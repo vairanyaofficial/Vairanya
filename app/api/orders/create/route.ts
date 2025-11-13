@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger";
 import { rateLimiters } from "@/lib/rate-limit";
 import type { Order } from "@/lib/orders-types";
 import { initializeMongoDB } from "@/lib/mongodb.server";
+import { sendOrderConfirmationEmail } from "@/lib/email-service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -167,6 +168,30 @@ export async function POST(request: NextRequest) {
     } catch (inventoryError) {
       // Continue even if inventory update fails
       logger.error("Failed to update inventory", inventoryError as Error);
+    }
+
+    // Send order confirmation email
+    try {
+      await sendOrderConfirmationEmail({
+        order_number: savedOrder.order_number,
+        customer: savedOrder.customer,
+        items: savedOrder.items.map((item) => ({
+          title: item.title,
+          quantity: item.quantity,
+          price: item.price,
+          image: item.image,
+        })),
+        subtotal: savedOrder.subtotal,
+        shipping: savedOrder.shipping,
+        discount: savedOrder.discount,
+        total: savedOrder.total,
+        payment_method: savedOrder.payment_method,
+        shipping_address: savedOrder.shipping_address,
+        created_at: savedOrder.created_at,
+      });
+    } catch (emailError) {
+      // Continue even if email fails - don't break order creation
+      logger.error("Failed to send order confirmation email", emailError as Error);
     }
 
     return NextResponse.json({

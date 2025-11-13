@@ -450,9 +450,18 @@ export default function OrderDetailPage() {
                 <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 <h3 className="font-semibold text-blue-900 dark:text-blue-300">Tracking Information</h3>
               </div>
-              <p className="text-sm text-blue-800 dark:text-blue-300">
+              <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
                 Tracking Number: <span className="font-mono font-semibold">{order.tracking_number}</span>
               </p>
+              <a
+                href={`https://www.shiprocket.in/shipment-tracking/${order.tracking_number}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 underline"
+              >
+                Track Your Shipment
+                <Truck className="h-4 w-4" />
+              </a>
               {order.status === "shipped" && (
                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
                   Your order has been shipped and is on its way!

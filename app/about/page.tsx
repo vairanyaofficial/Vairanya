@@ -4,26 +4,85 @@ import Footer from "@/components/Footer";
 import { Image } from "@imagekit/next";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Script from "next/script";
 import type { Metadata } from "next";
 
+const baseUrl = "https://vairanya.in";
+
 export const metadata: Metadata = {
-  title: "About Us - Our Story",
-  description: "Learn about Vairanya's journey. We create handcrafted, anti-tarnish jewellery that combines tradition with minimal design. Where elegance meets soul.",
-  keywords: ["about vairanya", "jewellery brand", "handcrafted jewellery", "anti-tarnish", "jewellery story"],
+  title: "About Us - Our Story | Vairanya Handcrafted Jewellery",
+  description: "Discover Vairanya's journey in creating handcrafted, anti-tarnish jewellery. Learn how we combine traditional craftsmanship with modern design to create timeless pieces. Where elegance meets soul.",
+  keywords: [
+    "about vairanya",
+    "jewellery brand story",
+    "handcrafted jewellery",
+    "anti-tarnish jewellery",
+    "jewellery craftsmanship",
+    "Vairanya story",
+    "jewellery brand India",
+  ],
   openGraph: {
-    title: "About Us - Vairanya",
-    description: "Learn about Vairanya's journey. We create handcrafted, anti-tarnish jewellery that combines tradition with minimal design.",
+    title: "About Us - Our Story | Vairanya",
+    description: "Discover Vairanya's journey in creating handcrafted, anti-tarnish jewellery. Learn how we combine traditional craftsmanship with modern design.",
     type: "website",
-    url: "https://vairanya.in/about",
+    url: `${baseUrl}/about`,
+    siteName: "Vairanya",
+    images: [
+      {
+        url: `${baseUrl}/images/hero-jewelry.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "Vairanya Handcrafted Jewellery",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About Us - Our Story | Vairanya",
+    description: "Discover Vairanya's journey in creating handcrafted, anti-tarnish jewellery.",
+    images: [`${baseUrl}/images/hero-jewelry.jpg`],
   },
   alternates: {
-    canonical: "https://vairanya.in/about",
+    canonical: `${baseUrl}/about`,
   },
 };
 
 export default function AboutPage() {
+  // Organization schema for About page
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Vairanya",
+    url: baseUrl,
+    logo: `${baseUrl}/images/logo-ivory.png`,
+    description: "Handcrafted, anti-tarnish jewellery designed for everyday elegance. Where elegance meets soul.",
+    foundingDate: "2024",
+    contactPoint: {
+      "@type": "ContactPoint",
+      telephone: "+91-9691998370",
+      contactType: "customer service",
+      email: "hello@vairanya.in",
+      areaServed: "IN",
+      availableLanguage: "en",
+    },
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Betul",
+      addressRegion: "Madhya Pradesh",
+      addressCountry: "IN",
+    },
+    sameAs: [
+      // Add social media links when available
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF9F6] dark:bg-black">
+      <Script
+        id="organization-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
       <Header />
       <main className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-8">
         <div className="mb-8 sm:mb-10 md:mb-12 text-center">
@@ -51,9 +110,11 @@ export default function AboutPage() {
             <div className="relative h-64 sm:h-72 md:h-80 w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-[#1a1a1a]">
               <Image
                 src="/images/ring-1.jpg"
-                alt="Craftsmanship"
+                alt="Handcrafted jewellery craftsmanship at Vairanya - skilled artisans creating anti-tarnish jewellery"
                 fill
                 className="object-cover"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 50vw"
+                priority
               />
             </div>
           </section>

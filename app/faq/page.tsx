@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import Script from "next/script";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface FAQItem {
@@ -70,8 +71,28 @@ export default function FAQPage() {
     setOpenIndex(openIndex === index ? null : index);
   };
 
+  // FAQ Schema markup
+  const baseUrl = "https://vairanya.in";
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF9F6] dark:bg-black">
+      <Script
+        id="faq-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <Header />
       <main className="max-w-3xl mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-8">
         <div className="mb-8 sm:mb-10 md:mb-12 text-center">

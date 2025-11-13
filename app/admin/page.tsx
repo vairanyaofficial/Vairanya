@@ -16,7 +16,8 @@ interface DashboardStats {
 
 interface Order {
   _id: string;
-  order_id: string;
+  order_id?: string;
+  order_number?: string;
   customer_email: string;
   customer_name: string;
   items: Array<{
@@ -152,33 +153,68 @@ export default function AdminDashboardPage() {
 
   if (isLoading && !stats) {
     return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-between mb-8">
+      <div className="space-y-6 md:space-y-8">
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-8 gap-4">
           <div>
-            <div className="h-8 w-48 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
-            <div className="h-4 w-64 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+            <div className="h-7 md:h-8 w-40 md:w-48 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+            <div className="h-3 md:h-4 w-48 md:w-64 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
           </div>
+          <div className="h-10 md:h-12 w-32 md:w-40 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse"></div>
         </div>
         
         {/* Stats Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
-              <div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mb-4"></div>
-              <div className="h-8 w-20 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
-              <div className="h-3 w-24 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+            <div key={i} className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10">
+              <div className="flex items-center justify-between mb-2 md:mb-4">
+                <div className="h-3 md:h-4 w-20 md:w-32 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+                <div className="h-4 w-4 md:h-5 md:w-5 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+              </div>
+              <div className="h-6 md:h-8 w-16 md:w-20 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+              <div className="h-2.5 md:h-3 w-16 md:w-24 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quick Actions Skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-4 border dark:border-white/10">
+              <div className="flex items-center justify-between">
+                <div className="h-3 md:h-4 w-16 md:w-24 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+                <div className="h-4 w-4 md:h-5 md:w-5 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+              </div>
             </div>
           ))}
         </div>
 
         {/* Orders Skeleton */}
-        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
-          <div className="h-6 w-32 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mb-4"></div>
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 md:p-6 border dark:border-white/10">
+          <div className="flex items-center justify-between mb-4">
+            <div className="h-5 md:h-6 w-32 md:w-40 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+            <div className="h-4 w-20 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+          </div>
           <div className="space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-16 bg-gray-100 dark:bg-gray-900 rounded animate-pulse"></div>
+              <div key={i} className="h-12 md:h-16 bg-gray-100 dark:bg-gray-900 rounded animate-pulse"></div>
             ))}
           </div>
+        </div>
+
+        {/* Quick Links Skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10">
+              <div className="flex items-center gap-2 md:gap-4">
+                <div className="h-5 w-5 md:h-8 md:w-8 bg-gray-200 dark:bg-gray-800 rounded animate-pulse flex-shrink-0"></div>
+                <div className="flex-1">
+                  <div className="h-4 md:h-5 w-20 md:w-24 bg-gray-200 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+                  <div className="h-3 md:h-4 w-32 md:w-40 bg-gray-200 dark:bg-gray-800 rounded animate-pulse hidden md:block"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -187,127 +223,127 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-2xl md:text-3xl font-serif font-bold text-gray-900 dark:text-white mb-2">
             Dashboard
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
             Welcome back, {session?.name || adminInfo?.name || "Admin"}!
           </p>
         </div>
         <Link href="/admin/products/new">
-          <button className="bg-[#D4AF37] hover:bg-[#C19B2E] text-white px-6 py-3 rounded-lg font-medium transition-colors">
+          <button className="bg-[#D4AF37] hover:bg-[#C19B2E] text-white px-4 py-2 md:px-6 md:py-3 rounded-lg text-sm md:text-base font-medium transition-colors">
             Add Product
           </button>
         </Link>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Orders</h3>
-            <ShoppingBag className="h-5 w-5 text-[#D4AF37]" />
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8">
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10">
+          <div className="flex items-center justify-between mb-2 md:mb-4">
+            <h3 className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Total Orders</h3>
+            <ShoppingBag className="h-4 w-4 md:h-5 md:w-5 text-[#D4AF37]" />
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">
+          <p className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
             {stats?.totalOrders || 0}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">All time orders</p>
+          <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-500 mt-1">All time orders</p>
         </div>
 
-        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Orders</h3>
-            <AlertCircle className="h-5 w-5 text-yellow-500" />
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10">
+          <div className="flex items-center justify-between mb-2 md:mb-4">
+            <h3 className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Pending Orders</h3>
+            <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-yellow-500" />
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">
+          <p className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
             {stats?.pendingOrders || 0}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Requires attention</p>
+          <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-500 mt-1">Requires attention</p>
         </div>
 
-        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</h3>
-            <TrendingUp className="h-5 w-5 text-green-500" />
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10">
+          <div className="flex items-center justify-between mb-2 md:mb-4">
+            <h3 className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</h3>
+            <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">
+          <p className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
             ₹{stats?.totalRevenue?.toLocaleString() || 0}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">All time revenue</p>
+          <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-500 mt-1">All time revenue</p>
         </div>
 
-        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Customers</h3>
-            <Users className="h-5 w-5 text-blue-500" />
+        <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10">
+          <div className="flex items-center justify-between mb-2 md:mb-4">
+            <h3 className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Total Customers</h3>
+            <Users className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">
+          <p className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
             {stats?.totalCustomers || 0}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Registered customers</p>
+          <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-500 mt-1">Registered customers</p>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
         <Link
           href="/admin/orders?status=pending"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-4 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Pending Orders</span>
-            <span className="text-2xl font-bold text-yellow-600">{stats?.pendingOrders || 0}</span>
+            <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">Pending Orders</span>
+            <span className="text-lg md:text-2xl font-bold text-yellow-600">{stats?.pendingOrders || 0}</span>
           </div>
         </Link>
 
         <Link
           href="/admin/orders?status=processing"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-4 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Processing</span>
-            <Package className="h-5 w-5 text-blue-500" />
+            <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">Processing</span>
+            <Package className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
           </div>
         </Link>
 
         <Link
           href="/admin/orders?status=packing"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-4 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Packing</span>
-            <Package className="h-5 w-5 text-purple-500" />
+            <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">Packing</span>
+            <Package className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />
           </div>
         </Link>
 
         <Link
           href="/admin/orders?status=shipped"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-4 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Shipped</span>
-            <Package className="h-5 w-5 text-indigo-500" />
+            <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">Shipped</span>
+            <Package className="h-4 w-4 md:h-5 md:w-5 text-indigo-500" />
           </div>
         </Link>
 
         <Link
           href="/admin/orders?status=delivered"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-4 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Delivered</span>
-            <Package className="h-5 w-5 text-green-500" />
+            <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">Delivered</span>
+            <Package className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
           </div>
         </Link>
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10">
+      <div className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-4 md:p-6 border dark:border-white/10">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-serif font-bold text-gray-900 dark:text-white">Recent Orders</h2>
-          <Link href="/admin/orders">View All</Link>
+          <h2 className="text-lg md:text-xl font-serif font-bold text-gray-900 dark:text-white">Recent Orders</h2>
+          <Link href="/admin/orders" className="text-sm md:text-base">View All</Link>
         </div>
 
         {recentOrders.length === 0 ? (
@@ -328,11 +364,11 @@ export default function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((order) => (
-                  <tr key={order._id} className="border-b dark:border-white/10 hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                {recentOrders.map((order, index) => (
+                  <tr key={order._id || order.order_id || order.order_number || `order-${index}`} className="border-b dark:border-white/10 hover:bg-gray-50 dark:hover:bg-gray-900/50">
                     <td className="py-3 px-4">
-                      <Link href={`/admin/orders/${order._id}`} className="text-[#D4AF37] hover:underline">
-                        {order.order_id}
+                      <Link href={`/admin/orders/${order._id || order.order_id || order.order_number}`} className="text-[#D4AF37] hover:underline text-sm md:text-base">
+                        {order.order_number || order.order_id || order._id}
                       </Link>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
@@ -358,111 +394,111 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         <Link
           href="/admin/orders"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
-          <div className="flex items-center gap-4">
-            <ShoppingBag className="h-8 w-8 text-[#D4AF37]" />
+          <div className="flex items-center gap-2 md:gap-4">
+            <ShoppingBag className="h-5 w-5 md:h-8 md:w-8 text-[#D4AF37] flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Orders</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Manage all orders</p>
+              <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Orders</h3>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden md:block">Manage all orders</p>
             </div>
           </div>
         </Link>
 
         <Link
           href="/admin/products"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
-          <div className="flex items-center gap-4">
-            <Package className="h-8 w-8 text-[#D4AF37]" />
+          <div className="flex items-center gap-2 md:gap-4">
+            <Package className="h-5 w-5 md:h-8 md:w-8 text-[#D4AF37] flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Products</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Manage products</p>
+              <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Products</h3>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden md:block">Manage products</p>
             </div>
           </div>
         </Link>
 
         <Link
           href="/admin/customers"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
-          <div className="flex items-center gap-4">
-            <Users className="h-8 w-8 text-[#D4AF37]" />
+          <div className="flex items-center gap-2 md:gap-4">
+            <Users className="h-5 w-5 md:h-8 md:w-8 text-[#D4AF37] flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Customers</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">View all customers</p>
+              <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Customers</h3>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden md:block">View all customers</p>
             </div>
           </div>
         </Link>
 
         <Link
           href="/admin/offers"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
-          <div className="flex items-center gap-4">
-            <TrendingUp className="h-8 w-8 text-[#D4AF37]" />
+          <div className="flex items-center gap-2 md:gap-4">
+            <TrendingUp className="h-5 w-5 md:h-8 md:w-8 text-[#D4AF37] flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Offers</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Manage offers & discounts</p>
+              <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Offers</h3>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden md:block">Manage offers & discounts</p>
             </div>
           </div>
         </Link>
 
         <Link
           href="/admin/categories"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
-          <div className="flex items-center gap-4">
-            <Package className="h-8 w-8 text-[#D4AF37]" />
+          <div className="flex items-center gap-2 md:gap-4">
+            <Package className="h-5 w-5 md:h-8 md:w-8 text-[#D4AF37] flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Categories</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Manage categories</p>
+              <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Categories</h3>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden md:block">Manage categories</p>
             </div>
           </div>
         </Link>
 
         <Link
           href="/admin/workers"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
-          <div className="flex items-center gap-4">
-            <Users className="h-8 w-8 text-[#D4AF37]" />
+          <div className="flex items-center gap-2 md:gap-4">
+            <Users className="h-5 w-5 md:h-8 md:w-8 text-[#D4AF37] flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Workers</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Manage workers</p>
+              <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Workers</h3>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden md:block">Manage workers</p>
             </div>
           </div>
         </Link>
 
         <Link
           href="/admin/carousel"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10 hover:shadow-md transition-shadow"
         >
-          <div className="flex items-center gap-4">
-            <Package className="h-8 w-8 text-[#D4AF37]" />
+          <div className="flex items-center gap-2 md:gap-4">
+            <Package className="h-5 w-5 md:h-8 md:w-8 text-[#D4AF37] flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Carousel</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Manage carousel slides</p>
+              <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Carousel</h3>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden md:block">Manage carousel slides</p>
             </div>
           </div>
         </Link>
 
         <Link
           href="/admin/messages"
-          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-6 border dark:border-white/10 hover:shadow-md transition-shadow relative"
+          className="bg-white dark:bg-[#0a0a0a] rounded-lg shadow-sm p-3 md:p-6 border dark:border-white/10 hover:shadow-md transition-shadow relative"
         >
-          <div className="flex items-center gap-4">
-            <MessageSquare className="h-8 w-8 text-[#D4AF37]" />
+          <div className="flex items-center gap-2 md:gap-4">
+            <MessageSquare className="h-5 w-5 md:h-8 md:w-8 text-[#D4AF37] flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Messages</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">View customer messages</p>
+              <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Messages</h3>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden md:block">View customer messages</p>
             </div>
           </div>
           {unreadMessagesCount > 0 && (
-            <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+            <span className="absolute top-2 right-2 md:top-4 md:right-4 bg-red-500 text-white text-[10px] md:text-xs font-bold rounded-full h-5 w-5 md:h-6 md:w-6 flex items-center justify-center">
               {unreadMessagesCount}
             </span>
           )}
